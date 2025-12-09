@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { Task, TimeBlock } from '../types';
-import { SubtaskList, Subtask } from './SubtaskList';
+import { Task, TimeBlock, TaskDependency, Subtask } from '../types';
+import { SubtaskList } from './SubtaskList';
 import { DependencySelector } from './DependencySelector';
 
 interface EditTaskModalProps {
@@ -9,8 +9,8 @@ interface EditTaskModalProps {
     onClose: () => void;
     onUpdate: (id: string, updates: Partial<Task>) => void;
     task: Task & {
-        subtasks?: any[];
-        dependencies?: any[];
+        subtasks?: Subtask[];
+        dependencies?: TaskDependency[];
     };
     projects: Array<{ id: string; name: string; color: string }>;
     allTasks: Task[];

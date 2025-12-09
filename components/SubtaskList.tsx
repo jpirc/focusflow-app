@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Circle, Plus, X, GripVertical, Edit2, Check } from 'lucide-react';
-
-export interface Subtask {
-    id: string;
-    title: string;
-    completed: boolean;
-    estimatedMinutes?: number;
-}
+import { Subtask } from '../types';
 
 interface SubtaskListProps {
     taskId: string;
