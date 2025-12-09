@@ -29,6 +29,15 @@ export interface Subtask {
     estimatedMinutes?: number;
 }
 
+export interface TaskDependency {
+    id: string;
+    taskId: string;
+    dependsOnId: string;
+    createdAt: string;
+    // Resolved task object when joined on the client
+    dependsOn: Task;
+}
+
 export interface Task {
     id: string;
     title: string;
@@ -44,7 +53,7 @@ export interface Task {
     energyLevel: EnergyLevel;
     icon: string;
     subtasks: Subtask[];
-    dependencies?: any[];
+    dependencies?: TaskDependency[];
     dependsOn: string[];
     dependents: string[];
     carriedOverFrom?: string;
