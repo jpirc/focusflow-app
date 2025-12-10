@@ -149,6 +149,16 @@ ANTHROPIC_API_KEY=your-api-key
 NEXT_PUBLIC_APP_URL=https://your-domain.com
 ```
 
+Local environment helper
+
+If you want a quick local `.env` scaffold with generated secrets, run:
+
+```bash
+./scripts/setup-local-env.sh
+```
+
+Then edit `.env.local` or `.env` to provide a valid `DATABASE_URL` and `ANTHROPIC_API_KEY` (if needed).
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
