@@ -165,7 +165,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Inspired by [Tiimo](https://tiimoapp.com/) - iPhone App of the Year 2025
 - Built with love for the neurodivergent community
 - Icons by [Lucide](https://lucide.dev/)
 
