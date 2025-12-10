@@ -159,6 +159,9 @@ export default function FocusFlowApp() {
   const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingProjectName, setEditingProjectName] = useState('');
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   // Fetch tasks from API
   const fetchTasks = useCallback(async () => {
@@ -389,6 +392,68 @@ export default function FocusFlowApp() {
       alert('Failed to create project. Please try again.');
     }
   }, [session]);
+
+  const handleStartEditProject = useCallback((project: Project) => {
+    setEditingProjectId(project.id);
+    setEditingProjectName(project.name);
+  }, []);
+
+  const handleCancelEditProject = useCallback(() => {
+    setEditingProjectId(null);
+    setEditingProjectName('');
+  }, []);
+
+  const handleSaveProjectName = useCallback(async (projectId: string) => {
+    if (!editingProjectName.trim() || !session) {
+      setEditingProjectId(null);
+      setEditingProjectName('');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editingProjectName }),
+      });
+
+      if (response.ok) {
+        const updatedProject = await response.json();
+        setProjects(prev => prev.map(p => p.id === projectId ? updatedProject : p));
+        setEditingProjectId(null);
+        setEditingProjectName('');
+      } else {
+        alert('Failed to update project. Please try again.');
+      }
+    } catch (error) {
+      console.error('Failed to save project name:', error);
+      alert('Failed to update project. Please try again.');
+    }
+  }, [editingProjectName, session]);
+
+  const handleConfirmDeleteProject = useCallback(async (projectId: string) => {
+    if (!session) return;
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setProjects(prev => prev.filter(p => p.id !== projectId));
+        if (selectedProjectId === projectId) {
+          setSelectedProjectId(null);
+        }
+        setProjectToDelete(null);
+        alert('Project deleted and tasks moved to inbox.');
+      } else {
+        alert('Failed to delete project. Please try again.');
+      }
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      alert('Failed to delete project. Please try again.');
+    }
+  }, [session, selectedProjectId]);
 
   // Subtask handlers
   const handleAddSubtask = useCallback(async (taskId: string, title: string, estimatedMinutes: number = 15) => {
@@ -699,18 +764,70 @@ export default function FocusFlowApp() {
               </div>
               <div className="space-y-1">
                 {projects.map(project => (
-                  <button
-                    key={project.id}
-                    onClick={() => setSelectedProjectId(selectedProjectId === project.id ? null : project.id)}
-                    className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors ${selectedProjectId === project.id ? 'bg-purple-50 text-purple-700 font-medium' : ''
-                      }`}
-                  >
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }} />
-                    <span>{project.name}</span>
-                    {selectedProjectId === project.id && (
-                      <span className="ml-auto text-xs">✓</span>
+                  <div key={project.id}>
+                    {editingProjectId === project.id ? (
+                      <div className="flex gap-2 px-2 py-2">
+                        <input
+                          type="text"
+                          value={editingProjectName}
+                          onChange={(e) => setEditingProjectName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveProjectName(project.id);
+                            if (e.key === 'Escape') handleCancelEditProject();
+                          }}
+                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded bg-white"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleSaveProjectName(project.id)}
+                          className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+                        >
+                          ✓
+                        </button>
+                        <button
+                          onClick={handleCancelEditProject}
+                          className="px-2 py-1 text-xs bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setSelectedProjectId(selectedProjectId === project.id ? null : project.id)}
+                        className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors group ${selectedProjectId === project.id ? 'bg-purple-50 text-purple-700 font-medium' : ''
+                          }`}
+                      >
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }} />
+                        <span className="flex-1 text-left">{project.name}</span>
+                        {selectedProjectId === project.id && (
+                          <span className="text-xs">✓</span>
+                        )}
+                        {/* Edit/Delete buttons appear on hover */}
+                        <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEditProject(project);
+                            }}
+                            className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                            title="Edit project"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setProjectToDelete(project.id);
+                            }}
+                            className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                            title="Delete project"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </button>
                     )}
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -919,6 +1036,32 @@ export default function FocusFlowApp() {
         onClose={() => setCreateProjectModalOpen(false)}
         onCreate={handleCreateProject}
       />
+
+      {/* Delete Project Confirmation Dialog */}
+      {projectToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Project?</h3>
+            <p className="text-gray-600 mb-4">
+              Deleting this project will move all its tasks to your Inbox. This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setProjectToDelete(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleConfirmDeleteProject(projectToDelete)}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+              >
+                Delete Project
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -85,6 +85,13 @@ export async function DELETE(
         if (!existing) return errorResponse('Project not found', 404);
         if (existing.userId !== session.user.id) return unauthorizedResponse();
 
+        // Reassign all tasks in this project to inbox (projectId = null)
+        await prisma.task.updateMany({
+            where: { projectId: params.id },
+            data: { projectId: null },
+        });
+
+        // Delete the project
         await prisma.project.delete({
             where: { id: params.id },
         });
