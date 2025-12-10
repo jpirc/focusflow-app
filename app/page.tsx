@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
+import Link from 'next/link';
+import { signOut } from 'next-auth/react';
 import {
   Clock, Plus, ChevronLeft, ChevronRight,
   Calendar, Settings, User, LogOut,
-  Volume2, VolumeX, Moon, Menu,
-  Sunrise, Sun, Sunset
+  Volume2, VolumeX, Moon, Menu, Brain,
+  Sunrise, Sun, Sunset, MoreVertical
 } from 'lucide-react';
 import { Task, Project, Subtask, TaskStatus, TimeBlock, DragItem, TimeBlockConfig } from '../types';
 import { TaskCard } from '../components/TaskCard';
@@ -33,7 +35,12 @@ const TIME_BLOCKS: TimeBlockConfig[] = [
 // UTILITIES
 // ============================================
 
-const formatDate = (date: Date): string => date.toISOString().split('T')[0];
+const formatDate = (date: Date | string | null | undefined): string => {
+  if (!date) return '';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().split('T')[0];
+};
 const addDays = (date: Date, days: number): Date => {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
@@ -159,6 +166,10 @@ export default function FocusFlowApp() {
   const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingProjectName, setEditingProjectName] = useState('');
+  const [projectMenuOpenId, setProjectMenuOpenId] = useState<string | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   // Fetch tasks from API
   const fetchTasks = useCallback(async () => {
@@ -390,6 +401,69 @@ export default function FocusFlowApp() {
     }
   }, [session]);
 
+  const handleStartEditProject = useCallback((project: Project) => {
+    setEditingProjectId(project.id);
+    setEditingProjectName(project.name);
+    setProjectMenuOpenId(null);
+  }, []);
+
+  const handleCancelEditProject = useCallback(() => {
+    setEditingProjectId(null);
+    setEditingProjectName('');
+  }, []);
+
+  const handleSaveProjectName = useCallback(async (projectId: string) => {
+    const trimmed = editingProjectName.trim();
+    if (!trimmed || !session) {
+      handleCancelEditProject();
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      });
+
+      if (response.ok) {
+        const updatedProject = await response.json();
+        setProjects(prev => prev.map(p => p.id === projectId ? updatedProject : p));
+        handleCancelEditProject();
+      } else {
+        alert('Failed to update project. Please try again.');
+      }
+    } catch (error) {
+      console.error('Failed to save project name:', error);
+      alert('Failed to update project. Please try again.');
+    }
+  }, [editingProjectName, session, handleCancelEditProject]);
+
+  const handleConfirmDeleteProject = useCallback(async (projectId: string) => {
+    if (!session) return;
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setProjects(prev => prev.filter(p => p.id !== projectId));
+        if (selectedProjectId === projectId) {
+          setSelectedProjectId(null);
+        }
+        setProjectToDelete(null);
+        setProjectMenuOpenId(null);
+        alert('Project deleted and tasks moved to inbox.');
+      } else {
+        alert('Failed to delete project. Please try again.');
+      }
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      alert('Failed to delete project. Please try again.');
+    }
+  }, [session, selectedProjectId]);
+
   // Subtask handlers
   const handleAddSubtask = useCallback(async (taskId: string, title: string, estimatedMinutes: number = 15) => {
     if (!session) return;
@@ -602,13 +676,20 @@ export default function FocusFlowApp() {
     t.status === 'completed' && (!selectedProjectId || t.projectId === selectedProjectId)
   );
 
+  // Auth protection: redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !session) {
+      window.location.href = '/login';
+    }
+  }, [session, loading]);
+
   // Generate days to display (excluding completed tasks)
   const displayDays = Array.from({ length: viewDays }, (_, i) => {
     const date = addDays(currentDate, i);
     const dateStr = formatDate(date);
     // Filter by selected project if one is selected, excluding completed tasks
     const dayTasks = tasks.filter(t =>
-      t.date === dateStr && t.status !== 'completed' && (!selectedProjectId || t.projectId === selectedProjectId)
+      formatDate(t.date!) === dateStr && t.status !== 'completed' && (!selectedProjectId || t.projectId === selectedProjectId)
     );
     return {
       date: date,
@@ -618,6 +699,20 @@ export default function FocusFlowApp() {
       tasks: dayTasks
     };
   });
+
+  // Show loading state while checking auth
+  if (loading || !session) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white mx-auto mb-4">
+            <Brain size={24} />
+          </div>
+          <p className="text-gray-600 font-medium">Loading FocusFlow...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
@@ -699,18 +794,76 @@ export default function FocusFlowApp() {
               </div>
               <div className="space-y-1">
                 {projects.map(project => (
-                  <button
-                    key={project.id}
-                    onClick={() => setSelectedProjectId(selectedProjectId === project.id ? null : project.id)}
-                    className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors ${selectedProjectId === project.id ? 'bg-purple-50 text-purple-700 font-medium' : ''
-                      }`}
-                  >
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }} />
-                    <span>{project.name}</span>
-                    {selectedProjectId === project.id && (
-                      <span className="ml-auto text-xs">✓</span>
+                  <div key={project.id} className="group relative">
+                    {editingProjectId === project.id ? (
+                      <div className="flex items-center gap-2 px-2 py-2 bg-white rounded-lg border border-gray-200">
+                        <input
+                          type="text"
+                          value={editingProjectName}
+                          onChange={(e) => setEditingProjectName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveProjectName(project.id);
+                            if (e.key === 'Escape') handleCancelEditProject();
+                          }}
+                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleSaveProjectName(project.id)}
+                          className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleCancelEditProject}
+                          className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors ${selectedProjectId === project.id ? 'bg-purple-50 text-purple-700 font-medium' : ''}`}
+                        onClick={() => setSelectedProjectId(selectedProjectId === project.id ? null : project.id)}
+                      >
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }} />
+                        <span className="flex-1 text-left">{project.name}</span>
+                        {selectedProjectId === project.id && (
+                          <span className="text-xs">✓</span>
+                        )}
+                        <button
+                          className="p-1 text-gray-400 hover:text-gray-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setProjectMenuOpenId(projectMenuOpenId === project.id ? null : project.id);
+                          }}
+                          aria-label="Project options"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+
+                        {projectMenuOpenId === project.id && (
+                          <div className="absolute right-2 top-10 z-10 bg-white border border-gray-200 rounded-lg shadow-md w-32 py-1">
+                            <button
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                              onClick={() => handleStartEditProject(project)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                              onClick={() => {
+                                setProjectToDelete(project.id);
+                                setProjectMenuOpenId(null);
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     )}
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -754,18 +907,25 @@ export default function FocusFlowApp() {
         </div>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-gray-100">
-          <button className={`flex items-center gap-3 w-full hover:bg-gray-50 p-2 rounded-lg transition-colors ${!sidebarOpen && 'justify-center'}`}>
+        <div className="p-4 border-t border-gray-100 space-y-2">
+          <Link href="/settings" className={`flex items-center gap-3 w-full hover:bg-gray-50 p-2 rounded-lg transition-colors ${!sidebarOpen && 'justify-center'}`}>
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-orange-400 flex items-center justify-center text-white font-medium text-sm">
               JP
             </div>
             {sidebarOpen && (
               <div className="flex-1 text-left">
-                <p className="text-sm font-medium text-gray-700">Jonathan P.</p>
-                <p className="text-xs text-gray-400">Pro Plan</p>
+                <p className="text-sm font-medium text-gray-700">{session?.user?.name || 'User'}</p>
+                <p className="text-xs text-gray-400">Account</p>
               </div>
             )}
             {sidebarOpen && <Settings size={16} className="text-gray-400" />}
+          </Link>
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className={`flex items-center gap-3 w-full hover:bg-gray-50 p-2 rounded-lg transition-colors text-gray-600 ${!sidebarOpen && 'justify-center'}`}
+          >
+            <LogOut size={18} />
+            {sidebarOpen && <span className="flex-1 text-left text-sm">Sign out</span>}
           </button>
         </div>
       </div>
@@ -919,6 +1079,32 @@ export default function FocusFlowApp() {
         onClose={() => setCreateProjectModalOpen(false)}
         onCreate={handleCreateProject}
       />
+
+      {/* Delete Project Confirmation */}
+      {projectToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete project?</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Deleting this project will move all its tasks to your Inbox. This cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setProjectToDelete(null)}
+                className="px-4 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleConfirmDeleteProject(projectToDelete)}
+                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

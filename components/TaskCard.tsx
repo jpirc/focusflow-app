@@ -116,7 +116,7 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                 </div>
             )}
 
-            <div className="p-2">
+            <div className="p-3">
                 <div className="flex items-start gap-2">
                     <button
                         onClick={(e) => { e.stopPropagation(); const nextStatus = task.status === 'completed' ? 'pending' : 'completed'; onStatusChange(task.id, nextStatus); }}
@@ -132,14 +132,14 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                     </button>
 
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                            <span className="p-1 rounded" style={{ backgroundColor: project.bgColor, color: project.color }}>
+                        <div className="flex items-start gap-1.5">
+                            <span className="p-1 rounded flex-shrink-0 mt-0.5" style={{ backgroundColor: project.bgColor, color: project.color }}>
                                 {iconMap[task.icon] || <Target size={14} />}
                             </span>
-                            <h4 className={`font-medium text-sm truncate ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-800'}`}>{task.title}</h4>
+                            <h4 className={`font-medium text-sm break-words leading-snug ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-800'}`}>{task.title}</h4>
                         </div>
 
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap ml-[30px]">
                             <span className="text-[11px] text-gray-500">{task.estimatedMinutes}min</span>
                             <PriorityBadge priority={task.priority} />
                             <EnergyBadge level={task.energyLevel} />
