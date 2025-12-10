@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
+import Link from 'next/link';
+import { signOut } from 'next-auth/react';
 import {
   Clock, Plus, ChevronLeft, ChevronRight,
   Calendar, Settings, User, LogOut,
-  Volume2, VolumeX, Moon, Menu,
+  Volume2, VolumeX, Moon, Menu, Brain,
   Sunrise, Sun, Sunset
 } from 'lucide-react';
 import { Task, Project, Subtask, TaskStatus, TimeBlock, DragItem, TimeBlockConfig } from '../types';
@@ -602,13 +604,20 @@ export default function FocusFlowApp() {
     t.status === 'completed' && (!selectedProjectId || t.projectId === selectedProjectId)
   );
 
+  // Auth protection: redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !session) {
+      window.location.href = '/login';
+    }
+  }, [session, loading]);
+
   // Generate days to display (excluding completed tasks)
   const displayDays = Array.from({ length: viewDays }, (_, i) => {
     const date = addDays(currentDate, i);
     const dateStr = formatDate(date);
     // Filter by selected project if one is selected, excluding completed tasks
     const dayTasks = tasks.filter(t =>
-      t.date === dateStr && t.status !== 'completed' && (!selectedProjectId || t.projectId === selectedProjectId)
+      formatDate(t.date!) === dateStr && t.status !== 'completed' && (!selectedProjectId || t.projectId === selectedProjectId)
     );
     return {
       date: date,
@@ -618,6 +627,20 @@ export default function FocusFlowApp() {
       tasks: dayTasks
     };
   });
+
+  // Show loading state while checking auth
+  if (loading || !session) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white mx-auto mb-4">
+            <Brain size={24} />
+          </div>
+          <p className="text-gray-600 font-medium">Loading FocusFlow...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
@@ -754,18 +777,25 @@ export default function FocusFlowApp() {
         </div>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-gray-100">
-          <button className={`flex items-center gap-3 w-full hover:bg-gray-50 p-2 rounded-lg transition-colors ${!sidebarOpen && 'justify-center'}`}>
+        <div className="p-4 border-t border-gray-100 space-y-2">
+          <Link href="/settings" className={`flex items-center gap-3 w-full hover:bg-gray-50 p-2 rounded-lg transition-colors ${!sidebarOpen && 'justify-center'}`}>
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-orange-400 flex items-center justify-center text-white font-medium text-sm">
               JP
             </div>
             {sidebarOpen && (
               <div className="flex-1 text-left">
-                <p className="text-sm font-medium text-gray-700">Jonathan P.</p>
-                <p className="text-xs text-gray-400">Pro Plan</p>
+                <p className="text-sm font-medium text-gray-700">{session?.user?.name || 'User'}</p>
+                <p className="text-xs text-gray-400">Account</p>
               </div>
             )}
             {sidebarOpen && <Settings size={16} className="text-gray-400" />}
+          </Link>
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className={`flex items-center gap-3 w-full hover:bg-gray-50 p-2 rounded-lg transition-colors text-gray-600 ${!sidebarOpen && 'justify-center'}`}
+          >
+            <LogOut size={18} />
+            {sidebarOpen && <span className="flex-1 text-left text-sm">Sign out</span>}
           </button>
         </div>
       </div>
