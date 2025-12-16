@@ -199,15 +199,38 @@ export default function FocusFlowApp() {
     }
   }, []);
 
+  // Auto-rollover incomplete past tasks on load
+  const rolloverTasks = useCallback(async () => {
+    if (!session) return;
+    
+    try {
+      const response = await fetch('/api/tasks/rollover', {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.count > 0) {
+          console.log(`Rolled over ${result.count} task(s) to today`);
+          // Refresh tasks after rollover
+          await fetchTasks();
+        }
+      }
+    } catch (error) {
+      console.error('Rollover failed:', error);
+    }
+  }, [session, fetchTasks]);
+
   // Initialize - fetch tasks from API
   useEffect(() => {
     if (session) {
       fetchTasks();
       fetchProjects();
+      rolloverTasks(); // Auto-rollover on load
     } else {
       setLoading(false);
     }
-  }, [session, fetchTasks, fetchProjects]);
+  }, [session, fetchTasks, fetchProjects, rolloverTasks]);
 
   // Handlers
   const handleCreateTask = useCallback(async (
