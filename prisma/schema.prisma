@@ -99,12 +99,17 @@ model Task {
   // Time tracking
   estimatedMinutes Int       @default(30)
   actualMinutes    Int?
+  startedAt        DateTime? // When task status changed to in-progress
+  completedAt      DateTime? // When task was marked completed
   
   // Status & Priority
   status           String    @default("pending")
   priority         String    @default("medium")
   energyLevel      String    @default("medium")
   completed        Boolean   @default(false)
+  
+  // Rollover tracking
+  rolloverCount    Int       @default(0) // How many times this task has been rolled over
   
   // Relations
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
