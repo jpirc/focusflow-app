@@ -37,8 +37,6 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
 
       const { tasks } = await parseResponse.json();
 
-      console.log('Parsed tasks:', tasks);
-
       // Create each task
       const createdTasks = [];
       for (const task of tasks) {
@@ -62,8 +60,6 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
         const createdTask = await response.json();
         createdTasks.push(createdTask);
       }
-
-      console.log('Created tasks:', createdTasks);
 
       setText('');
       onTasksCreated();

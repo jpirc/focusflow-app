@@ -134,7 +134,7 @@ export default function LoginPage() {
 
                         <div className="mt-6">
                             <button
-                                onClick={() => signIn('google')}
+                                onClick={() => signIn('google', { callbackUrl: '/' })}
                                 className="w-full flex justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                             >
                                 <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
