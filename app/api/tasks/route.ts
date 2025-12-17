@@ -14,8 +14,8 @@ const createTaskSchema = z.object({
     description: z.string().optional(),
     projectId: z.string().optional(),
     parentTaskId: z.string().optional(),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
-    timeBlock: z.enum(['anytime', 'morning', 'afternoon', 'evening']).optional(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.null()).optional(),
+    timeBlock: z.enum(['anytime', 'morning', 'afternoon', 'evening']).optional().or(z.null()).optional(),
     estimatedMinutes: z.number().optional(),
     priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
     energyLevel: z.enum(['low', 'medium', 'high']).optional(),
@@ -102,11 +102,29 @@ export async function POST(req: NextRequest) {
     if (error) return error;
 
     try {
+        // Build data object with only defined values
+        const taskData: any = {
+            title: data!.title,
+            user: {
+                connect: { id: session.user.id }
+            }
+        };
+
+        // Only include optional fields if they are defined and not null
+        if (data!.description !== undefined) taskData.description = data!.description;
+        if (data!.projectId !== undefined) taskData.projectId = data!.projectId;
+        if (data!.parentTaskId !== undefined) taskData.parentTaskId = data!.parentTaskId;
+        if (data!.date !== undefined && data!.date !== null) taskData.date = data!.date;
+        if (data!.timeBlock !== undefined && data!.timeBlock !== null) taskData.timeBlock = data!.timeBlock;
+        if (data!.estimatedMinutes !== undefined) taskData.estimatedMinutes = data!.estimatedMinutes;
+        if (data!.priority !== undefined) taskData.priority = data!.priority;
+        if (data!.energyLevel !== undefined) taskData.energyLevel = data!.energyLevel;
+        if (data!.icon !== undefined) taskData.icon = data!.icon;
+        if (data!.aiGenerated !== undefined) taskData.aiGenerated = data!.aiGenerated;
+        if (data!.completed !== undefined) taskData.completed = data!.completed;
+
         const task = await prisma.task.create({
-            data: {
-                ...data!,
-                userId: session.user.id,
-            },
+            data: taskData,
         });
 
         // Return task with all required fields
