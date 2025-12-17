@@ -16,6 +16,7 @@ import { AIBreakdownModal } from '../components/AIBreakdownModal';
 import { CreateTaskModal } from '../components/CreateTaskModal';
 import { EditTaskModal } from '../components/EditTaskModal';
 import { CreateProjectModal } from '../components/CreateProjectModal';
+import { SmartCaptureModal } from '../components/SmartCaptureModal';
 import { useSession } from 'next-auth/react';
 
 // ============================================
@@ -164,6 +165,7 @@ export default function FocusFlowApp() {
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
+  const [smartCaptureModalOpen, setSmartCaptureModalOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
@@ -231,6 +233,20 @@ export default function FocusFlowApp() {
       setLoading(false);
     }
   }, [session, fetchTasks, fetchProjects, rolloverTasks]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K for Smart Capture
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSmartCaptureModalOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Handlers
   const handleCreateTask = useCallback(async (
@@ -1000,6 +1016,13 @@ export default function FocusFlowApp() {
               ))}
             </div>
             <button
+              onClick={() => setSmartCaptureModalOpen(true)}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm hover:shadow"
+            >
+              <Brain size={18} />
+              Smart Capture
+            </button>
+            <button
               onClick={() => setCreateModalOpen(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm hover:shadow"
             >
@@ -1101,6 +1124,13 @@ export default function FocusFlowApp() {
         isOpen={createProjectModalOpen}
         onClose={() => setCreateProjectModalOpen(false)}
         onCreate={handleCreateProject}
+      />
+
+      {/* Smart Capture Modal */}
+      <SmartCaptureModal
+        isOpen={smartCaptureModalOpen}
+        onClose={() => setSmartCaptureModalOpen(false)}
+        onTasksCreated={fetchTasks}
       />
 
       {/* Delete Project Confirmation */}
