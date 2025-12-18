@@ -1,1163 +1,377 @@
+/**
+ * FocusFlow - Main Application Page
+ * 
+ * This page composes the app from hooks and components.
+ * All business logic lives in hooks, all UI in components.
+ */
+
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
-import Link from 'next/link';
-import { signOut } from 'next-auth/react';
-import {
-  Clock, Plus, ChevronLeft, ChevronRight,
-  Calendar, Settings, User, LogOut,
-  Volume2, VolumeX, Moon, Menu, Brain,
-  Sunrise, Sun, Sunset, MoreVertical
-} from 'lucide-react';
-import { Task, Project, Subtask, TaskStatus, TimeBlock, DragItem, TimeBlockConfig } from '../types';
-import { TaskCard } from '../components/TaskCard';
-import { TimeBlockColumn } from '../components/TimeBlockColumn';
-import { AIBreakdownModal } from '../components/AIBreakdownModal';
-import { CreateTaskModal } from '../components/CreateTaskModal';
-import { EditTaskModal } from '../components/EditTaskModal';
-import { CreateProjectModal } from '../components/CreateProjectModal';
-import { SmartCaptureModal } from '../components/SmartCaptureModal';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
+import { Brain } from 'lucide-react';
+
+// Hooks
+import { useTasks, useProjects } from '@/hooks';
+
+// Components
+import { Sidebar, Header } from '@/components/layout';
+import { TaskCard } from '@/components/TaskCard';
+import { TimeBlockColumn } from '@/components/TimeBlockColumn';
+import { AIBreakdownModal } from '@/components/AIBreakdownModal';
+import { CreateTaskModal } from '@/components/CreateTaskModal';
+import { EditTaskModal } from '@/components/EditTaskModal';
+import { CreateProjectModal } from '@/components/CreateProjectModal';
+import { SmartCaptureModal } from '@/components/SmartCaptureModal';
+
+// Utilities & Constants
+import { formatDate, formatDisplayDate, addDays, isToday } from '@/lib/utils/date';
+import { TIME_BLOCKS } from '@/lib/constants';
+
+// Types
+import { Task, Subtask, TimeBlock, DragItem } from '@/types';
 
 // ============================================
-// CONSTANTS
-// ============================================
-
-const TIME_BLOCKS: TimeBlockConfig[] = [
-  { id: 'anytime', label: 'Anytime', icon: <Clock size={16} />, hours: 'Flexible', energyMatch: 'medium' },
-  { id: 'morning', label: 'Morning', icon: <Sunrise size={16} />, hours: '6 AM - 12 PM', energyMatch: 'high' },
-  { id: 'afternoon', label: 'Afternoon', icon: <Sun size={16} />, hours: '12 PM - 5 PM', energyMatch: 'medium' },
-  { id: 'evening', label: 'Evening', icon: <Sunset size={16} />, hours: '5 PM - 10 PM', energyMatch: 'low' },
-];
-
-
-
-// ============================================
-// UTILITIES
-// ============================================
-
-const formatDate = (date: Date | string | null | undefined): string => {
-  if (!date) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toISOString().split('T')[0];
-};
-const addDays = (date: Date, days: number): Date => {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-};
-
-const formatDisplayDate = (dateStr: string): string => {
-  const date = new Date(dateStr + 'T00:00:00');
-  const today = new Date();
-  const tomorrow = addDays(today, 1);
-  if (dateStr === formatDate(today)) return 'Today';
-  if (dateStr === formatDate(tomorrow)) return 'Tomorrow';
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-};
-
-const isToday = (dateStr: string): boolean => dateStr === formatDate(new Date());
-
-// ============================================
-// SAMPLE DATA
-// ============================================
-
-const createSampleTasks = (): Task[] => {
-  const today = formatDate(new Date());
-  const tomorrow = formatDate(addDays(new Date(), 1));
-  const dayAfter = formatDate(addDays(new Date(), 2));
-
-  return [
-    {
-      id: 't1', title: 'Morning Standup', description: 'Daily team sync', projectId: 'work',
-      date: today, timeBlock: 'morning', estimatedMinutes: 30, status: 'completed',
-      priority: 'medium', energyLevel: 'medium', icon: 'briefcase',
-      subtasks: [], dependsOn: [], dependents: ['t2'], createdAt: new Date().toISOString()
-    },
-    {
-      id: 't2', title: 'Q4 Planning Document', description: 'Draft the quarterly objectives', projectId: 'work',
-      date: today, timeBlock: 'morning', estimatedMinutes: 120, status: 'in-progress',
-      priority: 'high', energyLevel: 'high', icon: 'briefcase',
-      subtasks: [
-        { id: 's1', title: 'Review Q3 metrics', completed: true, estimatedMinutes: 30 },
-        { id: 's2', title: 'Draft objectives', completed: false, estimatedMinutes: 45 },
-        { id: 's3', title: 'Get stakeholder input', completed: false, estimatedMinutes: 30 },
-      ],
-      dependsOn: ['t1'], dependents: ['t5'], createdAt: new Date().toISOString()
-    },
-    {
-      id: 't3', title: 'Gym - Upper Body', description: 'Chest, shoulders, triceps', projectId: 'health',
-      date: today, timeBlock: 'afternoon', estimatedMinutes: 60, status: 'pending',
-      priority: 'medium', energyLevel: 'high', icon: 'dumbbell',
-      subtasks: [], dependsOn: [], dependents: [], createdAt: new Date().toISOString()
-    },
-    {
-      id: 't4', title: 'Read AI Research Paper', projectId: 'learning',
-      date: today, timeBlock: 'evening', estimatedMinutes: 45, status: 'pending',
-      priority: 'low', energyLevel: 'low', icon: 'book',
-      subtasks: [], dependsOn: [], dependents: [], createdAt: new Date().toISOString()
-    },
-    {
-      id: 't5', title: 'Present Q4 Plan', description: 'Leadership review meeting', projectId: 'work',
-      date: tomorrow, timeBlock: 'morning', estimatedMinutes: 60, status: 'pending',
-      priority: 'urgent', energyLevel: 'high', icon: 'briefcase',
-      subtasks: [], dependsOn: ['t2'], dependents: [], createdAt: new Date().toISOString()
-    },
-    {
-      id: 't6', title: 'Dentist Appointment', projectId: 'personal',
-      date: tomorrow, timeBlock: 'afternoon', estimatedMinutes: 60, status: 'pending',
-      priority: 'high', energyLevel: 'low', icon: 'heart',
-      subtasks: [], dependsOn: [], dependents: [], createdAt: new Date().toISOString()
-    },
-    {
-      id: 't7', title: 'Online Course Module 3', description: 'React Advanced Patterns', projectId: 'learning',
-      date: tomorrow, timeBlock: 'evening', estimatedMinutes: 90, status: 'pending',
-      priority: 'medium', energyLevel: 'medium', icon: 'book',
-      subtasks: [
-        { id: 's4', title: 'Watch lecture videos', completed: false, estimatedMinutes: 45 },
-        { id: 's5', title: 'Complete exercises', completed: false, estimatedMinutes: 45 },
-      ],
-      dependsOn: [], dependents: ['t9'], createdAt: new Date().toISOString()
-    },
-    {
-      id: 't8', title: 'Grocery Shopping', projectId: 'home',
-      date: dayAfter, timeBlock: 'morning', estimatedMinutes: 45, status: 'pending',
-      priority: 'medium', energyLevel: 'medium', icon: 'home',
-      subtasks: [], dependsOn: [], dependents: [], createdAt: new Date().toISOString()
-    },
-    {
-      id: 't9', title: 'Course Quiz', description: 'Module 3 assessment', projectId: 'learning',
-      date: dayAfter, timeBlock: 'afternoon', estimatedMinutes: 30, status: 'pending',
-      priority: 'high', energyLevel: 'high', icon: 'book',
-      subtasks: [], dependsOn: ['t7'], dependents: [], createdAt: new Date().toISOString()
-    },
-    {
-      id: 't10', title: 'Research vacation destinations', projectId: 'personal',
-      date: null, timeBlock: 'anytime', estimatedMinutes: 30, status: 'pending',
-      priority: 'low', energyLevel: 'low', icon: 'heart',
-      subtasks: [], dependsOn: [], dependents: [], createdAt: new Date().toISOString()
-    },
-    {
-      id: 't11', title: 'Update LinkedIn profile', projectId: 'work',
-      date: null, timeBlock: 'anytime', estimatedMinutes: 20, status: 'pending',
-      priority: 'low', energyLevel: 'low', icon: 'briefcase',
-      subtasks: [], dependsOn: [], dependents: [], createdAt: new Date().toISOString()
-    },
-  ];
-};
-
-// ============================================
-// MAIN PAGE COMPONENT
+// Main Component
 // ============================================
 
 export default function FocusFlowApp() {
-  const { data: session } = useSession();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [viewDays, setViewDays] = useState(3);
-  const [aiModalOpen, setAiModalOpen] = useState(false);
-  const [taskForAI, setTaskForAI] = useState<Task | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
-  const [smartCaptureModalOpen, setSmartCaptureModalOpen] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
-  const [editingProjectName, setEditingProjectName] = useState('');
-  const [projectMenuOpenId, setProjectMenuOpenId] = useState<string | null>(null);
-  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+    const { data: session } = useSession();
+    const isAuthenticated = !!session?.user?.id;
 
-  // Fetch tasks from API
-  const fetchTasks = useCallback(async () => {
-    try {
-      const response = await fetch('/api/tasks');
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch tasks:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    // ============================================
+    // Custom Hooks for State Management
+    // ============================================
 
-  // Fetch projects from API
-  const fetchProjects = useCallback(async () => {
-    try {
-      const response = await fetch('/api/projects');
-      if (response.ok) {
-        const data = await response.json();
-        setProjects(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch projects:', error);
-    }
-  }, []);
+    const {
+        tasks,
+        loading,
+        createTask,
+        updateTask,
+        deleteTask,
+        updateStatus,
+        moveTask,
+        addSubtask,
+        toggleSubtask,
+        updateSubtask,
+        deleteSubtask,
+        addDependency,
+        removeDependency,
+        applyAIBreakdown,
+        refreshTasks,
+    } = useTasks({ isAuthenticated });
 
-  // Auto-rollover incomplete past tasks on load
-  const rolloverTasks = useCallback(async () => {
-    if (!session) return;
-    
-    try {
-      const response = await fetch('/api/tasks/rollover', {
-        method: 'POST',
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        if (result.count > 0) {
-          console.log(`Rolled over ${result.count} task(s) to today`);
-          // Refresh tasks after rollover
-          await fetchTasks();
-        }
-      }
-    } catch (error) {
-      console.error('Rollover failed:', error);
-    }
-  }, [session, fetchTasks]);
+    const {
+        projects,
+        selectedProjectId,
+        selectProject,
+        createProject,
+        updateProject,
+        deleteProject,
+        getProjectById,
+    } = useProjects({ isAuthenticated });
 
-  // Initialize - fetch tasks from API
-  useEffect(() => {
-    if (session) {
-      fetchTasks();
-      fetchProjects();
-      rolloverTasks(); // Auto-rollover on load
-    } else {
-      setLoading(false);
-    }
-  }, [session, fetchTasks, fetchProjects, rolloverTasks]);
+    // ============================================
+    // Local UI State
+    // ============================================
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + K for Smart Capture
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setSmartCaptureModalOpen(true);
-      }
-    };
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [viewDays, setViewDays] = useState(3);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    // Modal state
+    const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [taskToEditId, setTaskToEditId] = useState<string | null>(null);
+    const [aiModalOpen, setAiModalOpen] = useState(false);
+    const [taskForAI, setTaskForAI] = useState<Task | null>(null);
 
-  // Handlers
-  const handleCreateTask = useCallback(async (
-    title: string,
-    description: string,
-    date: string | null,
-    timeBlock: TimeBlock,
-    projectId?: string
-  ) => {
-    if (!session) {
-      // Offline mode - just add to local state
-      const newTask: Task = {
-        id: `t_${Date.now()}`,
-        title,
-        description,
-        projectId,
-        date,
-        timeBlock,
-        status: 'pending',
-        priority: 'medium',
-        energyLevel: 'medium',
-        estimatedMinutes: 30,
-        icon: 'target',
-        subtasks: [],
-        dependsOn: [],
-        dependents: [],
-        createdAt: new Date().toISOString(),
-      };
-      setTasks(prev => [...prev, newTask]);
-      return;
-    }
+    // Derive the current task to edit from the tasks array (stays in sync with subtask updates)
+    const taskToEdit = useMemo(() => 
+        taskToEditId ? tasks.find(t => t.id === taskToEditId) || null : null,
+        [taskToEditId, tasks]
+    );
+    const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
+    const [smartCaptureModalOpen, setSmartCaptureModalOpen] = useState(false);
 
-    try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description, date, timeBlock, projectId }),
-      });
-      if (response.ok) {
-        const newTask = await response.json();
-        setTasks(prev => [...prev, newTask]);
-      }
-    } catch (error) {
-      console.error('Failed to create task:', error);
-      alert('Failed to create task. Please try again.');
-    }
-  }, [session]);
+    // ============================================
+    // Computed Values
+    // ============================================
 
-  const handleStatusChange = useCallback(async (id: string, status: TaskStatus) => {
-    // Optimistic update
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+    const inboxTasks = useMemo(() => 
+        tasks.filter(t =>
+            !t.date && 
+            t.status !== 'completed' && 
+            (!selectedProjectId || t.projectId === selectedProjectId)
+        ),
+        [tasks, selectedProjectId]
+    );
 
-    if (!session) return;
+    const finishedTasks = useMemo(() =>
+        tasks.filter(t =>
+            t.status === 'completed' &&
+            (!selectedProjectId || t.projectId === selectedProjectId)
+        ),
+        [tasks, selectedProjectId]
+    );
 
-    try {
-      await fetch(`/api/tasks/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-    } catch (error) {
-      console.error('Failed to update task status:', error);
-      fetchTasks(); // Revert on error
-    }
-  }, [session, fetchTasks]);
-
-
-
-  const handleStartDrag = useCallback((item: DragItem) => {
-    // Could store drag state here if needed
-    console.log('Dragging', item);
-  }, []);
-
-  const handleDrop = useCallback(async (taskId: string, targetDate: string, targetBlock: TimeBlock) => {
-    // Optimistic update
-    setTasks(prev => prev.map(t => {
-      if (t.id !== taskId) return t;
-      return { ...t, date: targetDate, timeBlock: targetBlock };
-    }));
-
-    if (!session) return;
-
-    try {
-      await fetch(`/api/tasks/${taskId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: targetDate, timeBlock: targetBlock }),
-      });
-    } catch (error) {
-      console.error('Failed to update task position:', error);
-      fetchTasks(); // Revert on error
-    }
-  }, [session, fetchTasks]);
-
-  const handleDelete = useCallback(async (id: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
-
-    if (!session) {
-      alert('You must be logged in to delete tasks');
-      return;
-    }
-
-    // Store current state for rollback
-    const deletedTask = tasks.find(t => t.id === id);
-    
-    // Optimistic update
-    setTasks(prev => prev.filter(t => t.id !== id));
-    if (selectedTaskId === id) setSelectedTaskId(null);
-    if (taskToEdit?.id === id) setTaskToEdit(null);
-
-    try {
-      const response = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-      if (!response.ok) {
-        throw new Error('Delete failed');
-      }
-    } catch (error) {
-      console.error('Failed to delete task:', error);
-      // Rollback on error
-      if (deletedTask) {
-        setTasks(prev => [...prev, deletedTask]);
-      }
-      alert('Failed to delete task. Please try again.');
-    }
-  }, [tasks, selectedTaskId, taskToEdit?.id, session]);
-
-  const handleEditTask = useCallback((task: Task) => {
-    setTaskToEdit(task);
-    setEditModalOpen(true);
-  }, []);
-
-  const handleUpdateTask = useCallback(async (
-    id: string,
-    updates: Partial<Task>
-  ) => {
-    // Optimistic update
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
-
-    if (!session) return;
-
-    try {
-      await fetch(`/api/tasks/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-    } catch (error) {
-      console.error('Failed to update task:', error);
-      fetchTasks(); // Revert on error
-    }
-  }, [session, fetchTasks]);
-
-  const handleAIBreakdown = useCallback((task: Task) => {
-    setTaskForAI(task);
-    setAiModalOpen(true);
-  }, []);
-
-  const handleApplyAIBreakdown = useCallback((subtasks: Subtask[]) => {
-    if (taskForAI) {
-      setTasks(prev => prev.map(t =>
-        t.id === taskForAI.id ? { ...t, subtasks: [...t.subtasks, ...subtasks], aiGenerated: true } : t
-      ));
-    }
-  }, [taskForAI]);
-
-  const handleUpdateSubtasks = useCallback((taskId: string, subtasks: Subtask[]) => {
-    setTasks(prev => prev.map(t =>
-      t.id === taskId ? { ...t, subtasks } : t
-    ));
-  }, []);
-
-  const handleCreateProject = useCallback(async (
-    name: string,
-    color: string,
-    icon: string
-  ) => {
-    if (!session) return;
-
-    try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, color, icon }),
-      });
-      if (response.ok) {
-        const newProject = await response.json();
-        setProjects(prev => [...prev, newProject]);
-      }
-    } catch (error) {
-      console.error('Failed to create project:', error);
-      alert('Failed to create project. Please try again.');
-    }
-  }, [session]);
-
-  const handleStartEditProject = useCallback((project: Project) => {
-    setEditingProjectId(project.id);
-    setEditingProjectName(project.name);
-    setProjectMenuOpenId(null);
-  }, []);
-
-  const handleCancelEditProject = useCallback(() => {
-    setEditingProjectId(null);
-    setEditingProjectName('');
-  }, []);
-
-  const handleSaveProjectName = useCallback(async (projectId: string) => {
-    const trimmed = editingProjectName.trim();
-    if (!trimmed || !session) {
-      handleCancelEditProject();
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmed }),
-      });
-
-      if (response.ok) {
-        const updatedProject = await response.json();
-        setProjects(prev => prev.map(p => p.id === projectId ? updatedProject : p));
-        handleCancelEditProject();
-      } else {
-        alert('Failed to update project. Please try again.');
-      }
-    } catch (error) {
-      console.error('Failed to save project name:', error);
-      alert('Failed to update project. Please try again.');
-    }
-  }, [editingProjectName, session, handleCancelEditProject]);
-
-  const handleConfirmDeleteProject = useCallback(async (projectId: string) => {
-    if (!session) return;
-
-    try {
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setProjects(prev => prev.filter(p => p.id !== projectId));
-        if (selectedProjectId === projectId) {
-          setSelectedProjectId(null);
-        }
-        setProjectToDelete(null);
-        setProjectMenuOpenId(null);
-        alert('Project deleted and tasks moved to inbox.');
-      } else {
-        alert('Failed to delete project. Please try again.');
-      }
-    } catch (error) {
-      console.error('Failed to delete project:', error);
-      alert('Failed to delete project. Please try again.');
-    }
-  }, [session, selectedProjectId]);
-
-  // Subtask handlers
-  const handleAddSubtask = useCallback(async (taskId: string, title: string, estimatedMinutes: number = 15) => {
-    if (!session) return;
-
-    try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          parentTaskId: taskId,
-          timeBlock: 'anytime',
-          estimatedMinutes,
+    const displayDays = useMemo(() =>
+        Array.from({ length: viewDays }, (_, i) => {
+            const date = addDays(currentDate, i);
+            const dateStr = formatDate(date);
+            const dayTasks = tasks.filter(t =>
+                formatDate(t.date!) === dateStr &&
+                t.status !== 'completed' &&
+                (!selectedProjectId || t.projectId === selectedProjectId)
+            );
+            return {
+                date,
+                dateStr,
+                display: formatDisplayDate(dateStr),
+                isToday: isToday(dateStr),
+                tasks: dayTasks,
+            };
         }),
-      });
+        [currentDate, viewDays, tasks, selectedProjectId]
+    );
 
-      if (response.ok) {
-        const data = await response.json();
-        // Handle both direct response and wrapped response
-        const newSubtask = data.data || data;
-        
-        // Ensure subtask has all required fields
-        const completeSubtask = {
-          ...newSubtask,
-          completed: newSubtask.completed || false,
-          estimatedMinutes: newSubtask.estimatedMinutes || estimatedMinutes,
+    // ============================================
+    // Keyboard Shortcuts
+    // ============================================
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setSmartCaptureModalOpen(true);
+            }
         };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
-        // Update tasks immediately for instant UI feedback
-        setTasks(prev => prev.map(t =>
-          t.id === taskId 
-            ? { ...t, subtasks: [...(t.subtasks || []), completeSubtask] } 
-            : t
-        ));
-        
-        // Also update taskToEdit if it's the same task
-        if (taskToEdit?.id === taskId) {
-          setTaskToEdit(prev => prev ? { ...prev, subtasks: [...(prev.subtasks || []), completeSubtask] } : prev);
+    // ============================================
+    // Redirect if not authenticated
+    // ============================================
+
+    useEffect(() => {
+        if (!loading && !session) {
+            window.location.href = '/login';
         }
-      } else {
-        const error = await response.json();
-        console.error('Failed to add subtask:', error);
-        alert('Failed to add subtask. Please try again.');
-      }
-    } catch (error) {
-      console.error('Failed to add subtask:', error);
-      alert('Failed to add subtask. Please try again.');
-    }
-  }, [session, taskToEdit?.id]);
+    }, [session, loading]);
 
-  const handleToggleSubtask = useCallback(async (taskId: string, subtaskId: string) => {
-    // Find the subtask to toggle
-    const task = tasks.find(t => t.id === taskId);
-    const subtask = task?.subtasks?.find((s: any) => s.id === subtaskId);
-    if (!subtask) return;
+    // ============================================
+    // Handlers
+    // ============================================
 
-    // Optimistic update
-    setTasks(prev => prev.map(t =>
-      t.id === taskId
-        ? {
-          ...t,
-          subtasks: t.subtasks?.map((s: any) =>
-            s.id === subtaskId ? { ...s, completed: !s.completed } : s
-          ),
+    const handleCreateTask = useCallback(async (
+        title: string,
+        description: string,
+        date: string | null,
+        timeBlock: TimeBlock,
+        projectId?: string
+    ) => {
+        await createTask({ title, description, date, timeBlock, projectId });
+    }, [createTask]);
+
+    const handleEditTask = useCallback((task: Task) => {
+        setTaskToEditId(task.id);
+        setEditModalOpen(true);
+    }, []);
+
+    const handleAIBreakdown = useCallback((task: Task) => {
+        setTaskForAI(task);
+        setAiModalOpen(true);
+    }, []);
+
+    const handleApplyAIBreakdown = useCallback((subtasks: Subtask[]) => {
+        if (taskForAI) {
+            applyAIBreakdown(taskForAI.id, subtasks);
         }
-        : t
-    ));
-    // Also update taskToEdit if it's the same task
-    if (taskToEdit?.id === taskId) {
-      setTaskToEdit(prev => prev ? {
-        ...prev,
-        subtasks: prev.subtasks?.map((s: any) =>
-          s.id === subtaskId ? { ...s, completed: !s.completed } : s
-        ),
-      } : prev);
+    }, [taskForAI, applyAIBreakdown]);
+
+    const handleStartDrag = useCallback((item: DragItem) => {
+        console.log('Dragging', item);
+    }, []);
+
+    const handleDrop = useCallback(async (taskId: string, targetDate: string, targetBlock: TimeBlock) => {
+        await moveTask(taskId, targetDate, targetBlock);
+    }, [moveTask]);
+
+    const handleCreateProject = useCallback(async (name: string, color: string, icon: string) => {
+        await createProject({ name, color, icon });
+    }, [createProject]);
+
+    const handleUpdateProjectName = useCallback(async (id: string, name: string): Promise<boolean> => {
+        return await updateProject(id, { name });
+    }, [updateProject]);
+
+    // Update subtasks helper (for TaskCard compatibility)
+    const handleUpdateSubtasks = useCallback((taskId: string, subtasks: Subtask[]) => {
+        // This is handled by the individual subtask operations now
+        console.log('Update subtasks called', taskId, subtasks.length);
+    }, []);
+
+    // ============================================
+    // Loading State
+    // ============================================
+
+    if (loading || !session) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white mx-auto mb-4">
+                        <Brain size={24} />
+                    </div>
+                    <p className="text-gray-600 font-medium">Loading FocusFlow...</p>
+                </div>
+            </div>
+        );
     }
 
-    if (!session) return;
+    // ============================================
+    // Render
+    // ============================================
 
-    try {
-      await fetch(`/api/tasks/${subtaskId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ completed: !subtask.completed }),
-      });
-    } catch (error) {
-      console.error('Failed to toggle subtask:', error);
-      fetchTasks(); // Revert on error
-    }
-  }, [tasks, session, fetchTasks]);
-
-  const handleDeleteSubtask = useCallback(async (taskId: string, subtaskId: string) => {
-    // Optimistic update
-    setTasks(prev => prev.map(t =>
-      t.id === taskId
-        ? { ...t, subtasks: t.subtasks?.filter((s: any) => s.id !== subtaskId) }
-        : t
-    ));
-    // Also update taskToEdit if it's the same task
-    if (taskToEdit?.id === taskId) {
-      setTaskToEdit(prev => prev ? {
-        ...prev,
-        subtasks: prev.subtasks?.filter((s: any) => s.id !== subtaskId),
-      } : prev);
-    }
-
-    if (!session) return;
-
-    try {
-      await fetch(`/api/tasks/${subtaskId}`, {
-        method: 'DELETE',
-      });
-    } catch (error) {
-      console.error('Failed to delete subtask:', error);
-      fetchTasks(); // Revert on error
-    }
-  }, [session, fetchTasks]);
-
-  const handleUpdateSubtask = useCallback(async (taskId: string, subtaskId: string, updates: { estimatedMinutes?: number; title?: string; completed?: boolean }) => {
-    // Optimistic update
-    setTasks(prev => prev.map(t =>
-      t.id === taskId
-        ? {
-          ...t,
-          subtasks: t.subtasks?.map((s: any) =>
-            s.id === subtaskId ? { ...s, ...updates } : s
-          ),
-        }
-        : t
-    ));
-    
-    // Also update taskToEdit if it's the same task
-    if (taskToEdit?.id === taskId) {
-      setTaskToEdit(prev => prev ? {
-        ...prev,
-        subtasks: prev.subtasks?.map((s: any) =>
-          s.id === subtaskId ? { ...s, ...updates } : s
-        ),
-      } : prev);
-    }
-
-    if (!session) return;
-
-    try {
-      await fetch(`/api/tasks/${subtaskId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-    } catch (error) {
-      console.error('Failed to update subtask:', error);
-      fetchTasks(); // Revert on error
-    }
-  }, [session, taskToEdit?.id, fetchTasks]);
-
-  // Dependency handlers
-  const handleAddDependency = useCallback(async (taskId: string, dependsOnId: string) => {
-    if (!session) return;
-
-    try {
-      const response = await fetch(`/api/tasks/${taskId}/dependencies`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dependsOnId }),
-      });
-
-      if (response.ok) {
-        const newDependency = await response.json();
-        setTasks(prev => prev.map(t =>
-          t.id === taskId
-            ? { ...t, dependencies: [...(t.dependencies || []), newDependency] }
-            : t
-        ));
-      } else {
-        const error = await response.json();
-        alert(error.message || 'Failed to add dependency');
-      }
-    } catch (error) {
-      console.error('Failed to add dependency:', error);
-      alert('Failed to add dependency. Please try again.');
-    }
-  }, [session]);
-
-  const handleRemoveDependency = useCallback(async (taskId: string, dependencyId: string) => {
-    // Optimistic update
-    setTasks(prev => prev.map(t =>
-      t.id === taskId
-        ? { ...t, dependencies: t.dependencies?.filter((d: any) => d.id !== dependencyId) }
-        : t
-    ));
-
-    if (!session) return;
-
-    try {
-      await fetch(`/api/tasks/${taskId}/dependencies/${dependencyId}`, {
-        method: 'DELETE',
-      });
-    } catch (error) {
-      console.error('Failed to remove dependency:', error);
-      fetchTasks(); // Revert on error
-    }
-  }, [session, fetchTasks]);
-
-  // Filter tasks for inbox (no date), finished, and by selected project
-  const inboxTasks = tasks.filter(t =>
-    !t.date && t.status !== 'completed' && (!selectedProjectId || t.projectId === selectedProjectId)
-  );
-
-  const finishedTasks = tasks.filter(t =>
-    t.status === 'completed' && (!selectedProjectId || t.projectId === selectedProjectId)
-  );
-
-  // Auth protection: redirect to login if not authenticated
-  useEffect(() => {
-    if (!loading && !session) {
-      window.location.href = '/login';
-    }
-  }, [session, loading]);
-
-  // Generate days to display (excluding completed tasks)
-  const displayDays = Array.from({ length: viewDays }, (_, i) => {
-    const date = addDays(currentDate, i);
-    const dateStr = formatDate(date);
-    // Filter by selected project if one is selected, excluding completed tasks
-    const dayTasks = tasks.filter(t =>
-      formatDate(t.date!) === dateStr && t.status !== 'completed' && (!selectedProjectId || t.projectId === selectedProjectId)
-    );
-    return {
-      date: date,
-      dateStr: dateStr,
-      display: formatDisplayDate(dateStr),
-      isToday: isToday(dateStr),
-      tasks: dayTasks
-    };
-  });
-
-  // Show loading state while checking auth
-  if (loading || !session) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white mx-auto mb-4">
-            <Brain size={24} />
-          </div>
-          <p className="text-gray-600 font-medium">Loading FocusFlow...</p>
+        <div className="flex h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
+            {/* Sidebar */}
+            <Sidebar
+                isOpen={sidebarOpen}
+                onToggle={() => setSidebarOpen(!sidebarOpen)}
+                userName={session?.user?.name}
+                tasks={tasks}
+                inboxTasks={inboxTasks}
+                finishedTasks={finishedTasks}
+                selectedTaskId={selectedTaskId}
+                onSelectTask={setSelectedTaskId}
+                onStatusChange={updateStatus}
+                onToggleSubtask={toggleSubtask}
+                onStartDrag={handleStartDrag}
+                onDelete={deleteTask}
+                onAIBreakdown={handleAIBreakdown}
+                onUpdateSubtasks={handleUpdateSubtasks}
+                onEdit={handleEditTask}
+                projects={projects}
+                selectedProjectId={selectedProjectId}
+                onSelectProject={selectProject}
+                onCreateProject={() => setCreateProjectModalOpen(true)}
+                onUpdateProject={handleUpdateProjectName}
+                onDeleteProject={deleteProject}
+                getProjectById={getProjectById}
+            />
+
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col min-w-0">
+                {/* Header */}
+                <Header
+                    currentDate={currentDate}
+                    onDateChange={setCurrentDate}
+                    viewDays={viewDays}
+                    onViewDaysChange={setViewDays}
+                    onSmartCapture={() => setSmartCaptureModalOpen(true)}
+                    onNewTask={() => setCreateModalOpen(true)}
+                />
+
+                {/* Timeline View */}
+                <div className="flex-1 overflow-x-auto overflow-y-auto p-6">
+                    <div className="flex gap-6 min-w-max h-full">
+                        {displayDays.map(day => (
+                            <div key={day.dateStr} className="w-80 flex-shrink-0 flex flex-col h-full">
+                                {/* Day Header */}
+                                <div className={`mb-4 flex items-center justify-between ${day.isToday ? 'text-purple-600' : 'text-gray-500'}`}>
+                                    <div>
+                                        <h3 className="font-bold text-lg">{day.display}</h3>
+                                        <p className="text-xs opacity-70">
+                                            {day.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                                        </p>
+                                    </div>
+                                    {day.isToday && (
+                                        <span className="text-[10px] font-bold bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
+                                            TODAY
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Time Blocks */}
+                                <div className="flex-1 space-y-3 overflow-y-auto pr-2 pb-10">
+                                    {TIME_BLOCKS.map(block => (
+                                        <TimeBlockColumn
+                                            key={`${day.dateStr}-${block.id}`}
+                                            block={block}
+                                            date={day.dateStr}
+                                            tasks={day.tasks.filter(t => t.timeBlock === block.id)}
+                                            allTasks={tasks}
+                                            projects={projects}
+                                            selectedTaskId={selectedTaskId}
+                                            onSelectTask={setSelectedTaskId}
+                                            onStatusChange={updateStatus}
+                                            onToggleSubtask={toggleSubtask}
+                                            onStartDrag={handleStartDrag}
+                                            onDrop={handleDrop}
+                                            onDelete={deleteTask}
+                                            onAIBreakdown={handleAIBreakdown}
+                                            onUpdateSubtasks={handleUpdateSubtasks}
+                                            onEdit={handleEditTask}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Modals */}
+            {taskForAI && (
+                <AIBreakdownModal
+                    task={taskForAI}
+                    isOpen={aiModalOpen}
+                    onClose={() => setAiModalOpen(false)}
+                    onApply={handleApplyAIBreakdown}
+                />
+            )}
+
+            <CreateTaskModal
+                isOpen={createModalOpen}
+                onClose={() => setCreateModalOpen(false)}
+                onCreate={handleCreateTask}
+                defaultDate={formatDate(currentDate)}
+                projects={projects}
+            />
+
+            {taskToEdit && (
+                <EditTaskModal
+                    isOpen={editModalOpen}
+                    onClose={() => {
+                        setEditModalOpen(false);
+                        setTaskToEditId(null);
+                    }}
+                    onUpdate={updateTask}
+                    task={taskToEdit}
+                    projects={projects}
+                    allTasks={tasks}
+                    onAddSubtask={addSubtask}
+                    onToggleSubtask={toggleSubtask}
+                    onDeleteSubtask={deleteSubtask}
+                    onUpdateSubtask={updateSubtask}
+                    onAddDependency={addDependency}
+                    onRemoveDependency={removeDependency}
+                />
+            )}
+
+            <CreateProjectModal
+                isOpen={createProjectModalOpen}
+                onClose={() => setCreateProjectModalOpen(false)}
+                onCreate={handleCreateProject}
+            />
+
+            <SmartCaptureModal
+                isOpen={smartCaptureModalOpen}
+                onClose={() => setSmartCaptureModalOpen(false)}
+                onTasksCreated={refreshTasks}
+            />
         </div>
-      </div>
     );
-  }
-
-  return (
-    <div className="flex h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
-      {/* Sidebar */}
-      <div
-        className={`bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 flex flex-col
-          ${sidebarOpen ? 'w-64' : 'w-16'}
-        `}
-      >
-        <div className="p-4 flex items-center justify-between border-b border-gray-100">
-          {sidebarOpen ? (
-            <h1 className="font-bold text-xl bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              FocusFlow
-            </h1>
-          ) : (
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold">
-              F
-            </div>
-          )}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"
-          >
-            <Menu size={18} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-3 space-y-6">
-          {/* Inbox Section */}
-          <div>
-            {sidebarOpen && (
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">
-                Inbox ({inboxTasks.length})
-              </h2>
-            )}
-            <div className="space-y-2">
-              {inboxTasks.map(task => (
-                <div key={task.id} className={sidebarOpen ? '' : 'hidden'}>
-                  <TaskCard
-                    task={task}
-                    project={projects.find((p: any) => p.id === task.projectId) || { id: 'default', name: 'No Project', color: '#6b7280', bgColor: '#f3f4f6', icon: 'folder' }}
-                    allTasks={tasks}
-                    isSelected={selectedTaskId === task.id}
-                    onSelect={setSelectedTaskId}
-                    onStatusChange={handleStatusChange}
-                    onToggleSubtask={handleToggleSubtask}
-                    onStartDrag={handleStartDrag}
-                    onDelete={handleDelete}
-                    onAIBreakdown={handleAIBreakdown}
-                    onUpdateSubtasks={handleUpdateSubtasks}
-                    onEdit={handleEditTask}
-                  />
-                </div>
-              ))}
-              {!sidebarOpen && inboxTasks.length > 0 && (
-                <div className="flex justify-center">
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
-                    {inboxTasks.length}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Projects List */}
-          {sidebarOpen && (
-            <div>
-              <div className="flex items-center justify-between mb-3 px-2">
-                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Projects
-                </h2>
-                <button
-                  onClick={() => setCreateProjectModalOpen(true)}
-                  className="text-purple-600 hover:text-purple-700 text-lg font-bold"
-                  title="Create new project"
-                >
-                  +
-                </button>
-              </div>
-              <div className="space-y-1">
-                {projects.map(project => (
-                  <div key={project.id} className="group relative">
-                    {editingProjectId === project.id ? (
-                      <div className="flex items-center gap-2 px-2 py-2 bg-white rounded-lg border border-gray-200">
-                        <input
-                          type="text"
-                          value={editingProjectName}
-                          onChange={(e) => setEditingProjectName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSaveProjectName(project.id);
-                            if (e.key === 'Escape') handleCancelEditProject();
-                          }}
-                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
-                          autoFocus
-                        />
-                        <button
-                          onClick={() => handleSaveProjectName(project.id)}
-                          className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={handleCancelEditProject}
-                          className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <div
-                        className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors ${selectedProjectId === project.id ? 'bg-purple-50 text-purple-700 font-medium' : ''}`}
-                        onClick={() => setSelectedProjectId(selectedProjectId === project.id ? null : project.id)}
-                      >
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }} />
-                        <span className="flex-1 text-left">{project.name}</span>
-                        {selectedProjectId === project.id && (
-                          <span className="text-xs">✓</span>
-                        )}
-                        <button
-                          className="p-1 text-gray-400 hover:text-gray-600"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setProjectMenuOpenId(projectMenuOpenId === project.id ? null : project.id);
-                          }}
-                          aria-label="Project options"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-
-                        {projectMenuOpenId === project.id && (
-                          <div className="absolute right-2 top-10 z-10 bg-white border border-gray-200 rounded-lg shadow-md w-32 py-1">
-                            <button
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
-                              onClick={() => handleStartEditProject(project)}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                              onClick={() => {
-                                setProjectToDelete(project.id);
-                                setProjectMenuOpenId(null);
-                              }}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Finished Section */}
-          <div>
-            {sidebarOpen && (
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">
-                Finished ({finishedTasks.length})
-              </h2>
-            )}
-            <div className="space-y-2">
-              {finishedTasks.map(task => (
-                <div key={task.id} className={sidebarOpen ? '' : 'hidden'}>
-                  <TaskCard
-                    task={task}
-                    project={projects.find((p: any) => p.id === task.projectId) || { id: 'default', name: 'No Project', color: '#6b7280', bgColor: '#f3f4f6', icon: 'folder' }}
-                    allTasks={tasks}
-                    isSelected={selectedTaskId === task.id}
-                    onSelect={setSelectedTaskId}
-                    onStatusChange={handleStatusChange}
-                    onToggleSubtask={handleToggleSubtask}
-                    onStartDrag={handleStartDrag}
-                    onDelete={handleDelete}
-                    onAIBreakdown={handleAIBreakdown}
-                    onUpdateSubtasks={handleUpdateSubtasks}
-                    onEdit={handleEditTask}
-                  />
-                </div>
-              ))}
-              {!sidebarOpen && finishedTasks.length > 0 && (
-                <div className="flex justify-center">
-                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-600">
-                    {finishedTasks.length}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* User Profile */}
-        <div className="p-4 border-t border-gray-100 space-y-2">
-          <Link href="/settings" className={`flex items-center gap-3 w-full hover:bg-gray-50 p-2 rounded-lg transition-colors ${!sidebarOpen && 'justify-center'}`}>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-orange-400 flex items-center justify-center text-white font-medium text-sm">
-              JP
-            </div>
-            {sidebarOpen && (
-              <div className="flex-1 text-left">
-                <p className="text-sm font-medium text-gray-700">{session?.user?.name || 'User'}</p>
-                <p className="text-xs text-gray-400">Account</p>
-              </div>
-            )}
-            {sidebarOpen && <Settings size={16} className="text-gray-400" />}
-          </Link>
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className={`flex items-center gap-3 w-full hover:bg-gray-50 p-2 rounded-lg transition-colors text-gray-600 ${!sidebarOpen && 'justify-center'}`}
-          >
-            <LogOut size={18} />
-            {sidebarOpen && <span className="flex-1 text-left text-sm">Sign out</span>}
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setCurrentDate(addDays(currentDate, -1))}
-                className="p-1.5 hover:bg-white rounded-md transition-all shadow-sm hover:shadow text-gray-600"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                onClick={() => setCurrentDate(new Date())}
-                className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-white rounded-md transition-all"
-              >
-                Today
-              </button>
-              <button
-                onClick={() => setCurrentDate(addDays(currentDate, 1))}
-                className="p-1.5 hover:bg-white rounded-md transition-all shadow-sm hover:shadow text-gray-600"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <Calendar size={20} className="text-purple-500" />
-              {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
-              {[2, 3, 5].map(days => (
-                <button
-                  key={days}
-                  onClick={() => setViewDays(days)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewDays === days
-                    ? 'bg-white shadow text-purple-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                >
-                  {days} Days
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setSmartCaptureModalOpen(true)}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm hover:shadow"
-            >
-              <Brain size={18} />
-              Smart Capture
-            </button>
-            <button
-              onClick={() => setCreateModalOpen(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm hover:shadow"
-            >
-              <Plus size={18} />
-              New Task
-            </button>
-          </div>
-        </header>
-
-        {/* Timeline View */}
-        <div className="flex-1 overflow-x-auto overflow-y-auto p-6">
-          <div className="flex gap-6 min-w-max h-full">
-            {displayDays.map(day => (
-              <div key={day.dateStr} className="w-80 flex-shrink-0 flex flex-col h-full">
-                {/* Day Header */}
-                <div className={`mb-4 flex items-center justify-between ${day.isToday ? 'text-purple-600' : 'text-gray-500'}`}>
-                  <div>
-                    <h3 className="font-bold text-lg">{day.display}</h3>
-                    <p className="text-xs opacity-70">{day.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>
-                  </div>
-                  {day.isToday && (
-                    <span className="text-[10px] font-bold bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
-                      TODAY
-                    </span>
-                  )}
-                </div>
-
-                {/* Time Blocks */}
-                <div className="flex-1 space-y-3 overflow-y-auto pr-2 pb-10">
-                  {TIME_BLOCKS.map(block => (
-                    <TimeBlockColumn
-                      key={`${day.dateStr}-${block.id}`}
-                      block={block}
-                      date={day.dateStr}
-                      tasks={day.tasks.filter(t => t.timeBlock === block.id)}
-                      allTasks={tasks}
-                      projects={projects}
-                      selectedTaskId={selectedTaskId}
-                      onSelectTask={setSelectedTaskId}
-                      onStatusChange={handleStatusChange}
-                      onToggleSubtask={handleToggleSubtask}
-                      onStartDrag={handleStartDrag}
-                      onDrop={handleDrop}
-                      onDelete={handleDelete}
-                      onAIBreakdown={handleAIBreakdown}
-                      onUpdateSubtasks={handleUpdateSubtasks}
-                      onEdit={handleEditTask}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* AI Modal */}
-      {taskForAI && (
-        <AIBreakdownModal
-          task={taskForAI}
-          isOpen={aiModalOpen}
-          onClose={() => setAiModalOpen(false)}
-          onApply={handleApplyAIBreakdown}
-        />
-      )}
-
-      {/* Create Task Modal */}
-      <CreateTaskModal
-        isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onCreate={handleCreateTask}
-        defaultDate={formatDate(currentDate)}
-        projects={projects}
-      />
-
-      {/* Edit Task Modal */}
-      {taskToEdit && (
-        <EditTaskModal
-          isOpen={editModalOpen}
-          onClose={() => {
-            setEditModalOpen(false);
-            setTaskToEdit(null);
-          }}
-          onUpdate={handleUpdateTask}
-          task={taskToEdit}
-          projects={projects}
-          allTasks={tasks}
-          onAddSubtask={handleAddSubtask}
-          onToggleSubtask={handleToggleSubtask}
-          onDeleteSubtask={handleDeleteSubtask}
-          onUpdateSubtask={handleUpdateSubtask}
-          onAddDependency={handleAddDependency}
-          onRemoveDependency={handleRemoveDependency}
-        />
-      )}
-
-      {/* Create Project Modal */}
-      <CreateProjectModal
-        isOpen={createProjectModalOpen}
-        onClose={() => setCreateProjectModalOpen(false)}
-        onCreate={handleCreateProject}
-      />
-
-      {/* Smart Capture Modal */}
-      <SmartCaptureModal
-        isOpen={smartCaptureModalOpen}
-        onClose={() => setSmartCaptureModalOpen(false)}
-        onTasksCreated={fetchTasks}
-      />
-
-      {/* Delete Project Confirmation */}
-      {projectToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete project?</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Deleting this project will move all its tasks to your Inbox. This cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setProjectToDelete(null)}
-                className="px-4 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleConfirmDeleteProject(projectToDelete)}
-                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 }

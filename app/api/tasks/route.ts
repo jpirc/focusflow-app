@@ -112,8 +112,15 @@ export async function POST(req: NextRequest) {
 
         // Only include optional fields if they are defined and not null
         if (data!.description !== undefined) taskData.description = data!.description;
-        if (data!.projectId !== undefined) taskData.projectId = data!.projectId;
-        if (data!.parentTaskId !== undefined) taskData.parentTaskId = data!.parentTaskId;
+        
+        // Use Prisma's nested connect syntax for relations
+        if (data!.projectId) {
+            taskData.project = { connect: { id: data!.projectId } };
+        }
+        if (data!.parentTaskId) {
+            taskData.parentTask = { connect: { id: data!.parentTaskId } };
+        }
+        
         if (data!.date !== undefined && data!.date !== null) taskData.date = data!.date;
         if (data!.timeBlock !== undefined && data!.timeBlock !== null) taskData.timeBlock = data!.timeBlock;
         if (data!.estimatedMinutes !== undefined) taskData.estimatedMinutes = data!.estimatedMinutes;
