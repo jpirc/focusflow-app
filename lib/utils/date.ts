@@ -67,3 +67,63 @@ export function daysAgo(dateStr: string): number {
     const diffTime = now.getTime() - date.getTime();
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
 }
+
+/**
+ * Get day of week name from a date
+ */
+export function getDayName(date: Date): string {
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+}
+
+/**
+ * Check if a date is a weekend day
+ */
+export function isWeekend(date: Date): boolean {
+    const day = date.getDay();
+    return day === 0 || day === 6; // Sunday = 0, Saturday = 6
+}
+
+/**
+ * Get remaining weekdays in the current week (excluding today)
+ * Returns up to 4 days (the rest of the work week)
+ */
+export function getRemainingWeekdays(fromDate: Date): { date: Date; dateStr: string; dayName: string }[] {
+    const result: { date: Date; dateStr: string; dayName: string }[] = [];
+    const currentDay = fromDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    // Calculate remaining weekdays until Friday (day 5)
+    // If it's Saturday or Sunday, return empty
+    if (currentDay === 0 || currentDay === 6) return result;
+    
+    // Days remaining until Friday
+    for (let i = 1; i <= 5 - currentDay; i++) {
+        const nextDate = addDays(fromDate, i);
+        result.push({
+            date: nextDate,
+            dateStr: formatDate(nextDate),
+            dayName: getDayName(nextDate),
+        });
+    }
+    
+    return result;
+}
+
+/**
+ * Format a date for compact display (time-based)
+ */
+export function formatTimeAgo(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}

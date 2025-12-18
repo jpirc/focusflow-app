@@ -48,6 +48,7 @@ export interface Task {
     estimatedMinutes: number;
     actualMinutes?: number;
     completed?: boolean;
+    completedAt?: string | null;
     status: TaskStatus;
     priority: Priority;
     energyLevel: EnergyLevel;

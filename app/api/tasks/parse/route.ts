@@ -7,6 +7,16 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Get today's date info for the AI prompt
+function getDateContext(): string {
+  const now = new Date();
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  return `Today is ${dayNames[now.getDay()]}, ${monthNames[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}. The current time is ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}.`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -26,6 +36,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
     }
 
+    const dateContext = getDateContext();
+
     // Use OpenAI to parse the text into structured tasks
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -34,6 +46,8 @@ export async function POST(request: NextRequest) {
           role: 'system',
           content: `You are a task parsing assistant for an ADHD-friendly task management app. 
 Your job is to take freeform notes, ideas, or thoughts and convert them into structured, actionable tasks.
+
+${dateContext}
 
 Rules:
 1. Break down complex thoughts into individual, concrete tasks
@@ -45,12 +59,27 @@ Rules:
 7. If it's multiple tasks or a complex project, break it down
 8. Use appropriate icons: coffee (personal), briefcase (work), home (household), heart (health), dumbbell (fitness), book (learning), target (goals)
 
+DATE AND TIME EXTRACTION (IMPORTANT):
+- Extract dates when mentioned: "tomorrow", "Friday", "next week", "Dec 20", etc.
+- Return dates in YYYY-MM-DD format (e.g., "2025-12-20")
+- Extract time blocks based on time mentioned:
+  - Morning times (6am-12pm) → timeBlock: "morning"
+  - Afternoon times (12pm-5pm) → timeBlock: "afternoon"  
+  - Evening times (5pm-10pm) → timeBlock: "evening"
+  - No specific time or "anytime" → timeBlock: "anytime"
+- If no date is mentioned, set date to null (task goes to inbox)
+- "today at 2pm" → date: today's date, timeBlock: "afternoon"
+- "Friday morning" → date: that Friday, timeBlock: "morning"
+- "next week" → date: next Monday, timeBlock: "anytime"
+
 Return a JSON array of tasks with this structure:
 {
   "tasks": [
     {
       "title": "Do the thing",
       "description": "Optional detailed description",
+      "date": "2025-12-20" or null,
+      "timeBlock": "morning" | "afternoon" | "evening" | "anytime" | null,
       "estimatedMinutes": 30,
       "priority": "medium",
       "energyLevel": "medium",
@@ -61,6 +90,7 @@ Return a JSON array of tasks with this structure:
 
 Priority options: low, medium, high, urgent
 Energy options: low, medium, high
+TimeBlock options: morning, afternoon, evening, anytime (or null if no date)
 Icon options: coffee, briefcase, home, heart, dumbbell, book, target`,
         },
         {

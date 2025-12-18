@@ -18,6 +18,7 @@ import { useTasks, useProjects } from '@/hooks';
 import { Sidebar, Header } from '@/components/layout';
 import { TaskCard } from '@/components/TaskCard';
 import { TimeBlockColumn } from '@/components/TimeBlockColumn';
+import { UpcomingDayColumn } from '@/components/UpcomingDayColumn';
 import { AIBreakdownModal } from '@/components/AIBreakdownModal';
 import { CreateTaskModal } from '@/components/CreateTaskModal';
 import { EditTaskModal } from '@/components/EditTaskModal';
@@ -25,7 +26,7 @@ import { CreateProjectModal } from '@/components/CreateProjectModal';
 import { SmartCaptureModal } from '@/components/SmartCaptureModal';
 
 // Utilities & Constants
-import { formatDate, formatDisplayDate, addDays, isToday } from '@/lib/utils/date';
+import { formatDate, formatDisplayDate, addDays, isToday, getRemainingWeekdays } from '@/lib/utils/date';
 import { TIME_BLOCKS } from '@/lib/constants';
 
 // Types
@@ -135,6 +136,19 @@ export default function FocusFlowApp() {
         }),
         [currentDate, viewDays, tasks, selectedProjectId]
     );
+
+    // For 1-day view, get remaining weekdays to show as compact drop targets
+    const upcomingWeekdays = useMemo(() => {
+        if (viewDays !== 1) return [];
+        return getRemainingWeekdays(currentDate).map(day => ({
+            ...day,
+            taskCount: tasks.filter(t => 
+                formatDate(t.date!) === day.dateStr && 
+                t.status !== 'completed' &&
+                (!selectedProjectId || t.projectId === selectedProjectId)
+            ).length,
+        }));
+    }, [currentDate, viewDays, tasks, selectedProjectId]);
 
     // ============================================
     // Keyboard Shortcuts
@@ -275,50 +289,95 @@ export default function FocusFlowApp() {
                 />
 
                 {/* Timeline View */}
-                <div className="flex-1 overflow-x-auto overflow-y-auto p-6">
-                    <div className="flex gap-6 min-w-max h-full">
-                        {displayDays.map(day => (
-                            <div key={day.dateStr} className="w-80 flex-shrink-0 flex flex-col h-full">
-                                {/* Day Header */}
-                                <div className={`mb-4 flex items-center justify-between ${day.isToday ? 'text-purple-600' : 'text-gray-500'}`}>
-                                    <div>
-                                        <h3 className="font-bold text-lg">{day.display}</h3>
-                                        <p className="text-xs opacity-70">
-                                            {day.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-                                        </p>
+                <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+                    <div className="flex gap-3 lg:gap-6 h-full">
+                        {/* Main Day Columns */}
+                        <div className={`flex h-full ${
+                            viewDays === 1 
+                                ? 'flex-1 gap-6' 
+                                : viewDays === 5 
+                                    ? 'flex-1 gap-2' 
+                                    : 'gap-4 lg:gap-6 min-w-max'
+                        }`}>
+                            {displayDays.map(day => (
+                                <div 
+                                    key={day.dateStr} 
+                                    className={`flex flex-col h-full ${
+                                        viewDays === 1 
+                                            ? 'flex-1 min-w-[320px]' 
+                                            : viewDays === 2 
+                                                ? 'w-[400px] flex-shrink-0' 
+                                                : viewDays === 3 
+                                                    ? 'w-80 flex-shrink-0' 
+                                                    : 'flex-1 min-w-0'
+                                    }`}
+                                >
+                                    {/* Day Header */}
+                                    <div className={`mb-2 lg:mb-4 flex items-center justify-between ${day.isToday ? 'text-purple-600' : 'text-gray-500'}`}>
+                                        <div>
+                                            <h3 className={`font-bold ${viewDays >= 5 ? 'text-sm' : viewDays === 1 ? 'text-xl' : 'text-lg'}`}>
+                                                {viewDays >= 5 ? day.date.toLocaleDateString('en-US', { weekday: 'short' }) : day.display}
+                                            </h3>
+                                            <p className={`opacity-70 ${viewDays >= 5 ? 'text-[10px]' : 'text-xs'}`}>
+                                                {day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                            </p>
+                                        </div>
+                                        {day.isToday && (
+                                            <span className={`font-bold bg-purple-100 text-purple-600 rounded-full ${viewDays >= 5 ? 'text-[8px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1'}`}>
+                                                TODAY
+                                            </span>
+                                        )}
                                     </div>
-                                    {day.isToday && (
-                                        <span className="text-[10px] font-bold bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
-                                            TODAY
-                                        </span>
-                                    )}
-                                </div>
 
-                                {/* Time Blocks */}
-                                <div className="flex-1 space-y-3 overflow-y-auto pr-2 pb-10">
-                                    {TIME_BLOCKS.map(block => (
-                                        <TimeBlockColumn
-                                            key={`${day.dateStr}-${block.id}`}
-                                            block={block}
-                                            date={day.dateStr}
-                                            tasks={day.tasks.filter(t => t.timeBlock === block.id)}
-                                            allTasks={tasks}
-                                            projects={projects}
-                                            selectedTaskId={selectedTaskId}
-                                            onSelectTask={setSelectedTaskId}
-                                            onStatusChange={updateStatus}
-                                            onToggleSubtask={toggleSubtask}
-                                            onStartDrag={handleStartDrag}
+                                    {/* Time Blocks */}
+                                    <div className={`flex-1 overflow-y-auto pr-1 pb-4 ${viewDays >= 5 ? 'space-y-1' : 'space-y-3'}`}>
+                                        {TIME_BLOCKS.map(block => (
+                                            <TimeBlockColumn
+                                                key={`${day.dateStr}-${block.id}`}
+                                                block={block}
+                                                date={day.dateStr}
+                                                tasks={day.tasks.filter(t => t.timeBlock === block.id)}
+                                                allTasks={tasks}
+                                                projects={projects}
+                                                selectedTaskId={selectedTaskId}
+                                                onSelectTask={setSelectedTaskId}
+                                                onStatusChange={updateStatus}
+                                                onToggleSubtask={toggleSubtask}
+                                                onStartDrag={handleStartDrag}
+                                                onDrop={handleDrop}
+                                                onDelete={deleteTask}
+                                                onAIBreakdown={handleAIBreakdown}
+                                                onUpdateSubtasks={handleUpdateSubtasks}
+                                                onEdit={handleEditTask}
+                                                compact={viewDays >= 5}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Upcoming Weekdays Sidebar (1-day view only) */}
+                        {viewDays === 1 && upcomingWeekdays.length > 0 && (
+                            <div className="w-24 flex-shrink-0 flex flex-col gap-3">
+                                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
+                                    This Week
+                                </h4>
+                                <div className="flex flex-col gap-2">
+                                    {upcomingWeekdays.map(day => (
+                                        <UpcomingDayColumn
+                                            key={day.dateStr}
+                                            dateStr={day.dateStr}
+                                            dayName={day.dayName}
+                                            fullDate={day.date}
+                                            taskCount={day.taskCount}
                                             onDrop={handleDrop}
-                                            onDelete={deleteTask}
-                                            onAIBreakdown={handleAIBreakdown}
-                                            onUpdateSubtasks={handleUpdateSubtasks}
-                                            onEdit={handleEditTask}
+                                            onClick={setCurrentDate}
                                         />
                                     ))}
                                 </div>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
             </div>

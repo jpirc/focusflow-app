@@ -106,11 +106,21 @@ interface TaskCardProps {
     onAIBreakdown: (task: Task) => void;
     onUpdateSubtasks: (taskId: string, subtasks: Subtask[]) => void;
     onEdit: (task: Task) => void;
+    compact?: boolean; // For 5-day view
+}
+
+// Helper to lighten a hex color for backgrounds
+function lightenColor(hex: string, amount: number = 0.85): string {
+    const num = parseInt(hex.replace('#', ''), 16);
+    const r = Math.round((num >> 16) + (255 - (num >> 16)) * amount);
+    const g = Math.round(((num >> 8) & 0x00FF) + (255 - ((num >> 8) & 0x00FF)) * amount);
+    const b = Math.round((num & 0x0000FF) + (255 - (num & 0x0000FF)) * amount);
+    return `rgb(${r}, ${g}, ${b})`;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = (props) => {
     const { task, project, allTasks, isSelected, onSelect, onStatusChange,
-        onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit } = props;
+        onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, compact = false } = props;
 
     const [expanded, setExpanded] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
@@ -145,64 +155,92 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
             }}
             onClick={() => onSelect(task.id)}
             className={[
-                'group relative rounded-lg border transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-md',
+                'group relative rounded-lg border-l-4 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-md',
                 isSelected ? 'ring-2 ring-purple-400 ring-offset-1' : '',
-                task.status === 'completed' ? 'opacity-70' : '',
-                hasBlockingDeps ? 'border-dashed border-amber-400' : 'border-gray-200',
+                task.status === 'completed' ? 'opacity-60' : '',
+                hasBlockingDeps ? 'border-r-2 border-r-amber-400 border-dashed' : '',
                 (task.rolloverCount || 0) >= 3 && task.status !== 'completed' ? 'shadow-orange-100 shadow-md' : '',
                 (task.rolloverCount || 0) >= 5 && task.status !== 'completed' ? 'shadow-red-100 shadow-lg' : ''
             ].filter(Boolean).join(' ')}
-            style={{ borderLeftColor: project.color, borderLeftWidth: '3px' }}
+            style={{ 
+                borderLeftColor: project.color,
+                backgroundColor: project.id !== 'default' ? lightenColor(project.color, 0.92) : 'white',
+            }}
         >
             {task.aiGenerated && (
-                <div className="absolute -top-2 -left-2 bg-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                <div className="absolute -top-2 -left-2 bg-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 z-10">
                     <Sparkles size={10} /> AI
                 </div>
             )}
 
-            <div className="p-3">
+            <div className={compact ? 'p-2' : 'p-3'}>
                 <div className="flex items-start gap-2">
                     <button
                         onClick={(e) => { e.stopPropagation(); const nextStatus = task.status === 'completed' ? 'pending' : 'completed'; onStatusChange(task.id, nextStatus); }}
                         className="mt-0.5 flex-shrink-0"
                     >
                         {task.status === 'completed' ? (
-                            <CheckCircle2 size={18} className="text-green-500" />
+                            <CheckCircle2 size={compact ? 16 : 18} className="text-green-500" />
                         ) : task.status === 'in-progress' ? (
-                            <div className="w-[18px] h-[18px] rounded-full border-2 border-blue-500 flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" /></div>
+                            <div className={`${compact ? 'w-4 h-4' : 'w-[18px] h-[18px]'} rounded-full border-2 border-blue-500 flex items-center justify-center`}><div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /></div>
                         ) : (
-                            <Circle size={18} className="text-gray-300 hover:text-gray-400" />
+                            <Circle size={compact ? 16 : 18} className="text-gray-300 hover:text-gray-400" />
                         )}
                     </button>
 
                     <div className="flex-1 min-w-0">
                         <div className="flex items-start gap-1.5">
-                            <span className="p-1 rounded flex-shrink-0 mt-0.5" style={{ backgroundColor: project.bgColor, color: project.color }}>
-                                {iconMap[task.icon] || <Target size={14} />}
-                            </span>
-                            <h4 className={`font-medium text-sm break-words leading-snug ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-800'}`}>{task.title}</h4>
+                            {!compact && (
+                                <span className="p-1 rounded flex-shrink-0 mt-0.5" style={{ backgroundColor: project.bgColor, color: project.color }}>
+                                    {iconMap[task.icon] || <Target size={14} />}
+                                </span>
+                            )}
+                            <h4 className={`font-medium break-words leading-snug ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-800'} ${compact ? 'text-xs' : 'text-sm'}`}>
+                                {task.title}
+                            </h4>
                         </div>
 
-                        <div className="flex items-center gap-2 mt-1.5 flex-wrap ml-[30px]">
-                            <span className="text-[11px] text-gray-500">{task.estimatedMinutes}min</span>
-                            <PriorityBadge priority={task.priority} />
-                            <EnergyBadge level={task.energyLevel} />
-                            {(task.subtasks || []).length > 0 && (<span className="text-[11px] text-gray-500">{completedSubtasks}/{(task.subtasks || []).length} steps</span>)}
-                            <RolloverBadge count={task.rolloverCount || 0} />
-                            <TaskAgeBadge createdAt={task.createdAt} />
+                        {/* Badges row - simplified in compact mode */}
+                        <div className={`flex items-center gap-1.5 mt-1 flex-wrap ${compact ? '' : 'ml-[30px]'}`}>
+                            {!compact && (
+                                <>
+                                    <span className="text-[11px] text-gray-500">{task.estimatedMinutes}min</span>
+                                    <PriorityBadge priority={task.priority} />
+                                    <EnergyBadge level={task.energyLevel} />
+                                </>
+                            )}
+                            {compact && task.priority !== 'medium' && <PriorityBadge priority={task.priority} />}
+                            {(task.subtasks || []).length > 0 && (
+                                <span className={`${compact ? 'text-[10px]' : 'text-[11px]'} text-gray-500`}>
+                                    {completedSubtasks}/{(task.subtasks || []).length} {compact ? '' : 'steps'}
+                                </span>
+                            )}
+                            {!compact && <RolloverBadge count={task.rolloverCount || 0} />}
+                            {!compact && <TaskAgeBadge createdAt={task.createdAt} />}
+                            {compact && (task.rolloverCount || 0) > 0 && (
+                                <span className="text-[10px] text-orange-500 font-medium">↻{task.rolloverCount}</span>
+                            )}
                         </div>
+                        
+                        {/* Project name indicator for compact mode */}
+                        {compact && project.id !== 'default' && (
+                            <div className="flex items-center gap-1 mt-1">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: project.color }} />
+                                <span className="text-[9px] text-gray-500 truncate">{project.name}</span>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {task.status === 'pending' && (
+                    <div className={`flex items-center gap-1 ${compact ? 'opacity-0 group-hover:opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                        {!compact && task.status === 'pending' && (
                             <button onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'in-progress'); }} className="p-1 hover:bg-blue-100 rounded transition-colors" title="Start task"><Play size={14} className="text-blue-600" /></button>
                         )}
 
-                        {task.status !== 'completed' && task.subtasks.length === 0 && (
+                        {!compact && task.status !== 'completed' && task.subtasks.length === 0 && (
                             <button onClick={(e) => { e.stopPropagation(); onAIBreakdown(task); }} className="p-1 hover:bg-purple-100 rounded transition-colors" title="AI breakdown"><Wand2 size={14} className="text-purple-500" /></button>
                         )}
 
-                        <button ref={menuButtonRef} onClick={onMenuToggle} className="p-1 hover:bg-gray-100 rounded transition-colors"><MoreHorizontal size={14} className="text-gray-400" /></button>
+                        <button ref={menuButtonRef} onClick={onMenuToggle} className="p-1 hover:bg-gray-100 rounded transition-colors"><MoreHorizontal size={compact ? 12 : 14} className="text-gray-400" /></button>
                     </div>
                 </div>
 
@@ -220,7 +258,7 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                     (typeof document !== 'undefined' ? (document.body as any) : ({} as any))
                 )}
 
-                {(task.subtasks || []).length > 0 && (
+                {(task.subtasks || []).length > 0 && !compact && (
                     <div className="mt-2 ml-6 space-y-1 border-l-2 border-gray-100 pl-2">
                         {(task.subtasks || []).map(subtask => (
                             <div key={subtask.id} className="flex items-center gap-2 group/subtask">

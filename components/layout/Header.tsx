@@ -71,7 +71,7 @@ export function Header({
                                     : 'text-gray-500 hover:text-gray-700'
                             }`}
                         >
-                            {days} Days
+                            {days} Day{days !== 1 ? 's' : ''}
                         </button>
                     ))}
                 </div>
