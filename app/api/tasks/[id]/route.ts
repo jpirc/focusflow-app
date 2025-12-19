@@ -91,9 +91,18 @@ export async function PUT(
         if (!existing) return errorResponse('Task not found', 404);
         if (existing.userId !== session.user.id) return unauthorizedResponse();
 
+        // Auto-set completedAt when status changes to completed
+        const updateData: any = { ...data };
+        if (data!.status === 'completed' && existing.status !== 'completed') {
+            updateData.completedAt = new Date();
+        } else if (data!.status && data!.status !== 'completed' && existing.status === 'completed') {
+            // Clear completedAt if status changes FROM completed to something else
+            updateData.completedAt = null;
+        }
+
         const updated = await prisma.task.update({
             where: { id: params.id },
-            data: data!,
+            data: updateData,
         });
 
         // Track events for learning (async, non-blocking)
