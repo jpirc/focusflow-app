@@ -59,6 +59,8 @@ export default function FocusFlowApp() {
         removeDependency,
         applyAIBreakdown,
         refreshTasks,
+        uncompleteToInbox,
+        clearFinishedTasks,
     } = useTasks({ isAuthenticated });
 
     const {
@@ -272,6 +274,8 @@ export default function FocusFlowApp() {
                 selectedTaskId={selectedTaskId}
                 onSelectTask={setSelectedTaskId}
                 onStatusChange={updateStatus}
+                onUncompleteToInbox={uncompleteToInbox}
+                onClearFinished={clearFinishedTasks}
                 onToggleSubtask={toggleSubtask}
                 onStartDrag={handleStartDrag}
                 onDelete={deleteTask}

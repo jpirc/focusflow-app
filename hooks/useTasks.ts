@@ -27,6 +27,7 @@ interface UseTasksReturn {
     
     // Status & positioning
     updateStatus: (id: string, status: TaskStatus) => Promise<void>;
+    uncompleteToInbox: (id: string) => Promise<void>;
     moveTask: (taskId: string, date: string, timeBlock: TimeBlock) => Promise<void>;
     
     // Subtasks
@@ -41,6 +42,7 @@ interface UseTasksReturn {
     
     // Bulk operations
     applyAIBreakdown: (taskId: string, subtasks: Subtask[]) => void;
+    clearFinishedTasks: (taskIds: string[]) => Promise<void>;
     refreshTasks: () => Promise<void>;
 }
 
@@ -151,6 +153,26 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
         if (!isAuthenticated) return;
 
         const result = await taskApi.update(id, { status });
+        if (result.error) {
+            await refreshTasks(); // Rollback
+        }
+    }, [isAuthenticated, refreshTasks]);
+
+    const uncompleteToInbox = useCallback(async (id: string) => {
+        // Optimistic update - set to pending and clear date
+        setTasks(prev => prev.map(t => 
+            t.id === id 
+                ? { ...t, status: 'pending' as TaskStatus, date: null, completedAt: null } 
+                : t
+        ));
+
+        if (!isAuthenticated) return;
+
+        const result = await taskApi.update(id, { 
+            status: 'pending', 
+            date: null,
+            completed: false 
+        });
         if (result.error) {
             await refreshTasks(); // Rollback
         }
@@ -316,6 +338,25 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
         ));
     }, []);
 
+    const clearFinishedTasks = useCallback(async (taskIds: string[]) => {
+        if (taskIds.length === 0) return;
+        
+        // Optimistic update - remove all specified tasks
+        setTasks(prev => prev.filter(t => !taskIds.includes(t.id)));
+
+        if (!isAuthenticated) return;
+
+        // Delete all tasks in parallel
+        const results = await Promise.all(
+            taskIds.map(id => taskApi.delete(id))
+        );
+        
+        // If any failed, refresh to sync
+        if (results.some(r => r.error)) {
+            await refreshTasks();
+        }
+    }, [isAuthenticated, refreshTasks]);
+
     return {
         tasks,
         loading,
@@ -323,6 +364,7 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
         updateTask,
         deleteTask,
         updateStatus,
+        uncompleteToInbox,
         moveTask,
         addSubtask,
         toggleSubtask,
@@ -331,6 +373,7 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
         addDependency,
         removeDependency,
         applyAIBreakdown,
+        clearFinishedTasks,
         refreshTasks,
     };
 }

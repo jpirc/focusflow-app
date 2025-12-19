@@ -7,7 +7,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { Menu, Settings, LogOut, MoreVertical, ChevronDown, ChevronUp, ChevronRight, Filter, Inbox, FolderKanban, CheckCircle2, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Menu, Settings, LogOut, MoreVertical, ChevronDown, ChevronUp, ChevronRight, Filter, Inbox, FolderKanban, CheckCircle2, PanelLeftClose, PanelLeft, Trash2 } from 'lucide-react';
 import { Task, Project } from '@/types';
 import { TaskCard } from '@/components/TaskCard';
 import { CompactFinishedTask } from '@/components/CompactFinishedTask';
@@ -30,6 +30,8 @@ interface SidebarProps {
 
     // Task handlers
     onStatusChange: (id: string, status: any) => void;
+    onUncompleteToInbox: (id: string) => void;
+    onClearFinished: (taskIds: string[]) => void;
     onToggleSubtask: (taskId: string, subtaskId: string) => void;
     onStartDrag: (item: any) => void;
     onDelete: (id: string) => void;
@@ -57,6 +59,8 @@ export function Sidebar({
     selectedTaskId,
     onSelectTask,
     onStatusChange,
+    onUncompleteToInbox,
+    onClearFinished,
     onToggleSubtask,
     onStartDrag,
     onDelete,
@@ -131,7 +135,7 @@ export function Sidebar({
     const hiddenCount = sortedFinishedTasks.length - VISIBLE_FINISHED_COUNT;
 
     const handleUncomplete = (taskId: string) => {
-        onStatusChange(taskId, 'pending');
+        onUncompleteToInbox(taskId);
     };
 
     const handleStartEditProject = (project: Project) => {
@@ -425,6 +429,20 @@ export function Sidebar({
                                         </div>
                                     )}
                                 </div>
+                                {/* Clear all finished tasks button */}
+                                {sortedFinishedTasks.length > 0 && (
+                                    <button
+                                        onClick={() => {
+                                            if (confirm(`Delete all ${sortedFinishedTasks.length} finished tasks? This cannot be undone.`)) {
+                                                onClearFinished(sortedFinishedTasks.map(t => t.id));
+                                            }
+                                        }}
+                                        className="p-1 hover:bg-red-50 rounded transition-colors text-gray-400 hover:text-red-500"
+                                        title="Clear all finished tasks"
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
+                                )}
                             </div>
                         ) : (
                             finishedTasks.length > 0 && (
@@ -444,6 +462,7 @@ export function Sidebar({
                                         project={getProjectById(task.projectId)}
                                         onUncomplete={handleUncomplete}
                                         onEdit={onEdit}
+                                        onDelete={onDelete}
                                     />
                                 ))}
                                 {/* Show more/less toggle */}

@@ -5,7 +5,7 @@
 'use client';
 
 import React from 'react';
-import { Check, Undo2 } from 'lucide-react';
+import { Check, Undo2, Trash2 } from 'lucide-react';
 import { Task, Project } from '@/types';
 import { formatTimeAgo } from '@/lib/utils/date';
 
@@ -14,9 +14,10 @@ interface CompactFinishedTaskProps {
     project?: Project;
     onUncomplete: (id: string) => void;
     onEdit: (task: Task) => void;
+    onDelete: (id: string) => void;
 }
 
-export function CompactFinishedTask({ task, project, onUncomplete, onEdit }: CompactFinishedTaskProps) {
+export function CompactFinishedTask({ task, project, onUncomplete, onEdit, onDelete }: CompactFinishedTaskProps) {
     return (
         <div
             className="group flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
@@ -53,9 +54,21 @@ export function CompactFinishedTask({ task, project, onUncomplete, onEdit }: Com
                     onUncomplete(task.id);
                 }}
                 className="hidden group-hover:flex p-1 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors"
-                title="Mark as incomplete"
+                title="Mark as incomplete (moves to inbox)"
             >
                 <Undo2 size={12} />
+            </button>
+            
+            {/* Delete button - show on hover */}
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(task.id);
+                }}
+                className="hidden group-hover:flex p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                title="Delete task"
+            >
+                <Trash2 size={12} />
             </button>
         </div>
     );
