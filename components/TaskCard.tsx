@@ -130,6 +130,8 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
     const dependencyTasks = (task.dependsOn || []).map(id => allTasks.find(t => t.id === id)).filter(Boolean as any);
     const hasBlockingDeps = dependencyTasks.some((t: any) => t && t.status !== 'completed');
     const completedSubtasks = (task.subtasks || []).filter(s => s.completed).length;
+    const totalSubtasks = (task.subtasks || []).length;
+    const hasSubtasks = totalSubtasks > 0;
 
     useEffect(() => {
         if (showMenu && menuButtonRef.current) {
@@ -145,6 +147,10 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
         setShowMenu(v => !v);
     };
 
+    // Determine if we should show priority indicator (only for high/urgent)
+    const showPriorityDot = task.priority === 'urgent' || task.priority === 'high';
+    const priorityColor = task.priority === 'urgent' ? 'bg-red-500' : 'bg-orange-400';
+
     return (
         <div
             draggable
@@ -155,123 +161,152 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
             }}
             onClick={() => onSelect(task.id)}
             className={[
-                'group relative rounded-lg border-l-4 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-md',
-                isSelected ? 'ring-2 ring-purple-400 ring-offset-1' : '',
-                task.status === 'completed' ? 'opacity-60' : '',
-                hasBlockingDeps ? 'border-r-2 border-r-amber-400 border-dashed' : '',
-                (task.rolloverCount || 0) >= 3 && task.status !== 'completed' ? 'shadow-orange-100 shadow-md' : '',
-                (task.rolloverCount || 0) >= 5 && task.status !== 'completed' ? 'shadow-red-100 shadow-lg' : ''
+                'group relative rounded-md border-l-3 transition-all duration-150 cursor-grab active:cursor-grabbing',
+                isSelected ? 'ring-2 ring-purple-400 ring-offset-1 bg-purple-50/50' : 'hover:bg-gray-50/80',
+                task.status === 'completed' ? 'opacity-50' : '',
+                hasBlockingDeps ? 'border-r border-r-amber-400 border-dashed' : '',
             ].filter(Boolean).join(' ')}
             style={{ 
                 borderLeftColor: project.color,
-                backgroundColor: project.id !== 'default' ? lightenColor(project.color, 0.92) : 'white',
+                borderLeftWidth: '3px',
+                backgroundColor: isSelected ? undefined : (project.id !== 'default' ? lightenColor(project.color, 0.95) : undefined),
             }}
         >
             {task.aiGenerated && (
-                <div className="absolute -top-2 -left-2 bg-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 z-10">
-                    <Sparkles size={10} /> AI
+                <div className="absolute -top-1.5 -left-1.5 bg-purple-500 text-white text-[8px] px-1 py-0.5 rounded-full flex items-center gap-0.5 z-10">
+                    <Sparkles size={8} /> AI
                 </div>
             )}
 
-            <div className={compact ? 'p-2' : 'p-3'}>
-                <div className="flex items-start gap-2">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); const nextStatus = task.status === 'completed' ? 'pending' : 'completed'; onStatusChange(task.id, nextStatus); }}
-                        className="mt-0.5 flex-shrink-0"
-                    >
-                        {task.status === 'completed' ? (
-                            <CheckCircle2 size={compact ? 16 : 18} className="text-green-500" />
-                        ) : task.status === 'in-progress' ? (
-                            <div className={`${compact ? 'w-4 h-4' : 'w-[18px] h-[18px]'} rounded-full border-2 border-blue-500 flex items-center justify-center`}><div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /></div>
-                        ) : (
-                            <Circle size={compact ? 16 : 18} className="text-gray-300 hover:text-gray-400" />
-                        )}
-                    </button>
-
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-1.5">
-                            {!compact && (
-                                <span className="p-1 rounded flex-shrink-0 mt-0.5" style={{ backgroundColor: project.bgColor, color: project.color }}>
-                                    {iconMap[task.icon] || <Target size={14} />}
-                                </span>
-                            )}
-                            <h4 className={`font-medium break-words leading-snug ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-800'} ${compact ? 'text-xs' : 'text-sm'}`}>
-                                {task.title}
-                            </h4>
+            {/* Main compact row */}
+            <div className="px-2 py-1.5 flex items-center gap-2">
+                {/* Checkbox */}
+                <button
+                    onClick={(e) => { e.stopPropagation(); const nextStatus = task.status === 'completed' ? 'pending' : 'completed'; onStatusChange(task.id, nextStatus); }}
+                    className="flex-shrink-0"
+                >
+                    {task.status === 'completed' ? (
+                        <CheckCircle2 size={16} className="text-green-500" />
+                    ) : task.status === 'in-progress' ? (
+                        <div className="w-4 h-4 rounded-full border-2 border-blue-500 flex items-center justify-center">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
                         </div>
+                    ) : (
+                        <Circle size={16} className="text-gray-300 hover:text-gray-400" />
+                    )}
+                </button>
 
-                        {/* Badges row - simplified in compact mode */}
-                        <div className={`flex items-center gap-1.5 mt-1 flex-wrap ${compact ? '' : 'ml-[30px]'}`}>
-                            {!compact && (
-                                <>
-                                    <span className="text-[11px] text-gray-500">{task.estimatedMinutes}min</span>
-                                    <PriorityBadge priority={task.priority} />
-                                    <EnergyBadge level={task.energyLevel} />
-                                </>
-                            )}
-                            {compact && task.priority !== 'medium' && <PriorityBadge priority={task.priority} />}
-                            {(task.subtasks || []).length > 0 && (
-                                <span className={`${compact ? 'text-[10px]' : 'text-[11px]'} text-gray-500`}>
-                                    {completedSubtasks}/{(task.subtasks || []).length} {compact ? '' : 'steps'}
-                                </span>
-                            )}
-                            {!compact && <RolloverBadge count={task.rolloverCount || 0} />}
-                            {!compact && <TaskAgeBadge createdAt={task.createdAt} />}
-                            {compact && (task.rolloverCount || 0) > 0 && (
-                                <span className="text-[10px] text-orange-500 font-medium">↻{task.rolloverCount}</span>
-                            )}
-                        </div>
-                        
-                        {/* Project name indicator for compact mode */}
-                        {compact && project.id !== 'default' && (
-                            <div className="flex items-center gap-1 mt-1">
-                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: project.color }} />
-                                <span className="text-[9px] text-gray-500 truncate">{project.name}</span>
-                            </div>
-                        )}
-                    </div>
+                {/* Priority dot */}
+                {showPriorityDot && task.status !== 'completed' && (
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityColor}`} title={task.priority} />
+                )}
 
-                    <div className={`flex items-center gap-1 ${compact ? 'opacity-0 group-hover:opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
-                        {!compact && task.status === 'pending' && (
-                            <button onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'in-progress'); }} className="p-1 hover:bg-blue-100 rounded transition-colors" title="Start task"><Play size={14} className="text-blue-600" /></button>
-                        )}
+                {/* Title - grows to fill space */}
+                <span className={`flex-1 min-w-0 text-sm truncate ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                    {task.title}
+                </span>
 
-                        {!compact && task.status !== 'completed' && task.subtasks.length === 0 && (
-                            <button onClick={(e) => { e.stopPropagation(); onAIBreakdown(task); }} className="p-1 hover:bg-purple-100 rounded transition-colors" title="AI breakdown"><Wand2 size={14} className="text-purple-500" /></button>
-                        )}
+                {/* Inline indicators */}
+                <div className="flex items-center gap-1.5 flex-shrink-0 text-[10px] text-gray-400">
+                    {/* Rollover indicator */}
+                    {(task.rolloverCount || 0) > 0 && task.status !== 'completed' && (
+                        <span className={`flex items-center gap-0.5 ${(task.rolloverCount || 0) >= 3 ? 'text-orange-500' : 'text-gray-400'}`}>
+                            <RotateCcw size={10} />{task.rolloverCount}
+                        </span>
+                    )}
+                    
+                    {/* Subtask progress */}
+                    {hasSubtasks && (
+                        <span className={completedSubtasks === totalSubtasks ? 'text-green-500' : ''}>
+                            {completedSubtasks}/{totalSubtasks}
+                        </span>
+                    )}
 
-                        <button ref={menuButtonRef} onClick={onMenuToggle} className="p-1 hover:bg-gray-100 rounded transition-colors"><MoreHorizontal size={compact ? 12 : 14} className="text-gray-400" /></button>
-                    </div>
+                    {/* Time estimate */}
+                    {task.estimatedMinutes && !compact && (
+                        <span>{task.estimatedMinutes}m</span>
+                    )}
+
+                    {/* Energy indicator */}
+                    {!compact && <EnergyBadge level={task.energyLevel} />}
                 </div>
 
-                {showMenu && menuStyle && createPortal(
-                    <div style={{ position: 'fixed', top: menuStyle.top, left: menuStyle.left, zIndex: 9999 }}>
-                        <div className="bg-white text-gray-900 rounded-lg shadow-2xl border border-gray-200 py-1 min-w-[160px]">
-                            <button onClick={(e) => { e.stopPropagation(); onEdit(task); setShowMenu(false); }} className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2"><Edit3 size={14} /> Edit task</button>
-                            <button onClick={(e) => { e.stopPropagation(); onAIBreakdown(task); setShowMenu(false); }} className="w-full px-3 py-1.5 text-left text-sm hover:bg-purple-50 text-purple-600 flex items-center gap-2"><Wand2 size={14} /> AI breakdown</button>
-                            <button className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2"><Link2 size={14} /> Link to task</button>
-                            <button className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2"><Copy size={14} /> Duplicate</button>
-                            <hr className="my-1" />
-                            <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); setShowMenu(false); }} className="w-full px-3 py-1.5 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"><Trash2 size={14} /> Delete</button>
-                        </div>
-                    </div>,
-                    (typeof document !== 'undefined' ? (document.body as any) : ({} as any))
-                )}
+                {/* Action buttons - show on hover */}
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                    {task.status === 'pending' && (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'in-progress'); }} 
+                            className="p-1 hover:bg-blue-100 rounded transition-colors" 
+                            title="Start"
+                        >
+                            <Play size={12} className="text-blue-600" />
+                        </button>
+                    )}
+                    
+                    {hasSubtasks && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+                            className="p-1 hover:bg-gray-100 rounded transition-colors"
+                            title={expanded ? 'Collapse' : 'Expand'}
+                        >
+                            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                        </button>
+                    )}
 
-                {(task.subtasks || []).length > 0 && !compact && (
-                    <div className="mt-2 ml-6 space-y-1 border-l-2 border-gray-100 pl-2">
-                        {(task.subtasks || []).map(subtask => (
-                            <div key={subtask.id} className="flex items-center gap-2 group/subtask">
-                                <button onClick={(e) => { e.stopPropagation(); onToggleSubtask(task.id, subtask.id); }}>
-                                    {subtask.completed ? <CheckCircle2 size={14} className="text-green-500" /> : <Circle size={14} className="text-gray-300 group-hover/subtask:text-gray-400" />}
-                                </button>
-                                <span className={`text-xs flex-1 ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-600'}`}>{subtask.title}</span>
-                                {subtask.estimatedMinutes && <span className="text-[10px] text-gray-400">{subtask.estimatedMinutes}m</span>}
-                            </div>
-                        ))}
-                    </div>
-                )}
+                    <button 
+                        ref={menuButtonRef} 
+                        onClick={onMenuToggle} 
+                        className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    >
+                        <MoreHorizontal size={12} className="text-gray-400" />
+                    </button>
+                </div>
             </div>
+
+            {/* Expanded subtasks */}
+            {expanded && hasSubtasks && (
+                <div className="px-2 pb-1.5 ml-6 space-y-0.5 border-l border-gray-200">
+                    {(task.subtasks || []).map(subtask => (
+                        <div key={subtask.id} className="flex items-center gap-1.5 py-0.5 group/subtask">
+                            <button onClick={(e) => { e.stopPropagation(); onToggleSubtask(task.id, subtask.id); }}>
+                                {subtask.completed ? (
+                                    <CheckCircle2 size={12} className="text-green-500" />
+                                ) : (
+                                    <Circle size={12} className="text-gray-300 group-hover/subtask:text-gray-400" />
+                                )}
+                            </button>
+                            <span className={`text-xs flex-1 ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-600'}`}>
+                                {subtask.title}
+                            </span>
+                            {subtask.estimatedMinutes && (
+                                <span className="text-[10px] text-gray-400">{subtask.estimatedMinutes}m</span>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Context menu portal */}
+            {showMenu && menuStyle && createPortal(
+                <div style={{ position: 'fixed', top: menuStyle.top, left: menuStyle.left, zIndex: 9999 }}>
+                    <div className="bg-white text-gray-900 rounded-lg shadow-2xl border border-gray-200 py-1 min-w-[160px]">
+                        <button onClick={(e) => { e.stopPropagation(); onEdit(task); setShowMenu(false); }} className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2">
+                            <Edit3 size={14} /> Edit
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); onAIBreakdown(task); setShowMenu(false); }} className="w-full px-3 py-1.5 text-left text-sm hover:bg-purple-50 text-purple-600 flex items-center gap-2">
+                            <Wand2 size={14} /> AI breakdown
+                        </button>
+                        <button className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2">
+                            <Copy size={14} /> Duplicate
+                        </button>
+                        <hr className="my-1" />
+                        <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); setShowMenu(false); }} className="w-full px-3 py-1.5 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2">
+                            <Trash2 size={14} /> Delete
+                        </button>
+                    </div>
+                </div>,
+                (typeof document !== 'undefined' ? (document.body as any) : ({} as any))
+            )}
         </div>
     );
 };
