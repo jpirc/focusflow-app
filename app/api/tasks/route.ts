@@ -8,6 +8,7 @@ import {
     validateRequest,
     errorResponse,
 } from '@/lib/api/route_utils';
+import { trackTaskCreated } from '@/lib/intelligence';
 
 const createTaskSchema = z.object({
     title: z.string().min(1, 'Title is required'),
@@ -133,6 +134,21 @@ export async function POST(req: NextRequest) {
         const task = await prisma.task.create({
             data: taskData,
         });
+
+        // Track event for learning (async, non-blocking)
+        trackTaskCreated(session.user.id, {
+            id: task.id,
+            title: task.title,
+            date: task.date || undefined,
+            timeBlock: task.timeBlock as 'morning' | 'afternoon' | 'evening' | 'anytime',
+            projectId: task.projectId,
+            priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
+            energyLevel: task.energyLevel as 'low' | 'medium' | 'high',
+            estimatedMinutes: task.estimatedMinutes,
+            status: task.status as any,
+            createdAt: task.createdAt.toISOString(),
+            updatedAt: task.updatedAt.toISOString(),
+        } as any).catch(console.error);
 
         // Return task with all required fields
         const completeTask = {

@@ -8,6 +8,13 @@ import {
     validateRequest,
     errorResponse,
 } from '@/lib/api/route_utils';
+import { 
+    trackTaskCompleted, 
+    trackTaskStarted, 
+    trackTaskMoved, 
+    trackTaskUpdated,
+    trackTaskDeleted,
+} from '@/lib/intelligence';
 
 const updateTaskSchema = z.object({
     title: z.string().min(1).optional(),
@@ -89,6 +96,42 @@ export async function PUT(
             data: data!,
         });
 
+        // Track events for learning (async, non-blocking)
+        const taskForTracking = {
+            id: updated.id,
+            title: updated.title,
+            date: updated.date || undefined,
+            timeBlock: updated.timeBlock as 'morning' | 'afternoon' | 'evening' | 'anytime',
+            projectId: updated.projectId,
+            priority: updated.priority as 'low' | 'medium' | 'high' | 'urgent',
+            energyLevel: updated.energyLevel as 'low' | 'medium' | 'high',
+            estimatedMinutes: updated.estimatedMinutes,
+            actualMinutes: updated.actualMinutes,
+            status: updated.status as any,
+            rolloverCount: updated.rolloverCount,
+            createdAt: updated.createdAt.toISOString(),
+            updatedAt: updated.updatedAt.toISOString(),
+        } as any;
+
+        // Track specific status changes
+        if (data!.status === 'completed' && existing.status !== 'completed') {
+            trackTaskCompleted(session.user.id, taskForTracking).catch(console.error);
+        } else if (data!.status === 'in-progress' && existing.status !== 'in-progress') {
+            trackTaskStarted(session.user.id, taskForTracking).catch(console.error);
+        }
+
+        // Track date/timeBlock changes
+        if (data!.date !== undefined || data!.timeBlock !== undefined) {
+            if (data!.date !== existing.date || data!.timeBlock !== existing.timeBlock) {
+                trackTaskMoved(
+                    session.user.id, 
+                    taskForTracking, 
+                    existing.date, 
+                    existing.timeBlock
+                ).catch(console.error);
+            }
+        }
+
         return successResponse(updated);
     } catch (error) {
         console.error('Failed to update task:', error);
@@ -114,6 +157,17 @@ export async function DELETE(
         await prisma.task.delete({
             where: { id: params.id },
         });
+
+        // Track deletion for analytics (async, non-blocking)
+        trackTaskDeleted(session.user.id, params.id, {
+            title: existing.title,
+            status: existing.status,
+            date: existing.date,
+            projectId: existing.projectId,
+            timeBlock: existing.timeBlock,
+            priority: existing.priority,
+            energyLevel: existing.energyLevel,
+        } as any).catch(console.error);
 
         return successResponse({ success: true });
     } catch (error) {
