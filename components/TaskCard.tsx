@@ -178,113 +178,96 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                 </div>
             )}
 
-            {/* Main compact row */}
-            <div className="px-2 py-1.5 flex items-center gap-2">
+            {/* Main content */}
+            <div className="px-1.5 py-1 flex items-start gap-1.5">
                 {/* Checkbox */}
                 <button
                     onClick={(e) => { e.stopPropagation(); const nextStatus = task.status === 'completed' ? 'pending' : 'completed'; onStatusChange(task.id, nextStatus); }}
-                    className="flex-shrink-0"
+                    className="flex-shrink-0 mt-0.5"
                 >
                     {task.status === 'completed' ? (
-                        <CheckCircle2 size={16} className="text-green-500" />
+                        <CheckCircle2 size={14} className="text-green-500" />
                     ) : task.status === 'in-progress' ? (
-                        <div className="w-4 h-4 rounded-full border-2 border-blue-500 flex items-center justify-center">
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                        <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-500 flex items-center justify-center">
+                            <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
                         </div>
                     ) : (
-                        <Circle size={16} className="text-gray-300 hover:text-gray-400" />
+                        <Circle size={14} className="text-gray-300 hover:text-gray-400" />
                     )}
                 </button>
 
                 {/* Priority dot */}
                 {showPriorityDot && task.status !== 'completed' && (
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityColor}`} title={task.priority} />
+                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1 ${priorityColor}`} title={task.priority} />
                 )}
 
-                {/* Title - grows to fill space */}
-                <span className={`flex-1 min-w-0 text-sm truncate ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-                    {task.title}
-                </span>
-
-                {/* Inline indicators */}
-                <div className="flex items-center gap-1.5 flex-shrink-0 text-[10px] text-gray-400">
-                    {/* Rollover indicator */}
-                    {(task.rolloverCount || 0) > 0 && task.status !== 'completed' && (
-                        <span className={`flex items-center gap-0.5 ${(task.rolloverCount || 0) >= 3 ? 'text-orange-500' : 'text-gray-400'}`}>
-                            <RotateCcw size={10} />{task.rolloverCount}
+                {/* Title and content */}
+                <div className="flex-1 min-w-0">
+                    {/* Title - wraps to multiple lines */}
+                    <div className="flex items-start justify-between gap-1">
+                        <span className={`text-xs leading-tight ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                            {task.title}
                         </span>
-                    )}
-                    
-                    {/* Subtask progress */}
+                        
+                        {/* Inline indicators */}
+                        <div className="flex items-center gap-1 flex-shrink-0 text-[9px] text-gray-400">
+                            {(task.rolloverCount || 0) > 0 && task.status !== 'completed' && (
+                                <span className={`flex items-center ${(task.rolloverCount || 0) >= 3 ? 'text-orange-500' : ''}`}>
+                                    <RotateCcw size={8} />{task.rolloverCount}
+                                </span>
+                            )}
+                            {task.estimatedMinutes && !compact && (
+                                <span>{task.estimatedMinutes}m</span>
+                            )}
+                            {!compact && <EnergyBadge level={task.energyLevel} />}
+                        </div>
+                    </div>
+
+                    {/* Subtasks - always visible */}
                     {hasSubtasks && (
-                        <span className={completedSubtasks === totalSubtasks ? 'text-green-500' : ''}>
-                            {completedSubtasks}/{totalSubtasks}
-                        </span>
+                        <div className="mt-0.5 ml-1 space-y-0 border-l border-gray-200 pl-1.5">
+                            {(task.subtasks || []).map(subtask => (
+                                <div key={subtask.id} className="flex items-center gap-1 py-px group/subtask">
+                                    <button onClick={(e) => { e.stopPropagation(); onToggleSubtask(task.id, subtask.id); }}>
+                                        {subtask.completed ? (
+                                            <CheckCircle2 size={10} className="text-green-500" />
+                                        ) : (
+                                            <Circle size={10} className="text-gray-300 group-hover/subtask:text-gray-400" />
+                                        )}
+                                    </button>
+                                    <span className={`text-[10px] leading-tight flex-1 ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-600'}`}>
+                                        {subtask.title}
+                                    </span>
+                                    {subtask.estimatedMinutes && (
+                                        <span className="text-[9px] text-gray-400">{subtask.estimatedMinutes}m</span>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     )}
-
-                    {/* Time estimate */}
-                    {task.estimatedMinutes && !compact && (
-                        <span>{task.estimatedMinutes}m</span>
-                    )}
-
-                    {/* Energy indicator */}
-                    {!compact && <EnergyBadge level={task.energyLevel} />}
                 </div>
 
                 {/* Action buttons - show on hover */}
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                <div className="flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                     {task.status === 'pending' && (
                         <button 
                             onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, 'in-progress'); }} 
-                            className="p-1 hover:bg-blue-100 rounded transition-colors" 
+                            className="p-0.5 hover:bg-blue-100 rounded transition-colors" 
                             title="Start"
                         >
-                            <Play size={12} className="text-blue-600" />
-                        </button>
-                    )}
-                    
-                    {hasSubtasks && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-                            className="p-1 hover:bg-gray-100 rounded transition-colors"
-                            title={expanded ? 'Collapse' : 'Expand'}
-                        >
-                            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                            <Play size={10} className="text-blue-600" />
                         </button>
                     )}
 
                     <button 
                         ref={menuButtonRef} 
                         onClick={onMenuToggle} 
-                        className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        className="p-0.5 hover:bg-gray-100 rounded transition-colors"
                     >
-                        <MoreHorizontal size={12} className="text-gray-400" />
+                        <MoreHorizontal size={10} className="text-gray-400" />
                     </button>
                 </div>
             </div>
-
-            {/* Expanded subtasks */}
-            {expanded && hasSubtasks && (
-                <div className="px-2 pb-1.5 ml-6 space-y-0.5 border-l border-gray-200">
-                    {(task.subtasks || []).map(subtask => (
-                        <div key={subtask.id} className="flex items-center gap-1.5 py-0.5 group/subtask">
-                            <button onClick={(e) => { e.stopPropagation(); onToggleSubtask(task.id, subtask.id); }}>
-                                {subtask.completed ? (
-                                    <CheckCircle2 size={12} className="text-green-500" />
-                                ) : (
-                                    <Circle size={12} className="text-gray-300 group-hover/subtask:text-gray-400" />
-                                )}
-                            </button>
-                            <span className={`text-xs flex-1 ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-600'}`}>
-                                {subtask.title}
-                            </span>
-                            {subtask.estimatedMinutes && (
-                                <span className="text-[10px] text-gray-400">{subtask.estimatedMinutes}m</span>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            )}
 
             {/* Context menu portal */}
             {showMenu && menuStyle && createPortal(
