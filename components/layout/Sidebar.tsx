@@ -7,7 +7,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { Menu, Settings, LogOut, MoreVertical, ChevronDown, ChevronUp, ChevronRight, Filter, Inbox, FolderKanban, CheckCircle2, PanelLeftClose, PanelLeft, Trash2 } from 'lucide-react';
+import { Menu, Settings, LogOut, MoreVertical, ChevronDown, ChevronUp, ChevronRight, Filter, Inbox, FolderKanban, CheckCircle2, PanelLeftClose, PanelLeft, Trash2, BarChart3 } from 'lucide-react';
 import { Task, Project } from '@/types';
 import { TaskCard } from '@/components/TaskCard';
 import { CompactFinishedTask } from '@/components/CompactFinishedTask';
@@ -491,6 +491,16 @@ export function Sidebar({
 
                 {/* User Profile */}
                 <div className="p-4 border-t border-gray-100 space-y-2">
+                    {/* Analytics Link */}
+                    <Link
+                        href="/analytics"
+                        className={`flex items-center gap-3 w-full hover:bg-purple-50 p-2 rounded-lg transition-colors text-gray-600 hover:text-purple-600 ${
+                            !isOpen && 'justify-center'
+                        }`}
+                    >
+                        <BarChart3 size={18} />
+                        {isOpen && <span className="flex-1 text-left text-sm">Analytics & Insights</span>}
+                    </Link>
                     <Link
                         href="/settings"
                         className={`flex items-center gap-3 w-full hover:bg-gray-50 p-2 rounded-lg transition-colors ${
