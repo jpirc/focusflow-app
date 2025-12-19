@@ -103,17 +103,20 @@ export default function AnalyticsPage() {
             const suggestions = await suggestionsRes.json();
             const stats = await statsRes.json();
 
+            console.log('Analytics API responses:', { insights, suggestions, stats });
+
+            // API returns data directly, not wrapped in { data: ... }
             setData({
-                insights: insights.data || [],
-                suggestions: suggestions.data || [],
-                stats: stats.data || {
+                insights: Array.isArray(insights) ? insights : (insights.data || []),
+                suggestions: Array.isArray(suggestions) ? suggestions : (suggestions.data || []),
+                stats: stats.completedToday !== undefined ? stats : (stats.data || {
                     completedToday: 0,
                     completedThisWeek: 0,
                     completedThisMonth: 0,
                     totalEvents: 0,
                     streak: 0,
                     timeBlockData: {},
-                },
+                }),
             });
         } catch (err) {
             setError('Failed to load analytics');
