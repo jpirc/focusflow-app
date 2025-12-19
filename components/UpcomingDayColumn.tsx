@@ -13,6 +13,8 @@ interface UpcomingDayColumnProps {
     dayName: string;
     fullDate: Date;
     taskCount: number;
+    isWeekend?: boolean;
+    isToday?: boolean;
     onDrop: (taskId: string, date: string, timeBlock: TimeBlock) => void;
     onClick: (date: Date) => void;
 }
@@ -22,6 +24,8 @@ export function UpcomingDayColumn({
     dayName, 
     fullDate, 
     taskCount,
+    isWeekend = false,
+    isToday = false,
     onDrop,
     onClick,
 }: UpcomingDayColumnProps) {
@@ -54,37 +58,43 @@ export function UpcomingDayColumn({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={`
-                flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed
-                transition-all duration-200 cursor-pointer min-h-[80px]
+                flex flex-col items-center justify-center p-2 rounded-lg border
+                transition-all duration-200 cursor-pointer min-h-[60px]
                 ${isDragOver 
-                    ? 'border-purple-400 bg-purple-50 scale-105' 
-                    : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100'
+                    ? 'border-purple-400 bg-purple-50 scale-105 border-2' 
+                    : isToday
+                        ? 'border-purple-400 bg-white hover:bg-purple-50/30'
+                        : isWeekend
+                            ? 'border-gray-200 bg-white hover:bg-gray-50'
+                            : 'border-gray-200 bg-white hover:bg-gray-50'
                 }
             `}
         >
             {/* Day name */}
-            <span className={`text-sm font-semibold ${isDragOver ? 'text-purple-600' : 'text-gray-700'}`}>
-                {dayName}
+            <span className={`text-xs font-semibold ${
+                isDragOver ? 'text-purple-600' : isToday ? 'text-purple-600' : 'text-gray-600'
+            }`}>
+                {isToday ? 'Today' : dayName}
             </span>
             
             {/* Date */}
-            <span className="text-[10px] text-gray-400">
+            <span className={`text-[9px] ${isToday ? 'text-purple-400' : 'text-gray-400'}`}>
                 {fullDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
             
             {/* Task count badge */}
             {taskCount > 0 && (
-                <div className="mt-2 px-2 py-0.5 bg-gray-200 rounded-full">
-                    <span className="text-[10px] font-medium text-gray-600">
-                        {taskCount} task{taskCount !== 1 ? 's' : ''}
+                <div className={`mt-1 px-1.5 py-0.5 rounded-full ${isToday ? 'bg-purple-100' : 'bg-gray-100'}`}>
+                    <span className={`text-[9px] font-medium ${isToday ? 'text-purple-600' : 'text-gray-500'}`}>
+                        {taskCount}
                     </span>
                 </div>
             )}
             
             {/* Drop hint */}
             {isDragOver && (
-                <span className="mt-1 text-[10px] text-purple-500 font-medium">
-                    Drop here
+                <span className="mt-0.5 text-[9px] text-purple-500 font-medium">
+                    Drop
                 </span>
             )}
         </div>

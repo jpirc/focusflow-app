@@ -54,8 +54,9 @@ export const DEFAULT_PROJECT = {
 
 /**
  * View options for the timeline
+ * 7 = "Week" view (Sunday-Saturday)
  */
-export const VIEW_DAY_OPTIONS = [1, 2, 3, 5] as const;
+export const VIEW_DAY_OPTIONS = [1, 3, 7] as const;
 
 /**
  * Default values for new tasks

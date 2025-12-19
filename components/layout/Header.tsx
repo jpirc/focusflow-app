@@ -5,17 +5,23 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Brain, Plus } from 'lucide-react';
-import { addDays } from '@/lib/utils/date';
+import { ChevronLeft, ChevronRight, Calendar, Plus } from 'lucide-react';
+import { addDays, getWeekStart } from '@/lib/utils/date';
 import { VIEW_DAY_OPTIONS } from '@/lib/constants';
+
+// Label mapping for view options
+const VIEW_LABELS: Record<number, string> = {
+    1: '1 Day',
+    3: '3 Days',
+    7: 'Week',
+};
 
 interface HeaderProps {
     currentDate: Date;
     onDateChange: (date: Date) => void;
     viewDays: number;
     onViewDaysChange: (days: number) => void;
-    onSmartCapture: () => void;
-    onNewTask: () => void;
+    onAddTask: () => void;
 }
 
 export function Header({
@@ -23,8 +29,7 @@ export function Header({
     onDateChange,
     viewDays,
     onViewDaysChange,
-    onSmartCapture,
-    onNewTask,
+    onAddTask,
 }: HeaderProps) {
     return (
         <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
@@ -38,7 +43,11 @@ export function Header({
                         <ChevronLeft size={18} />
                     </button>
                     <button
-                        onClick={() => onDateChange(new Date())}
+                        onClick={() => {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            onDateChange(today);
+                        }}
                         className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-white rounded-md transition-all"
                     >
                         Today
@@ -64,34 +73,31 @@ export function Header({
                     {VIEW_DAY_OPTIONS.map(days => (
                         <button
                             key={days}
-                            onClick={() => onViewDaysChange(days)}
+                            onClick={() => {
+                                onViewDaysChange(days);
+                                // For week view, snap to start of week
+                                if (days === 7) {
+                                    onDateChange(getWeekStart(currentDate));
+                                }
+                            }}
                             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                                 viewDays === days
                                     ? 'bg-white shadow text-purple-600'
                                     : 'text-gray-500 hover:text-gray-700'
                             }`}
                         >
-                            {days} Day{days !== 1 ? 's' : ''}
+                            {VIEW_LABELS[days] || `${days} Days`}
                         </button>
                     ))}
                 </div>
 
-                {/* Smart Capture Button */}
+                {/* Add Task Button */}
                 <button
-                    onClick={onSmartCapture}
+                    onClick={onAddTask}
                     className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm hover:shadow"
                 >
-                    <Brain size={18} />
-                    Smart Capture
-                </button>
-
-                {/* New Task Button */}
-                <button
-                    onClick={onNewTask}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm hover:shadow"
-                >
                     <Plus size={18} />
-                    New Task
+                    Add Task
                 </button>
             </div>
         </header>

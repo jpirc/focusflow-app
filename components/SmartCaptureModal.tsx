@@ -91,7 +91,7 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Sparkles className="text-purple-500" size={24} />
-              <h2 className="text-xl font-semibold text-gray-900">Smart Task Capture</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Add Task</h2>
             </div>
             <button
               onClick={onClose}
@@ -102,14 +102,14 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
           </div>
 
           <p className="text-sm text-gray-600 mb-4">
-            Dump your thoughts, notes, or ideas here. AI will organize them into actionable tasks and schedule them if you mention dates/times.
+            Type naturally – dates, times, and priorities are automatically detected.
           </p>
 
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="E.g., 'Take the trash out at 2pm on Friday. Book dentist appointment for next week morning. Also need to fix the leaky faucet sometime - probably 30 mins'"
+            placeholder="e.g., 'Call mom tomorrow morning' or 'Finish report by Friday afternoon - high priority'"
             className="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
             autoFocus
             disabled={isLoading}

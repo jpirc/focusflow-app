@@ -20,13 +20,12 @@ import { TaskCard } from '@/components/TaskCard';
 import { TimeBlockColumn } from '@/components/TimeBlockColumn';
 import { UpcomingDayColumn } from '@/components/UpcomingDayColumn';
 import { AIBreakdownModal } from '@/components/AIBreakdownModal';
-import { CreateTaskModal } from '@/components/CreateTaskModal';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import { CreateProjectModal } from '@/components/CreateProjectModal';
 import { SmartCaptureModal } from '@/components/SmartCaptureModal';
 
 // Utilities & Constants
-import { formatDate, formatDisplayDate, addDays, isToday, getRemainingWeekdays } from '@/lib/utils/date';
+import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeekend } from '@/lib/utils/date';
 import { TIME_BLOCKS } from '@/lib/constants';
 
 // Types
@@ -76,13 +75,17 @@ export default function FocusFlowApp() {
     // Local UI State
     // ============================================
 
-    const [currentDate, setCurrentDate] = useState(new Date());
+    // Normalize to local midnight to avoid timezone drift
+    const [currentDate, setCurrentDate] = useState(() => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        return now;
+    });
     const [viewDays, setViewDays] = useState(3);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
     // Modal state
-    const [createModalOpen, setCreateModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [taskToEditId, setTaskToEditId] = useState<string | null>(null);
     const [aiModalOpen, setAiModalOpen] = useState(false);
@@ -117,9 +120,12 @@ export default function FocusFlowApp() {
         [tasks, selectedProjectId]
     );
 
-    const displayDays = useMemo(() =>
-        Array.from({ length: viewDays }, (_, i) => {
-            const date = addDays(currentDate, i);
+    // For week view (7 days), start from Sunday of current week
+    const displayDays = useMemo(() => {
+        const startDate = viewDays === 7 ? getWeekStart(currentDate) : currentDate;
+        
+        return Array.from({ length: viewDays }, (_, i) => {
+            const date = addDays(startDate, i);
             const dateStr = formatDate(date);
             const dayTasks = tasks.filter(t =>
                 formatDate(t.date!) === dateStr &&
@@ -131,24 +137,39 @@ export default function FocusFlowApp() {
                 dateStr,
                 display: formatDisplayDate(dateStr),
                 isToday: isToday(dateStr),
+                isWeekend: isWeekend(date),
                 tasks: dayTasks,
             };
-        }),
-        [currentDate, viewDays, tasks, selectedProjectId]
-    );
-
-    // For 1-day view, get remaining weekdays to show as compact drop targets
-    const upcomingWeekdays = useMemo(() => {
-        if (viewDays !== 1) return [];
-        return getRemainingWeekdays(currentDate).map(day => ({
-            ...day,
-            taskCount: tasks.filter(t => 
-                formatDate(t.date!) === day.dateStr && 
-                t.status !== 'completed' &&
-                (!selectedProjectId || t.projectId === selectedProjectId)
-            ).length,
-        }));
+        });
     }, [currentDate, viewDays, tasks, selectedProjectId]);
+
+    // Sidebar: Always show 5 days starting from today (fixed navigation)
+    // This provides consistent quick-nav regardless of what date you're viewing
+    const upcomingDays = useMemo(() => {
+        // Don't show sidebar for week view (7 days)
+        if (viewDays === 7) return [];
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Always show 5 days starting from today
+        return Array.from({ length: 5 }, (_, i) => {
+            const date = addDays(today, i);
+            const dateStr = formatDate(date);
+            return {
+                date,
+                dateStr,
+                dayName: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : date.toLocaleDateString('en-US', { weekday: 'short' }),
+                isWeekend: isWeekend(date),
+                isToday: i === 0,
+                taskCount: tasks.filter(t => 
+                    formatDate(t.date!) === dateStr && 
+                    t.status !== 'completed' &&
+                    (!selectedProjectId || t.projectId === selectedProjectId)
+                ).length,
+            };
+        });
+    }, [viewDays, tasks, selectedProjectId]);
 
     // ============================================
     // Keyboard Shortcuts
@@ -178,16 +199,6 @@ export default function FocusFlowApp() {
     // ============================================
     // Handlers
     // ============================================
-
-    const handleCreateTask = useCallback(async (
-        title: string,
-        description: string,
-        date: string | null,
-        timeBlock: TimeBlock,
-        projectId?: string
-    ) => {
-        await createTask({ title, description, date, timeBlock, projectId });
-    }, [createTask]);
 
     const handleEditTask = useCallback((task: Task) => {
         setTaskToEditId(task.id);
@@ -284,53 +295,50 @@ export default function FocusFlowApp() {
                     onDateChange={setCurrentDate}
                     viewDays={viewDays}
                     onViewDaysChange={setViewDays}
-                    onSmartCapture={() => setSmartCaptureModalOpen(true)}
-                    onNewTask={() => setCreateModalOpen(true)}
+                    onAddTask={() => setSmartCaptureModalOpen(true)}
                 />
 
                 {/* Timeline View */}
-                <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-                    <div className="flex gap-3 lg:gap-6 h-full">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 sm:p-3 lg:p-4">
+                    <div className="flex gap-2 sm:gap-3 lg:gap-4 h-full">
                         {/* Main Day Columns */}
-                        <div className={`flex h-full ${
-                            viewDays === 1 
-                                ? 'flex-1 gap-6' 
-                                : viewDays === 5 
-                                    ? 'flex-1 gap-2' 
-                                    : 'gap-4 lg:gap-6 min-w-max'
+                        <div className={`flex-1 flex h-full min-w-0 ${
+                            viewDays === 7 
+                                ? 'gap-0.5 sm:gap-1' 
+                                : viewDays === 1 
+                                    ? 'gap-2 sm:gap-3' 
+                                    : 'gap-2 sm:gap-3 lg:gap-4'
                         }`}>
                             {displayDays.map(day => (
                                 <div 
                                     key={day.dateStr} 
-                                    className={`flex flex-col h-full ${
-                                        viewDays === 1 
-                                            ? 'flex-1 min-w-[320px]' 
-                                            : viewDays === 2 
-                                                ? 'w-[400px] flex-shrink-0' 
-                                                : viewDays === 3 
-                                                    ? 'w-80 flex-shrink-0' 
-                                                    : 'flex-1 min-w-0'
+                                    className={`flex flex-col h-full min-w-0 ${
+                                        viewDays === 7 
+                                            ? 'flex-1' 
+                                            : 'flex-1'
                                     }`}
                                 >
                                     {/* Day Header */}
-                                    <div className={`mb-2 lg:mb-4 flex items-center justify-between ${day.isToday ? 'text-purple-600' : 'text-gray-500'}`}>
-                                        <div>
-                                            <h3 className={`font-bold ${viewDays >= 5 ? 'text-sm' : viewDays === 1 ? 'text-xl' : 'text-lg'}`}>
-                                                {viewDays >= 5 ? day.date.toLocaleDateString('en-US', { weekday: 'short' }) : day.display}
+                                    <div className={`mb-1.5 sm:mb-2 flex items-center justify-between ${
+                                        day.isToday ? 'text-purple-600' : day.isWeekend ? 'text-amber-600' : 'text-gray-500'
+                                    }`}>
+                                        <div className="min-w-0">
+                                            <h3 className={`font-bold truncate ${viewDays === 7 ? 'text-xs sm:text-sm' : viewDays === 1 ? 'text-lg sm:text-xl' : 'text-sm sm:text-lg'}`}>
+                                                {viewDays === 7 ? day.date.toLocaleDateString('en-US', { weekday: 'short' }) : day.display}
                                             </h3>
-                                            <p className={`opacity-70 ${viewDays >= 5 ? 'text-[10px]' : 'text-xs'}`}>
+                                            <p className={`opacity-70 truncate ${viewDays === 7 ? 'text-[9px]' : 'text-[10px] sm:text-xs'}`}>
                                                 {day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                             </p>
                                         </div>
                                         {day.isToday && (
-                                            <span className={`font-bold bg-purple-100 text-purple-600 rounded-full ${viewDays >= 5 ? 'text-[8px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1'}`}>
+                                            <span className={`font-bold bg-purple-100 text-purple-600 rounded-full ${viewDays === 7 ? 'text-[8px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1'}`}>
                                                 TODAY
                                             </span>
                                         )}
                                     </div>
 
                                     {/* Time Blocks */}
-                                    <div className={`flex-1 overflow-y-auto pr-1 pb-4 ${viewDays >= 5 ? 'space-y-1' : 'space-y-3'}`}>
+                                    <div className={`flex-1 overflow-y-auto pr-0.5 pb-2 ${viewDays === 7 ? 'space-y-0.5' : 'space-y-2'}`}>
                                         {TIME_BLOCKS.map(block => (
                                             <TimeBlockColumn
                                                 key={`${day.dateStr}-${block.id}`}
@@ -349,7 +357,7 @@ export default function FocusFlowApp() {
                                                 onAIBreakdown={handleAIBreakdown}
                                                 onUpdateSubtasks={handleUpdateSubtasks}
                                                 onEdit={handleEditTask}
-                                                compact={viewDays >= 5}
+                                                compact={viewDays === 7}
                                             />
                                         ))}
                                     </div>
@@ -357,22 +365,30 @@ export default function FocusFlowApp() {
                             ))}
                         </div>
 
-                        {/* Upcoming Weekdays Sidebar (1-day view only) */}
-                        {viewDays === 1 && upcomingWeekdays.length > 0 && (
-                            <div className="w-24 flex-shrink-0 flex flex-col gap-3">
-                                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
-                                    This Week
+                        {/* Upcoming Days Sidebar (1 and 3 day views) */}
+                        {upcomingDays.length > 0 && (
+                            <div className="w-20 sm:w-24 flex-shrink-0 flex flex-col gap-2">
+                                <h4 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
+                                    Quick Nav
                                 </h4>
-                                <div className="flex flex-col gap-2">
-                                    {upcomingWeekdays.map(day => (
+                                <div className="flex flex-col gap-1.5">
+                                    {upcomingDays.map(day => (
                                         <UpcomingDayColumn
                                             key={day.dateStr}
                                             dateStr={day.dateStr}
                                             dayName={day.dayName}
                                             fullDate={day.date}
                                             taskCount={day.taskCount}
+                                            isWeekend={day.isWeekend}
+                                            isToday={day.isToday}
                                             onDrop={handleDrop}
-                                            onClick={setCurrentDate}
+                                            onClick={(date) => {
+                                                // Ensure we use a clean local midnight date
+                                                const cleanDate = new Date(date);
+                                                cleanDate.setHours(0, 0, 0, 0);
+                                                setCurrentDate(cleanDate);
+                                                setViewDays(1);
+                                            }}
                                         />
                                     ))}
                                 </div>
@@ -391,14 +407,6 @@ export default function FocusFlowApp() {
                     onApply={handleApplyAIBreakdown}
                 />
             )}
-
-            <CreateTaskModal
-                isOpen={createModalOpen}
-                onClose={() => setCreateModalOpen(false)}
-                onCreate={handleCreateTask}
-                defaultDate={formatDate(currentDate)}
-                projects={projects}
-            />
 
             {taskToEdit && (
                 <EditTaskModal
