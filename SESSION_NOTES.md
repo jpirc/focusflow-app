@@ -188,3 +188,79 @@ gh repo view -w  # Opens in web browser
 **Session completed**: December 9, 2025  
 **Branch**: `fix/ui-investigation-1765316458`  
 **Status**: ✅ All type checks pass, middleware enforced, types tightened, repo pushed to GitHub.
+
+---
+
+# Session Notes (Dec 19, 2025)
+
+## Overview
+Major UI polish session focusing on compact layouts, completed task tracking, and hover tooltips.
+
+## Key Changes Made
+
+### 1. **Compact UI Throughout**
+- Reduced font sizes across all modals and components (text-xs → text-[10px], etc.)
+- Tighter padding and spacing in EditTaskModal, SmartCaptureModal, CreateProjectModal, AIBreakdownModal
+- Header view switcher now uses icon buttons instead of dropdown
+- Sidebar project section has tighter padding
+
+### 2. **Calendar/Month View**
+- Added full month grid view accessible from Header
+- Shows task counts as colored badges per day
+- Click day to navigate to that date in day view
+
+### 3. **Completed Tasks "Done" Section**
+- Each day column now shows completed tasks at the bottom in a "Done" section
+- Completed tasks grouped by completion date (shows "Completed Dec 18" headers)
+- Removed redundant "Finished" section from Sidebar
+
+### 4. **Completed Task Actions**
+- Restore button (↩ RotateCcw icon) to move task back to pending
+- Edit button (✏ Pencil icon) to open EditTaskModal
+- Hover tooltip showing description, project, and time estimate
+
+### 5. **Live Task Hover Tooltips**
+- TaskCard now shows tooltip on hover with:
+  - Description text
+  - Project name with color dot
+  - Estimated time
+  - Energy level
+- Disabled in compact/week view to avoid clutter
+
+### 6. **View Switching Defaults to Today**
+- Switching to 1-day or 3-day view now snaps to today's date
+- Prevents confusion when switching views
+
+### 7. **Optimistic Update Fix for Completed Tasks**
+- `updateStatus` in useTasks.ts now sets `completedAt` immediately
+- Ensures completed tasks sort correctly by completion date
+
+## Files Modified
+- `app/page.tsx` - Done section, completed task hover/actions
+- `components/TaskCard.tsx` - Hover tooltip for live tasks
+- `components/layout/Header.tsx` - Calendar view, icon buttons, view snapping
+- `components/layout/Sidebar.tsx` - Removed Finished section
+- `components/EditTaskModal.tsx` - Compact styling
+- `components/SmartCaptureModal.tsx` - Compact styling
+- `components/CreateProjectModal.tsx` - Compact styling
+- `components/AIBreakdownModal.tsx` - Compact styling
+- `components/DependencySelector.tsx` - Fixed syntax error (extra `}`)
+- `hooks/useTasks.ts` - Optimistic completedAt setting
+
+## Current Repository State
+- **Branch**: `main`
+- **Latest Commit**: `4b459aa` - "Fix syntax error in DependencySelector"
+- **Status**: ✅ Deployed to Vercel, all type checks pass
+
+## Next Steps / Roadmap Ideas
+- Task timer (track actual time spent)
+- Task age badges (show how long tasks have been open)
+- Auto-rollover of incomplete tasks at midnight
+- Real AI integration for task breakdown (replace mock)
+- Analytics dashboard with completion trends
+
+---
+
+**Session completed**: December 19, 2025  
+**Branch**: `main`  
+**Status**: ✅ Deployed, compact UI with hover tooltips working
