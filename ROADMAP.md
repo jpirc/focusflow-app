@@ -50,12 +50,14 @@ This document tracks future features and enhancements for FocusFlow, organized b
 ## 🎯 Phase 1: Task Intelligence & Time Tracking
 
 ### Time Tracking & Analytics
-- [ ] **Task Timer**: Track actual time spent on tasks
-  - Start timer when task status changes to "in-progress"
-  - Stop timer when task is completed or paused
-  - Store `startedAt` timestamp and `actualMinutes` in database
-  - Display elapsed time in TaskCard during active work
-  - Compare estimated vs actual time
+- [~] **Task Timer**: Track actual time spent on tasks (schema ready, needs UI)
+  - [x] `startedAt` timestamp in database schema
+  - [x] `actualMinutes` field in database schema  
+  - [x] Event types defined (timer_started, timer_stopped)
+  - [ ] Set `startedAt` when status changes to "in-progress"
+  - [ ] Display elapsed time in TaskCard during active work
+  - [ ] Stop timer and calculate `actualMinutes` on completion
+  - [ ] Compare estimated vs actual time
 
 - [ ] **Task Age Tracking**: Monitor how long tasks remain open
   - Show "age" badge on tasks (e.g., "3 days old")
@@ -71,12 +73,13 @@ This document tracks future features and enhancements for FocusFlow, organized b
   - [ ] Completion rate by project, priority, energy level
 
 ### Smart Task Management
-- [ ] **Auto-Rollover**: Move incomplete tasks to next day
-  - Daily midnight cron job or client-side check
-  - Move pending/in-progress tasks from past dates
-  - Default to "Anytime" slot on next day
-  - Optional notification: "5 tasks rolled over to today"
-  - User preferences: auto-rollover on/off, which statuses to move
+- [x] **Auto-Rollover**: Move incomplete tasks to next day ✅
+  - [x] Client-side check on app load (hooks/useTasks.ts)
+  - [x] Move pending/in-progress tasks from past dates to today
+  - [x] Default to "Anytime" slot on next day
+  - [x] Increment rolloverCount for tracking
+  - [ ] Optional notification: "5 tasks rolled over to today"
+  - [ ] User preferences: auto-rollover on/off, which statuses to move
 
 - [ ] **Task Notifications**: Contextual alerts
   - Tasks aging beyond threshold (e.g., "Review AhhBravo has been open for 7 days")
