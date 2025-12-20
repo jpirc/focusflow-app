@@ -4,6 +4,42 @@ This document tracks future features and enhancements for FocusFlow, organized b
 
 ---
 
+## ✅ Completed Features
+
+### Core App (Phase 0)
+- [x] Multi-day timeline (1, 3, 5, 7 days)
+- [x] Month/calendar view with task badges
+- [x] Time block scheduling (morning/afternoon/evening/anytime)
+- [x] Drag & drop between days and time blocks
+- [x] Project organization with color-coding
+- [x] Task dependencies with blocking indicators
+- [x] Subtasks with inline editing
+- [x] Unscheduled inbox
+
+### Authentication & Backend
+- [x] Email/password authentication (NextAuth + credentials)
+- [x] Google OAuth
+- [x] PostgreSQL database (Supabase + Prisma)
+- [x] Full API routes with auth protection
+- [x] Server-side middleware redirects
+
+### UI/UX Polish
+- [x] Compact week view with smaller fonts
+- [x] Hover tooltips on tasks (description, project, time)
+- [x] Completed tasks "Done" section per day
+- [x] Restore completed tasks to pending
+- [x] Rollover count badge on tasks
+- [x] Priority dots (high/urgent)
+- [x] Energy level badges
+- [x] AI task breakdown (simulated)
+
+### Analytics Foundation
+- [x] TaskEvent model for tracking (created, completed, moved, etc.)
+- [x] completedAt timestamp on tasks
+- [x] Basic stats API endpoint
+
+---
+
 ## 🎯 Phase 1: Task Intelligence & Time Tracking
 
 ### Time Tracking & Analytics
@@ -402,4 +438,4 @@ When ready to implement a feature:
 
 ---
 
-_Last updated: December 10, 2025_
+_Last updated: December 19, 2025_

@@ -7,13 +7,15 @@ A visual planning app designed for ADHD, autism, and anyone who needs flexible s
 ## ✨ Features
 
 ### Core Functionality
-- **Multi-day visual timeline** - View 2, 3, or 5 days at once
+- **Multi-day visual timeline** - View 1, 3, 5, or 7 days at once, plus month calendar
 - **Time block scheduling** - Morning, Afternoon, Evening, and Anytime slots
 - **Drag & drop interface** - Move tasks between days and time blocks
 - **Project organization** - Group related tasks with color-coded projects
 - **Task dependencies** - Link tasks that depend on each other
-- **Subtask breakdown** - Break large tasks into manageable steps
+- **Subtask breakdown** - Break large tasks into manageable steps with inline editing
 - **Unscheduled inbox** - Capture tasks without immediate scheduling
+- **Completed tasks section** - Per-day "Done" section with restore capability
+- **Hover tooltips** - View task details on hover without opening modal
 
 ### AI-Powered Features
 - **Smart task breakdown** - AI analyzes your task and suggests subtasks
@@ -99,34 +101,41 @@ focusflow/
 ## 🗺 Roadmap
 
 ### Phase 1: MVP ✅
-- [x] Multi-day timeline view
-- [x] Time block scheduling
-- [x] Drag and drop
-- [x] Project organization
+- [x] Multi-day timeline view (1, 3, 5, 7 days + month calendar)
+- [x] Time block scheduling (Morning, Afternoon, Evening, Anytime)
+- [x] Drag and drop between days and time blocks
+- [x] Project organization with color-coding
 - [x] Task dependencies
 - [x] AI task breakdown (simulated)
+- [x] Subtasks with inline editing
+- [x] Unscheduled inbox
 
-### Phase 2: User Accounts (Next)
-- [ ] Email/password authentication
-- [ ] Google/Apple OAuth
-- [ ] User preferences storage
-- [ ] Cloud sync
+### Phase 2: User Accounts ✅
+- [x] Email/password authentication (NextAuth)
+- [x] Google OAuth
+- [x] User preferences storage
+- [x] Cloud sync (Prisma + PostgreSQL/Supabase)
 
-### Phase 3: Backend API
-- [ ] PostgreSQL database
-- [ ] FastAPI/Next.js API routes
-- [ ] Real-time sync with WebSockets
+### Phase 3: Backend API ✅
+- [x] PostgreSQL database (Supabase)
+- [x] Next.js API routes with auth protection
+- [x] Prisma ORM with full schema
 
-### Phase 4: AI Integration
-- [ ] Claude API for smart breakdown
-- [ ] Voice-to-task input
-- [ ] Smart scheduling suggestions
+### Phase 4: Enhanced Features ✅
+- [x] Task rollover tracking (rolloverCount badge)
+- [x] Completed tasks per-day "Done" section
+- [x] Task restore from completed
+- [x] Hover tooltips showing task details
+- [x] Compact week view
+- [x] Month/calendar view
+- [x] Event tracking for analytics (TaskEvent model)
 
-### Phase 5: Advanced Features
+### Phase 5: Future
+- [ ] Real AI integration (Claude API for breakdown)
+- [ ] Task timer (actual time tracking)
 - [ ] Push notifications
 - [ ] Calendar integrations
 - [ ] Mobile app (React Native)
-- [ ] Collaboration features
 
 ## 🔧 Configuration
 
