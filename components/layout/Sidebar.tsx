@@ -25,6 +25,7 @@ interface SidebarProps {
 
     // Task handlers
     onStatusChange: (id: string, status: any) => void;
+    onPause: (id: string) => void;
     onToggleSubtask: (taskId: string, subtaskId: string) => void;
     onStartDrag: (item: any) => void;
     onDelete: (id: string) => void;
@@ -51,6 +52,7 @@ export function Sidebar({
     selectedTaskId,
     onSelectTask,
     onStatusChange,
+    onPause,
     onToggleSubtask,
     onStartDrag,
     onDelete,
@@ -176,6 +178,7 @@ export function Sidebar({
                                         isSelected={selectedTaskId === task.id}
                                         onSelect={onSelectTask}
                                         onStatusChange={onStatusChange}
+                                        onPause={onPause}
                                         onToggleSubtask={onToggleSubtask}
                                         onStartDrag={onStartDrag}
                                         onDelete={onDelete}

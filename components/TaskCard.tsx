@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
-    Play, Wand2, MoreHorizontal, Edit3, Link2, Copy, Trash2,
+    Play, Pause, Wand2, MoreHorizontal, Edit3, Link2, Copy, Trash2,
     ChevronUp, ChevronDown, GripVertical, CheckCircle2, Circle,
     Sparkles, ArrowRight, Target, Flag, BatteryLow, BatteryMedium, BatteryFull,
     Coffee, Briefcase, Home, Heart, Dumbbell, BookOpen, RotateCcw, Clock
@@ -100,6 +100,7 @@ interface TaskCardProps {
     isSelected: boolean;
     onSelect: (id: string) => void;
     onStatusChange: (id: string, status: TaskStatus) => void;
+    onPause: (id: string) => void;
     onToggleSubtask: (taskId: string, subtaskId: string) => void;
     onStartDrag: (item: DragItem) => void;
     onDelete: (id: string) => void;
@@ -119,7 +120,7 @@ function lightenColor(hex: string, amount: number = 0.85): string {
 }
 
 export const TaskCard: React.FC<TaskCardProps> = (props) => {
-    const { task, project, allTasks, isSelected, onSelect, onStatusChange,
+    const { task, project, allTasks, isSelected, onSelect, onStatusChange, onPause,
         onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, compact = false } = props;
 
     const [expanded, setExpanded] = useState(false);
@@ -307,6 +308,15 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                             title="Start"
                         >
                             <Play size={10} className="text-blue-600" />
+                        </button>
+                    )}
+                    {task.status === 'in-progress' && (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onPause(task.id); }} 
+                            className="p-0.5 hover:bg-orange-100 rounded transition-colors" 
+                            title="Pause"
+                        >
+                            <Pause size={10} className="text-orange-500" />
                         </button>
                     )}
 

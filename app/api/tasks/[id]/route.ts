@@ -27,6 +27,7 @@ const updateTaskSchema = z.object({
     timeBlock: z.enum(['anytime', 'morning', 'afternoon', 'evening']).optional(),
     estimatedMinutes: z.number().optional(),
     actualMinutes: z.number().nullable().optional(),
+    startedAt: z.string().nullable().optional(),
     completed: z.boolean().optional(),
 });
 

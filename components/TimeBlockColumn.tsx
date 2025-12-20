@@ -11,6 +11,7 @@ interface TimeBlockColumnProps {
     selectedTaskId: string | null;
     onSelectTask: (id: string) => void;
     onStatusChange: (id: string, status: TaskStatus) => void;
+    onPause: (id: string) => void;
     onToggleSubtask: (taskId: string, subtaskId: string) => void;
     onStartDrag: (item: DragItem) => void;
     onDrop: (taskId: string, targetDate: string, targetBlock: TimeBlock) => void;
@@ -23,7 +24,7 @@ interface TimeBlockColumnProps {
 
 export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
     block, tasks, allTasks, projects, date, selectedTaskId,
-    onSelectTask, onStatusChange, onToggleSubtask, onStartDrag, onDrop, onDelete,
+    onSelectTask, onStatusChange, onPause, onToggleSubtask, onStartDrag, onDrop, onDelete,
     onAIBreakdown, onUpdateSubtasks, onEdit, compact = false
 }) => {
     const [isDragOver, setIsDragOver] = useState(false);
@@ -97,6 +98,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
                             isSelected={selectedTaskId === task.id}
                             onSelect={onSelectTask}
                             onStatusChange={onStatusChange}
+                            onPause={onPause}
                             onToggleSubtask={onToggleSubtask}
                             onStartDrag={onStartDrag}
                             onDelete={onDelete}

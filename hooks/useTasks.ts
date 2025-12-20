@@ -27,6 +27,7 @@ interface UseTasksReturn {
     
     // Status & positioning
     updateStatus: (id: string, status: TaskStatus) => Promise<void>;
+    pauseTask: (id: string) => Promise<void>;
     uncompleteToInbox: (id: string) => Promise<void>;
     moveTask: (taskId: string, date: string, timeBlock: TimeBlock) => Promise<void>;
     
@@ -174,6 +175,42 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
             await refreshTasks(); // Rollback
         }
     }, [isAuthenticated, refreshTasks]);
+
+    const pauseTask = useCallback(async (id: string) => {
+        // Optimistic update - pause task and accumulate elapsed time
+        setTasks(prev => prev.map(t => {
+            if (t.id !== id) return t;
+            let accumulatedMinutes = t.actualMinutes || 0;
+            if (t.startedAt) {
+                const elapsed = Math.round((Date.now() - new Date(t.startedAt).getTime()) / 60000);
+                accumulatedMinutes += elapsed;
+            }
+            return {
+                ...t,
+                status: 'pending' as TaskStatus,
+                startedAt: null,
+                actualMinutes: accumulatedMinutes,
+            };
+        }));
+
+        if (!isAuthenticated) return;
+
+        // Get current task to calculate accumulated time
+        const task = tasks.find(t => t.id === id);
+        let accumulatedMinutes = task?.actualMinutes || 0;
+        if (task?.startedAt) {
+            const elapsed = Math.round((Date.now() - new Date(task.startedAt).getTime()) / 60000);
+            accumulatedMinutes += elapsed;
+        }
+
+        const result = await taskApi.update(id, { 
+            status: 'pending',
+            actualMinutes: accumulatedMinutes,
+        });
+        if (result.error) {
+            await refreshTasks(); // Rollback
+        }
+    }, [isAuthenticated, tasks, refreshTasks]);
 
     const uncompleteToInbox = useCallback(async (id: string) => {
         // Optimistic update - set to pending and clear date
@@ -381,6 +418,7 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
         updateTask,
         deleteTask,
         updateStatus,
+        pauseTask,
         uncompleteToInbox,
         moveTask,
         addSubtask,

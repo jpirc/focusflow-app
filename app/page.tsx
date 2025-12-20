@@ -51,6 +51,7 @@ export default function FocusFlowApp() {
         updateTask,
         deleteTask,
         updateStatus,
+        pauseTask,
         moveTask,
         addSubtask,
         toggleSubtask,
@@ -271,6 +272,7 @@ export default function FocusFlowApp() {
                 selectedTaskId={selectedTaskId}
                 onSelectTask={setSelectedTaskId}
                 onStatusChange={updateStatus}
+                onPause={pauseTask}
                 onToggleSubtask={toggleSubtask}
                 onStartDrag={handleStartDrag}
                 onDelete={deleteTask}
@@ -361,6 +363,7 @@ export default function FocusFlowApp() {
                                                 selectedTaskId={selectedTaskId}
                                                 onSelectTask={setSelectedTaskId}
                                                 onStatusChange={updateStatus}
+                                                onPause={pauseTask}
                                                 onToggleSubtask={toggleSubtask}
                                                 onStartDrag={handleStartDrag}
                                                 onDrop={handleDrop}
