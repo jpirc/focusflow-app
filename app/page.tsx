@@ -417,9 +417,9 @@ export default function FocusFlowApp() {
                                                                 >
                                                                     <Pencil size={viewDays === 7 ? 10 : 12} />
                                                                 </button>
-                                                                {/* Hover tooltip with details */}
+                                                                {/* Hover tooltip with details (2s delay) */}
                                                                 {(task.description || task.estimatedMinutes || project) && viewDays !== 7 && (
-                                                                    <div className="absolute left-0 bottom-full mb-1 w-48 p-2 bg-gray-900 text-white text-[10px] rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                                                                    <div className="absolute left-0 bottom-full mb-1 w-48 p-2 bg-gray-900 text-white text-[10px] rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all delay-0 group-hover:delay-[2000ms] z-50 pointer-events-none">
                                                                         <div className="font-medium text-xs mb-1">{task.title}</div>
                                                                         {task.description && (
                                                                             <p className="text-gray-300 mb-1">{task.description}</p>
