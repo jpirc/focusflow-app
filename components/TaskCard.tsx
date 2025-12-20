@@ -125,6 +125,7 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
     const [expanded, setExpanded] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [menuStyle, setMenuStyle] = useState<{ top: number; left: number } | null>(null);
+    const [elapsedMinutes, setElapsedMinutes] = useState(0);
     const menuButtonRef = useRef<HTMLButtonElement | null>(null);
 
     const dependencyTasks = (task.dependsOn || []).map(id => allTasks.find(t => t.id === id)).filter(Boolean as any);
@@ -132,6 +133,22 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
     const completedSubtasks = (task.subtasks || []).filter(s => s.completed).length;
     const totalSubtasks = (task.subtasks || []).length;
     const hasSubtasks = totalSubtasks > 0;
+
+    // Timer for in-progress tasks
+    useEffect(() => {
+        if (task.status === 'in-progress' && task.startedAt) {
+            const updateElapsed = () => {
+                const started = new Date(task.startedAt!).getTime();
+                const elapsed = Math.floor((Date.now() - started) / 60000);
+                setElapsedMinutes(elapsed);
+            };
+            updateElapsed();
+            const interval = setInterval(updateElapsed, 60000); // Update every minute
+            return () => clearInterval(interval);
+        } else {
+            setElapsedMinutes(0);
+        }
+    }, [task.status, task.startedAt]);
 
     useEffect(() => {
         if (showMenu && menuButtonRef.current) {
@@ -238,6 +255,13 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                         
                         {/* Inline indicators */}
                         <div className="flex items-center gap-1 flex-shrink-0 text-[9px] text-gray-400">
+                            {/* Elapsed time for in-progress tasks */}
+                            {task.status === 'in-progress' && task.startedAt && (
+                                <span className="flex items-center gap-0.5 text-blue-500 font-medium">
+                                    <Clock size={9} className="animate-pulse" />
+                                    {elapsedMinutes}m
+                                </span>
+                            )}
                             {(task.rolloverCount || 0) > 0 && task.status !== 'completed' && (
                                 <span className={`flex items-center ${(task.rolloverCount || 0) >= 3 ? 'text-orange-500' : ''}`}>
                                     <RotateCcw size={8} />{task.rolloverCount}

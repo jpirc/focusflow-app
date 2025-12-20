@@ -91,13 +91,30 @@ export async function PUT(
         if (!existing) return errorResponse('Task not found', 404);
         if (existing.userId !== session.user.id) return unauthorizedResponse();
 
-        // Auto-set completedAt when status changes to completed
+        // Auto-set timestamps when status changes
         const updateData: any = { ...data };
+        
+        // Set startedAt when task moves to in-progress
+        if (data!.status === 'in-progress' && existing.status !== 'in-progress') {
+            updateData.startedAt = new Date();
+        }
+        
+        // Set completedAt and calculate actualMinutes when completed
         if (data!.status === 'completed' && existing.status !== 'completed') {
             updateData.completedAt = new Date();
+            // Calculate actual minutes if we have a startedAt time
+            if (existing.startedAt) {
+                const elapsed = Math.round((Date.now() - new Date(existing.startedAt).getTime()) / 60000);
+                updateData.actualMinutes = elapsed;
+            }
         } else if (data!.status && data!.status !== 'completed' && existing.status === 'completed') {
             // Clear completedAt if status changes FROM completed to something else
             updateData.completedAt = null;
+        }
+        
+        // Clear startedAt if going back to pending
+        if (data!.status === 'pending' && existing.status !== 'pending') {
+            updateData.startedAt = null;
         }
 
         const updated = await prisma.task.update({

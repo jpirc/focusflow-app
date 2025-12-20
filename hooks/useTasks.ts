@@ -147,9 +147,25 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
     // ============================================
 
     const updateStatus = useCallback(async (id: string, status: TaskStatus) => {
-        // Optimistic update - set completedAt when completing
-        const completedAt = status === 'completed' ? new Date().toISOString() : null;
-        setTasks(prev => prev.map(t => t.id === id ? { ...t, status, completedAt } : t));
+        // Optimistic update - set timestamps based on status
+        const now = new Date().toISOString();
+        setTasks(prev => prev.map(t => {
+            if (t.id !== id) return t;
+            const updates: Partial<typeof t> = { status };
+            if (status === 'in-progress') {
+                updates.startedAt = now;
+            } else if (status === 'completed') {
+                updates.completedAt = now;
+                // Calculate actual minutes if we have startedAt
+                if (t.startedAt) {
+                    updates.actualMinutes = Math.round((Date.now() - new Date(t.startedAt).getTime()) / 60000);
+                }
+            } else if (status === 'pending') {
+                updates.startedAt = null;
+                updates.completedAt = null;
+            }
+            return { ...t, ...updates };
+        }));
 
         if (!isAuthenticated) return;
 
