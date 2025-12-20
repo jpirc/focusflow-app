@@ -103,11 +103,13 @@ export async function PUT(
         // Set completedAt and calculate actualMinutes when completed
         if (data!.status === 'completed' && existing.status !== 'completed') {
             updateData.completedAt = new Date();
-            // Calculate actual minutes if we have a startedAt time
+            // Add current session's time to existing accumulated time
+            let accumulatedMinutes = existing.actualMinutes || 0;
             if (existing.startedAt) {
                 const elapsed = Math.round((Date.now() - new Date(existing.startedAt).getTime()) / 60000);
-                updateData.actualMinutes = elapsed;
+                accumulatedMinutes += elapsed;
             }
+            updateData.actualMinutes = accumulatedMinutes;
         } else if (data!.status && data!.status !== 'completed' && existing.status === 'completed') {
             // Clear completedAt if status changes FROM completed to something else
             updateData.completedAt = null;

@@ -157,10 +157,13 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
                 updates.startedAt = now;
             } else if (status === 'completed') {
                 updates.completedAt = now;
-                // Calculate actual minutes if we have startedAt
+                // Add current session's time to existing accumulated time
+                let accumulatedMinutes = t.actualMinutes || 0;
                 if (t.startedAt) {
-                    updates.actualMinutes = Math.round((Date.now() - new Date(t.startedAt).getTime()) / 60000);
+                    const elapsed = Math.round((Date.now() - new Date(t.startedAt).getTime()) / 60000);
+                    accumulatedMinutes += elapsed;
                 }
+                updates.actualMinutes = accumulatedMinutes;
             } else if (status === 'pending') {
                 updates.startedAt = null;
                 updates.completedAt = null;
