@@ -89,7 +89,7 @@ export function DependencySelector({
                 </div>
             ) : (
                 <p className="text-[10px] text-gray-400 italic">No dependencies</p>
-            )}}
+            )}
 
             {/* Add dependency */}
             {isAdding ? (
