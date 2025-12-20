@@ -37,6 +37,13 @@ This document tracks future features and enhancements for FocusFlow, organized b
 - [x] TaskEvent model for tracking (created, completed, moved, etc.)
 - [x] completedAt timestamp on tasks
 - [x] Basic stats API endpoint
+- [x] Full Analytics Dashboard (/analytics)
+- [x] Velocity tracking (tasks per day)
+- [x] Time block breakdown chart
+- [x] Day streak tracking
+- [x] Pattern detection (time_preference, productivity_window, completion_velocity)
+- [x] Smart suggestions system with accept/dismiss
+- [x] Confidence scoring for insights
 
 ---
 
@@ -56,12 +63,12 @@ This document tracks future features and enhancements for FocusFlow, organized b
   - Filter/sort by task age
   - Analytics: average time to completion by project/priority
 
-- [ ] **Velocity Metrics**: Personal productivity insights
-  - Daily/weekly completion rate
-  - Tasks completed vs created trend
-  - Average tasks per day by time block
-  - Completion rate by project, priority, energy level
-  - Streak tracking (consecutive days with completed tasks)
+- [x] **Velocity Metrics**: Personal productivity insights ✅
+  - [x] Daily/weekly/monthly completion rate
+  - [x] Average tasks per day by time block
+  - [x] Streak tracking (consecutive days with completed tasks)
+  - [ ] Tasks completed vs created trend (chart)
+  - [ ] Completion rate by project, priority, energy level
 
 ### Smart Task Management
 - [ ] **Auto-Rollover**: Move incomplete tasks to next day
