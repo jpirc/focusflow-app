@@ -43,13 +43,13 @@ export function SubtaskList({
     };
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
             {/* Progress header */}
             {totalCount > 0 && (
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                <div className="flex items-center justify-between text-[10px] text-gray-500 mb-1">
                     <span>Subtasks ({completedCount}/{totalCount})</span>
                     {totalCount > 0 && (
-                        <div className="flex-1 mx-3 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="flex-1 mx-2 h-1 bg-gray-200 rounded-full overflow-hidden">
                             <div
                                 className="h-full bg-green-500 transition-all duration-300"
                                 style={{ width: `${(completedCount / totalCount) * 100}%` }}
@@ -60,25 +60,25 @@ export function SubtaskList({
             )}
 
             {/* Subtask list */}
-            <div className="space-y-1.5">
+            <div className="space-y-0.5">
                 {subtasks.map((subtask) => (
                     <div
                         key={subtask.id}
-                        className="group flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md transition-colors"
+                        className="group flex items-center gap-1.5 py-1 px-1.5 hover:bg-gray-50 rounded transition-colors"
                     >
                         <button
                             onClick={() => onToggleSubtask(subtask.id)}
                             className="flex-shrink-0"
                         >
                             {subtask.completed ? (
-                                <CheckCircle2 size={16} className="text-green-500" />
+                                <CheckCircle2 size={14} className="text-green-500" />
                             ) : (
-                                <Circle size={16} className="text-gray-300 group-hover:text-gray-400" />
+                                <Circle size={14} className="text-gray-300 group-hover:text-gray-400" />
                             )}
                         </button>
 
                         <span
-                            className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'
+                            className={`flex-1 text-xs ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'
                                 }`}
                         >
                             {subtask.title}
@@ -132,9 +132,9 @@ export function SubtaskList({
 
             {/* Add subtask */}
             {editable && (
-                <div className="pt-2">
+                <div className="pt-1">
                     {isAdding ? (
-                        <div className="flex gap-2">
+                        <div className="flex gap-1.5">
                             <input
                                 type="text"
                                 value={newSubtaskTitle}
@@ -149,8 +149,8 @@ export function SubtaskList({
                                         }
                                     }
                                 }}
-                                placeholder="Subtask name..."
-                                className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Subtask..."
+                                className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                 autoFocus
                             />
                             <button
@@ -162,7 +162,7 @@ export function SubtaskList({
                                         setIsAdding(false);
                                     }
                                 }}
-                                className="px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+                                className="px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
                             >
                                 Add
                             </button>
@@ -172,17 +172,17 @@ export function SubtaskList({
                                     setIsAdding(false);
                                     setNewSubtaskTitle('');
                                 }}
-                                className="px-3 py-1.5 border border-gray-300 text-sm rounded hover:bg-gray-50"
+                                className="px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded"
                             >
-                                Cancel
+                                ×
                             </button>
                         </div>
                     ) : (
                         <button
                             onClick={() => setIsAdding(true)}
-                            className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
+                            className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-700"
                         >
-                            <Plus size={16} />
+                            <Plus size={12} />
                             Add Subtask
                         </button>
                     )}

@@ -55,8 +55,9 @@ export const DEFAULT_PROJECT = {
 /**
  * View options for the timeline
  * 7 = "Week" view (Sunday-Saturday)
+ * 30 = "Month" view (calendar grid)
  */
-export const VIEW_DAY_OPTIONS = [1, 3, 7] as const;
+export const VIEW_DAY_OPTIONS = [1, 3, 7, 30] as const;
 
 /**
  * Default values for new tasks

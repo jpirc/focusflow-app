@@ -1,19 +1,15 @@
 /**
- * Sidebar Component - Project list, inbox, and finished tasks
+ * Sidebar Component - Project list and inbox
  */
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { Menu, Settings, LogOut, MoreVertical, ChevronDown, ChevronUp, ChevronRight, Filter, Inbox, FolderKanban, CheckCircle2, PanelLeftClose, PanelLeft, Trash2, BarChart3 } from 'lucide-react';
+import { Settings, LogOut, MoreVertical, ChevronDown, ChevronRight, Inbox, FolderKanban, PanelLeftClose, PanelLeft, BarChart3 } from 'lucide-react';
 import { Task, Project } from '@/types';
 import { TaskCard } from '@/components/TaskCard';
-import { CompactFinishedTask } from '@/components/CompactFinishedTask';
-
-type FinishedFilter = 'all' | 'today' | 'week' | 'month';
-type FinishedSort = 'completedAt' | 'title' | 'project';
 
 interface SidebarProps {
     // State
@@ -24,14 +20,11 @@ interface SidebarProps {
     // Tasks
     tasks: Task[];
     inboxTasks: Task[];
-    finishedTasks: Task[];
     selectedTaskId: string | null;
     onSelectTask: (id: string | null) => void;
 
     // Task handlers
     onStatusChange: (id: string, status: any) => void;
-    onUncompleteToInbox: (id: string) => void;
-    onClearFinished: (taskIds: string[]) => void;
     onToggleSubtask: (taskId: string, subtaskId: string) => void;
     onStartDrag: (item: any) => void;
     onDelete: (id: string) => void;
@@ -55,12 +48,9 @@ export function Sidebar({
     userName,
     tasks,
     inboxTasks,
-    finishedTasks,
     selectedTaskId,
     onSelectTask,
     onStatusChange,
-    onUncompleteToInbox,
-    onClearFinished,
     onToggleSubtask,
     onStartDrag,
     onDelete,
@@ -84,59 +74,6 @@ export function Sidebar({
     // Collapsible section state
     const [inboxCollapsed, setInboxCollapsed] = useState(false);
     const [projectsCollapsed, setProjectsCollapsed] = useState(false);
-    const [finishedCollapsed, setFinishedCollapsed] = useState(false);
-
-    // Finished tasks state
-    const [finishedExpanded, setFinishedExpanded] = useState(false);
-    const [finishedFilter, setFinishedFilter] = useState<FinishedFilter>('all');
-    const [showFinishedFilterMenu, setShowFinishedFilterMenu] = useState(false);
-    const VISIBLE_FINISHED_COUNT = 5;
-
-    // Filter and sort finished tasks
-    const sortedFinishedTasks = useMemo(() => {
-        const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const weekAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const monthAgo = new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-        let filtered = [...finishedTasks];
-
-        // Apply filter
-        if (finishedFilter !== 'all') {
-            filtered = filtered.filter(task => {
-                if (!task.completedAt) return false;
-                const completedDate = new Date(task.completedAt);
-                switch (finishedFilter) {
-                    case 'today':
-                        return completedDate >= todayStart;
-                    case 'week':
-                        return completedDate >= weekAgo;
-                    case 'month':
-                        return completedDate >= monthAgo;
-                    default:
-                        return true;
-                }
-            });
-        }
-
-        // Sort by completedAt (newest first)
-        filtered.sort((a, b) => {
-            const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
-            const dateB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
-            return dateB - dateA;
-        });
-
-        return filtered;
-    }, [finishedTasks, finishedFilter]);
-
-    const visibleFinishedTasks = finishedExpanded 
-        ? sortedFinishedTasks 
-        : sortedFinishedTasks.slice(0, VISIBLE_FINISHED_COUNT);
-    const hiddenCount = sortedFinishedTasks.length - VISIBLE_FINISHED_COUNT;
-
-    const handleUncomplete = (taskId: string) => {
-        onUncompleteToInbox(taskId);
-    };
 
     const handleStartEditProject = (project: Project) => {
         setEditingProjectId(project.id);
@@ -292,7 +229,7 @@ export function Sidebar({
                             )
                         )}
                         {isOpen && !projectsCollapsed && (
-                            <div className="space-y-1">
+                            <div className="space-y-0.5">
                                 {projects.map(project => (
                                     <div key={project.id} className="group relative">
                                         {editingProjectId === project.id ? (
@@ -323,7 +260,7 @@ export function Sidebar({
                                             </div>
                                         ) : (
                                             <div
-                                                className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer ${
+                                                className={`w-full flex items-center gap-2 px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer ${
                                                     selectedProjectId === project.id ? 'bg-purple-50 text-purple-700 font-medium' : ''
                                                 }`}
                                                 onClick={() => onSelectProject(project.id)}
@@ -371,119 +308,6 @@ export function Sidebar({
                                         )}
                                     </div>
                                 ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Finished Section */}
-                    <div>
-                        {isOpen ? (
-                            <div className="flex items-center gap-1 mb-2">
-                                <button
-                                    onClick={() => setFinishedCollapsed(!finishedCollapsed)}
-                                    className="flex items-center gap-2 flex-1 px-2 py-1 hover:bg-gray-50 rounded-lg transition-colors"
-                                >
-                                    {finishedCollapsed ? (
-                                        <ChevronRight size={14} className="text-gray-400" />
-                                    ) : (
-                                        <ChevronDown size={14} className="text-gray-400" />
-                                    )}
-                                    <CheckCircle2 size={14} className="text-green-500" />
-                                    <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex-1 text-left">
-                                        Finished
-                                    </h2>
-                                    {sortedFinishedTasks.length > 0 && (
-                                        <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full">
-                                            {sortedFinishedTasks.length}
-                                        </span>
-                                    )}
-                                </button>
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowFinishedFilterMenu(!showFinishedFilterMenu)}
-                                        className={`p-1 hover:bg-gray-100 rounded transition-colors ${
-                                            finishedFilter !== 'all' ? 'text-purple-600' : 'text-gray-400 hover:text-gray-600'
-                                        }`}
-                                        title="Filter"
-                                    >
-                                        <Filter size={12} />
-                                    </button>
-                                    {showFinishedFilterMenu && (
-                                        <div className="absolute right-0 top-6 z-10 bg-white border border-gray-200 rounded-lg shadow-md w-28 py-1">
-                                            {(['all', 'today', 'week', 'month'] as FinishedFilter[]).map(filter => (
-                                                <button
-                                                    key={filter}
-                                                    onClick={() => {
-                                                        setFinishedFilter(filter);
-                                                        setShowFinishedFilterMenu(false);
-                                                    }}
-                                                    className={`w-full text-left px-3 py-1.5 text-xs capitalize ${
-                                                        finishedFilter === filter
-                                                            ? 'bg-purple-50 text-purple-600 font-medium'
-                                                            : 'hover:bg-gray-50 text-gray-600'
-                                                    }`}
-                                                >
-                                                    {filter === 'all' ? 'All Time' : filter === 'today' ? 'Today' : `This ${filter}`}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                {/* Clear all finished tasks button */}
-                                {sortedFinishedTasks.length > 0 && (
-                                    <button
-                                        onClick={() => {
-                                            if (confirm(`Delete all ${sortedFinishedTasks.length} finished tasks? This cannot be undone.`)) {
-                                                onClearFinished(sortedFinishedTasks.map(t => t.id));
-                                            }
-                                        }}
-                                        className="p-1 hover:bg-red-50 rounded transition-colors text-gray-400 hover:text-red-500"
-                                        title="Clear all finished tasks"
-                                    >
-                                        <Trash2 size={12} />
-                                    </button>
-                                )}
-                            </div>
-                        ) : (
-                            finishedTasks.length > 0 && (
-                                <div className="flex justify-center mb-2">
-                                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-600" title="Finished tasks">
-                                        {finishedTasks.length}
-                                    </div>
-                                </div>
-                            )
-                        )}
-                        {isOpen && !finishedCollapsed && (
-                            <div className="space-y-0.5">
-                                {visibleFinishedTasks.map(task => (
-                                    <CompactFinishedTask
-                                        key={task.id}
-                                        task={task}
-                                        project={getProjectById(task.projectId)}
-                                        onUncomplete={handleUncomplete}
-                                        onEdit={onEdit}
-                                        onDelete={onDelete}
-                                    />
-                                ))}
-                                {/* Show more/less toggle */}
-                                {hiddenCount > 0 && (
-                                    <button
-                                        onClick={() => setFinishedExpanded(!finishedExpanded)}
-                                        className="w-full flex items-center justify-center gap-1 py-1.5 text-[10px] text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded transition-colors"
-                                    >
-                                        {finishedExpanded ? (
-                                            <>
-                                                <ChevronUp size={12} />
-                                                Show less
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ChevronDown size={12} />
-                                                Show {hiddenCount} more
-                                            </>
-                                        )}
-                                    </button>
-                                )}
                             </div>
                         )}
                     </div>

@@ -14,6 +14,7 @@ const VIEW_LABELS: Record<number, string> = {
     1: '1 Day',
     3: '3 Days',
     7: 'Week',
+    30: 'Month',
 };
 
 interface HeaderProps {
@@ -32,15 +33,15 @@ export function Header({
     onAddTask,
 }: HeaderProps) {
     return (
-        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <header className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
+            <div className="flex items-center gap-3">
                 {/* Date Navigation */}
-                <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                     <button
                         onClick={() => onDateChange(addDays(currentDate, -1))}
-                        className="p-1.5 hover:bg-white rounded-md transition-all shadow-sm hover:shadow text-gray-600"
+                        className="p-1 hover:bg-white rounded transition-all text-gray-600"
                     >
-                        <ChevronLeft size={18} />
+                        <ChevronLeft size={16} />
                     </button>
                     <button
                         onClick={() => {
@@ -48,45 +49,50 @@ export function Header({
                             today.setHours(0, 0, 0, 0);
                             onDateChange(today);
                         }}
-                        className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-white rounded-md transition-all"
+                        className="px-2 py-1 text-xs font-medium text-gray-700 hover:bg-white rounded transition-all"
                     >
                         Today
                     </button>
                     <button
                         onClick={() => onDateChange(addDays(currentDate, 1))}
-                        className="p-1.5 hover:bg-white rounded-md transition-all shadow-sm hover:shadow text-gray-600"
+                        className="p-1 hover:bg-white rounded transition-all text-gray-600"
                     >
-                        <ChevronRight size={18} />
+                        <ChevronRight size={16} />
                     </button>
                 </div>
 
                 {/* Current Month/Year */}
-                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <Calendar size={20} className="text-purple-500" />
-                    {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                    <Calendar size={16} className="text-purple-500" />
+                    {currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                 </h2>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
                 {/* View Days Toggle */}
-                <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                     {VIEW_DAY_OPTIONS.map(days => (
                         <button
                             key={days}
                             onClick={() => {
                                 onViewDaysChange(days);
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                // For 1-day and 3-day views, snap to today
                                 // For week view, snap to start of week
                                 if (days === 7) {
-                                    onDateChange(getWeekStart(currentDate));
+                                    onDateChange(getWeekStart(today));
+                                } else if (days === 1 || days === 3) {
+                                    onDateChange(today);
                                 }
                             }}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                            className={`px-2 py-1 text-[10px] font-medium rounded transition-all ${
                                 viewDays === days
                                     ? 'bg-white shadow text-purple-600'
                                     : 'text-gray-500 hover:text-gray-700'
                             }`}
                         >
-                            {VIEW_LABELS[days] || `${days} Days`}
+                            {VIEW_LABELS[days] || `${days}D`}
                         </button>
                     ))}
                 </div>
@@ -94,9 +100,9 @@ export function Header({
                 {/* Add Task Button */}
                 <button
                     onClick={onAddTask}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm hover:shadow"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm hover:shadow"
                 >
-                    <Plus size={18} />
+                    <Plus size={14} />
                     Add Task
                 </button>
             </div>

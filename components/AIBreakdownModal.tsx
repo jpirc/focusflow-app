@@ -138,87 +138,87 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
             <div
-                className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+                className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-4 text-white">
+                <div className="bg-gradient-to-r from-purple-500 to-blue-500 px-4 py-3 text-white">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <div className="p-2 bg-white/20 rounded-lg">
-                                <Brain size={20} />
+                            <div className="p-1.5 bg-white/20 rounded-lg">
+                                <Brain size={16} />
                             </div>
                             <div>
-                                <h2 className="font-semibold">AI Task Breakdown</h2>
-                                <p className="text-sm text-white/80">Making "{task.title}" manageable</p>
+                                <h2 className="text-sm font-semibold">AI Task Breakdown</h2>
+                                <p className="text-xs text-white/80 truncate max-w-[200px]">"{task.title}"</p>
                             </div>
                         </div>
                         <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
-                            <X size={20} />
+                            <X size={16} />
                         </button>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="p-4 max-h-[60vh] overflow-y-auto">
+                <div className="p-3 max-h-[50vh] overflow-y-auto">
                     {isLoading ? (
-                        <div className="text-center py-12">
-                            <Loader2 size={40} className="mx-auto text-purple-500 animate-spin mb-4" />
-                            <p className="text-gray-600 font-medium">Analyzing your task...</p>
-                            <p className="text-sm text-gray-400 mt-1">Breaking it into bite-sized pieces</p>
+                        <div className="text-center py-8">
+                            <Loader2 size={32} className="mx-auto text-purple-500 animate-spin mb-3" />
+                            <p className="text-sm text-gray-600 font-medium">Analyzing task...</p>
+                            <p className="text-xs text-gray-400 mt-1">Breaking into bite-sized pieces</p>
                         </div>
                     ) : error ? (
-                        <div className="text-center py-8">
-                            <AlertTriangle size={40} className="mx-auto text-amber-500 mb-4" />
-                            <p className="text-gray-600">{error}</p>
+                        <div className="text-center py-6">
+                            <AlertTriangle size={32} className="mx-auto text-amber-500 mb-3" />
+                            <p className="text-sm text-gray-600">{error}</p>
                             <button
                                 onClick={generateBreakdown}
-                                className="mt-4 px-4 py-2 bg-gray-100 rounded-lg text-sm hover:bg-gray-200"
+                                className="mt-3 px-3 py-1.5 bg-gray-100 rounded-lg text-xs hover:bg-gray-200"
                             >
                                 Try Again
                             </button>
                         </div>
                     ) : suggestion ? (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             {/* Suggested subtasks */}
                             <div>
-                                <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                                    <Sparkles size={16} className="text-purple-500" />
+                                <h3 className="text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                                    <Sparkles size={12} className="text-purple-500" />
                                     Suggested Subtasks
                                 </h3>
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                     {suggestion.subtasks.map((subtask, i) => (
                                         <div
                                             key={i}
-                                            className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100"
+                                            className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-100"
                                         >
-                                            <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-medium">
+                                            <div className="w-5 h-5 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-[10px] font-medium flex-shrink-0">
                                                 {i + 1}
                                             </div>
-                                            <div className="flex-1">
-                                                <p className="text-sm text-gray-800">{subtask.title}</p>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs text-gray-800 truncate">{subtask.title}</p>
                                             </div>
-                                            <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
-                                                ~{subtask.estimatedMinutes}min
+                                            <span className="text-[10px] text-gray-500 bg-white px-1.5 py-0.5 rounded flex-shrink-0">
+                                                {subtask.estimatedMinutes}m
                                             </span>
                                         </div>
                                     ))}
                                 </div>
-                                <div className="mt-2 text-right text-sm text-gray-500">
-                                    Total: ~{suggestion.subtasks.reduce((sum, st) => sum + st.estimatedMinutes, 0)} minutes
+                                <div className="mt-1.5 text-right text-[10px] text-gray-500">
+                                    Total: ~{suggestion.subtasks.reduce((sum, st) => sum + st.estimatedMinutes, 0)} min
                                 </div>
                             </div>
 
                             {/* Tips */}
-                            <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
-                                <h4 className="text-sm font-medium text-amber-800 flex items-center gap-1.5 mb-2">
-                                    <Lightbulb size={14} />
-                                    Getting Started Tips
+                            <div className="bg-amber-50 rounded-lg p-2 border border-amber-100">
+                                <h4 className="text-[10px] font-medium text-amber-800 flex items-center gap-1 mb-1">
+                                    <Lightbulb size={10} />
+                                    Tips
                                 </h4>
-                                <ul className="space-y-1">
+                                <ul className="space-y-0.5">
                                     {suggestion.tips.map((tip, i) => (
-                                        <li key={i} className="text-xs text-amber-700 flex items-start gap-2">
-                                            <span className="text-amber-400 mt-0.5">•</span>
+                                        <li key={i} className="text-[10px] text-amber-700 flex items-start gap-1">
+                                            <span className="text-amber-400">•</span>
                                             {tip}
                                         </li>
                                     ))}
@@ -230,20 +230,20 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
 
                 {/* Footer */}
                 {!isLoading && suggestion && (
-                    <div className="p-4 border-t bg-gray-50 flex gap-2">
+                    <div className="px-3 py-2 border-t bg-gray-50 flex gap-2">
                         <button
                             onClick={generateBreakdown}
-                            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-white flex items-center justify-center gap-2"
+                            className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-white flex items-center justify-center gap-1.5"
                         >
-                            <RefreshCw size={16} />
+                            <RefreshCw size={12} />
                             Regenerate
                         </button>
                         <button
                             onClick={handleApply}
-                            className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:opacity-90 flex items-center justify-center gap-2 font-medium"
+                            className="flex-1 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:opacity-90 flex items-center justify-center gap-1.5 text-xs font-medium"
                         >
-                            <Check size={16} />
-                            Apply Breakdown
+                            <Check size={12} />
+                            Apply
                         </button>
                     </div>
                 )}

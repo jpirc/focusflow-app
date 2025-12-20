@@ -9,7 +9,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { Brain } from 'lucide-react';
+import { Brain, CheckCircle2, RotateCcw, Pencil } from 'lucide-react';
 
 // Hooks
 import { useTasks, useProjects } from '@/hooks';
@@ -19,6 +19,7 @@ import { Sidebar, Header } from '@/components/layout';
 import { TaskCard } from '@/components/TaskCard';
 import { TimeBlockColumn } from '@/components/TimeBlockColumn';
 import { UpcomingDayColumn } from '@/components/UpcomingDayColumn';
+import { CalendarView } from '@/components/CalendarView';
 import { AIBreakdownModal } from '@/components/AIBreakdownModal';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import { CreateProjectModal } from '@/components/CreateProjectModal';
@@ -59,8 +60,6 @@ export default function FocusFlowApp() {
         removeDependency,
         applyAIBreakdown,
         refreshTasks,
-        uncompleteToInbox,
-        clearFinishedTasks,
     } = useTasks({ isAuthenticated });
 
     const {
@@ -114,14 +113,6 @@ export default function FocusFlowApp() {
         [tasks, selectedProjectId]
     );
 
-    const finishedTasks = useMemo(() =>
-        tasks.filter(t =>
-            t.status === 'completed' &&
-            (!selectedProjectId || t.projectId === selectedProjectId)
-        ),
-        [tasks, selectedProjectId]
-    );
-
     // For week view (7 days), start from Sunday of current week
     const displayDays = useMemo(() => {
         const startDate = viewDays === 7 ? getWeekStart(currentDate) : currentDate;
@@ -134,6 +125,12 @@ export default function FocusFlowApp() {
                 t.status !== 'completed' &&
                 (!selectedProjectId || t.projectId === selectedProjectId)
             );
+            // Get completed tasks for this day (by completedAt date)
+            const completedTasks = tasks.filter(t => {
+                if (t.status !== 'completed' || !t.completedAt) return false;
+                const completedDate = formatDate(new Date(t.completedAt));
+                return completedDate === dateStr && (!selectedProjectId || t.projectId === selectedProjectId);
+            });
             return {
                 date,
                 dateStr,
@@ -141,6 +138,7 @@ export default function FocusFlowApp() {
                 isToday: isToday(dateStr),
                 isWeekend: isWeekend(date),
                 tasks: dayTasks,
+                completedTasks,
             };
         });
     }, [currentDate, viewDays, tasks, selectedProjectId]);
@@ -270,12 +268,9 @@ export default function FocusFlowApp() {
                 userName={session?.user?.name}
                 tasks={tasks}
                 inboxTasks={inboxTasks}
-                finishedTasks={finishedTasks}
                 selectedTaskId={selectedTaskId}
                 onSelectTask={setSelectedTaskId}
                 onStatusChange={updateStatus}
-                onUncompleteToInbox={uncompleteToInbox}
-                onClearFinished={clearFinishedTasks}
                 onToggleSubtask={toggleSubtask}
                 onStartDrag={handleStartDrag}
                 onDelete={deleteTask}
@@ -304,6 +299,18 @@ export default function FocusFlowApp() {
 
                 {/* Timeline View */}
                 <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 sm:p-3 lg:p-4">
+                    {viewDays === 30 ? (
+                        <CalendarView
+                            currentDate={currentDate}
+                            tasks={tasks}
+                            projects={projects}
+                            selectedProjectId={selectedProjectId}
+                            selectedTaskId={selectedTaskId}
+                            onSelectTask={setSelectedTaskId}
+                            onDrop={handleDrop}
+                            onEdit={handleEditTask}
+                        />
+                    ) : (
                     <div className="flex gap-2 sm:gap-3 lg:gap-4 h-full">
                         {/* Main Day Columns */}
                         <div className={`flex-1 flex h-full min-w-0 ${
@@ -364,6 +371,76 @@ export default function FocusFlowApp() {
                                                 compact={viewDays === 7}
                                             />
                                         ))}
+
+                                        {/* Completed Tasks for this day */}
+                                        {day.completedTasks.length > 0 && (
+                                            <div className={`rounded-lg border border-green-200 bg-green-50/50 ${viewDays === 7 ? 'p-1' : 'p-2'}`}>
+                                                <div className={`flex items-center gap-1 text-green-600 ${viewDays === 7 ? 'mb-0.5' : 'mb-1.5'}`}>
+                                                    <CheckCircle2 size={viewDays === 7 ? 10 : 12} />
+                                                    <span className={`font-medium ${viewDays === 7 ? 'text-[8px]' : 'text-[10px]'}`}>
+                                                        Done ({day.completedTasks.length})
+                                                    </span>
+                                                </div>
+                                                <div className={viewDays === 7 ? 'space-y-0.5' : 'space-y-1'}>
+                                                    {day.completedTasks.map(task => {
+                                                        const project = projects.find(p => p.id === task.projectId);
+                                                        return (
+                                                            <div
+                                                                key={task.id}
+                                                                className={`group relative flex items-center gap-1.5 ${viewDays === 7 ? 'py-0.5 px-1' : 'py-1 px-1.5'} bg-white/60 rounded border border-green-100 hover:bg-white transition-colors`}
+                                                            >
+                                                                <button
+                                                                    onClick={() => updateStatus(task.id, 'pending')}
+                                                                    className="flex-shrink-0 p-0.5 text-amber-500 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
+                                                                    title="Restore task"
+                                                                >
+                                                                    <RotateCcw size={viewDays === 7 ? 10 : 12} />
+                                                                </button>
+                                                                {project && (
+                                                                    <div 
+                                                                        className="w-1.5 h-1.5 rounded-full flex-shrink-0" 
+                                                                        style={{ backgroundColor: project.color }}
+                                                                    />
+                                                                )}
+                                                                <span 
+                                                                    className={`line-through text-gray-400 truncate flex-1 ${viewDays === 7 ? 'text-[8px]' : 'text-[10px]'}`}
+                                                                >
+                                                                    {task.title}
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => handleEditTask(task)}
+                                                                    className="flex-shrink-0 p-0.5 text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded transition-colors"
+                                                                    title="Edit task"
+                                                                >
+                                                                    <Pencil size={viewDays === 7 ? 10 : 12} />
+                                                                </button>
+                                                                {/* Hover tooltip with details */}
+                                                                {(task.description || task.estimatedMinutes || project) && viewDays !== 7 && (
+                                                                    <div className="absolute left-0 bottom-full mb-1 w-48 p-2 bg-gray-900 text-white text-[10px] rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                                                                        <div className="font-medium text-xs mb-1">{task.title}</div>
+                                                                        {task.description && (
+                                                                            <p className="text-gray-300 mb-1">{task.description}</p>
+                                                                        )}
+                                                                        <div className="flex items-center gap-2 text-gray-400">
+                                                                            {project && (
+                                                                                <span className="flex items-center gap-1">
+                                                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: project.color }} />
+                                                                                    {project.name}
+                                                                                </span>
+                                                                            )}
+                                                                            {task.estimatedMinutes && (
+                                                                                <span>{task.estimatedMinutes}m</span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="absolute left-4 bottom-0 translate-y-full border-4 border-transparent border-t-gray-900" />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -399,6 +476,7 @@ export default function FocusFlowApp() {
                             </div>
                         )}
                     </div>
+                    )}
                 </div>
             </div>
 

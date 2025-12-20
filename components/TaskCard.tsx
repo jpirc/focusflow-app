@@ -151,6 +151,9 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
     const showPriorityDot = task.priority === 'urgent' || task.priority === 'high';
     const priorityColor = task.priority === 'urgent' ? 'bg-red-500' : 'bg-orange-400';
 
+    // Check if there's meaningful content for tooltip
+    const hasTooltipContent = task.description || project.name || task.estimatedMinutes;
+
     return (
         <div
             draggable
@@ -172,6 +175,30 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                 backgroundColor: isSelected ? undefined : (project.id !== 'default' ? lightenColor(project.color, 0.95) : undefined),
             }}
         >
+            {/* Hover tooltip - shows description and details */}
+            {hasTooltipContent && !compact && (
+                <div className="absolute bottom-full left-0 right-0 mb-1.5 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none">
+                    <div className="bg-gray-900 text-white text-[10px] rounded-md shadow-lg p-2 max-w-[200px]">
+                        {task.description && (
+                            <p className="text-gray-200 leading-snug mb-1">{task.description}</p>
+                        )}
+                        <div className="flex items-center gap-2 text-gray-400">
+                            {project.name && project.id !== 'default' && (
+                                <span className="flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: project.color }}></span>
+                                    {project.name}
+                                </span>
+                            )}
+                            {task.estimatedMinutes && (
+                                <span>{task.estimatedMinutes}m</span>
+                            )}
+                            {task.energyLevel && (
+                                <span className="capitalize">{task.energyLevel} energy</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
             {task.aiGenerated && (
                 <div className="absolute -top-1.5 -left-1.5 bg-purple-500 text-white text-[8px] px-1 py-0.5 rounded-full flex items-center gap-0.5 z-10">
                     <Sparkles size={8} /> AI
@@ -205,7 +232,7 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                 <div className="flex-1 min-w-0">
                     {/* Title - wraps to multiple lines */}
                     <div className="flex items-start justify-between gap-1">
-                        <span className={`text-xs leading-tight ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                        <span className={`${compact ? 'text-[10px]' : 'text-xs'} leading-tight ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-800'}`}>
                             {task.title}
                         </span>
                         

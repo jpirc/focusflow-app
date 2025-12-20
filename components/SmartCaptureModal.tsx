@@ -84,51 +84,51 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-white rounded-lg shadow-2xl w-full max-w-2xl mx-4"
+        className="bg-white rounded-lg shadow-2xl w-full max-w-lg mx-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <Sparkles className="text-purple-500" size={24} />
-              <h2 className="text-xl font-semibold text-gray-900">Add Task</h2>
+              <Sparkles className="text-purple-500" size={18} />
+              <h2 className="text-base font-semibold text-gray-900">Add Task</h2>
             </div>
             <button
               onClick={onClose}
               className="p-1 hover:bg-gray-100 rounded transition-colors"
             >
-              <X size={20} className="text-gray-400" />
+              <X size={18} className="text-gray-400" />
             </button>
           </div>
 
-          <p className="text-sm text-gray-600 mb-4">
-            Type naturally – dates, times, and priorities are automatically detected.
+          <p className="text-xs text-gray-500 mb-2">
+            Type naturally – dates, times, and priorities are auto-detected.
           </p>
 
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="e.g., 'Call mom tomorrow morning' or 'Finish report by Friday afternoon - high priority'"
-            className="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+            placeholder="e.g., 'Call mom tomorrow morning' or 'Finish report by Friday - high priority'"
+            className="w-full h-28 p-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
             autoFocus
             disabled={isLoading}
           />
 
           {error && (
-            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
               {error}
             </div>
           )}
 
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-xs text-gray-500">
-              ⌘ + Enter to create tasks • ESC to cancel
+          <div className="flex items-center justify-between mt-3">
+            <p className="text-[10px] text-gray-400">
+              ⌘+Enter to create • ESC to cancel
             </p>
             <div className="flex gap-2">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 disabled={isLoading}
               >
                 Cancel
@@ -136,17 +136,17 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
               <button
                 onClick={handleSubmit}
                 disabled={!text.trim() || isLoading}
-                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-3 py-1.5 text-sm bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" />
+                    <Loader2 size={14} className="animate-spin" />
                     Creating...
                   </>
                 ) : (
                   <>
-                    <Sparkles size={16} />
-                    Create Tasks
+                    <Sparkles size={14} />
+                    Create
                   </>
                 )}
               </button>

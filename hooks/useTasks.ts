@@ -147,8 +147,9 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
     // ============================================
 
     const updateStatus = useCallback(async (id: string, status: TaskStatus) => {
-        // Optimistic update
-        setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+        // Optimistic update - set completedAt when completing
+        const completedAt = status === 'completed' ? new Date().toISOString() : null;
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, status, completedAt } : t));
 
         if (!isAuthenticated) return;
 
