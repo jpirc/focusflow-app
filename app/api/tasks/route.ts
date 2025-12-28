@@ -15,14 +15,15 @@ const createTaskSchema = z.object({
     description: z.string().optional(),
     projectId: z.string().optional(),
     parentTaskId: z.string().optional(),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.null()).optional(),
-    timeBlock: z.enum(['anytime', 'morning', 'afternoon', 'evening']).optional().or(z.null()).optional(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+    timeBlock: z.enum(['anytime', 'morning', 'afternoon', 'evening']).nullable().optional(),
     estimatedMinutes: z.number().optional(),
     priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
     energyLevel: z.enum(['low', 'medium', 'high']).optional(),
     icon: z.string().optional(),
     aiGenerated: z.boolean().optional(),
     completed: z.boolean().optional(),
+    status: z.enum(['pending', 'in-progress', 'completed', 'skipped', 'carried-over']).optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -130,6 +131,7 @@ export async function POST(req: NextRequest) {
         if (data!.icon !== undefined) taskData.icon = data!.icon;
         if (data!.aiGenerated !== undefined) taskData.aiGenerated = data!.aiGenerated;
         if (data!.completed !== undefined) taskData.completed = data!.completed;
+        if (data!.status !== undefined) taskData.status = data!.status;
 
         const task = await prisma.task.create({
             data: taskData,
