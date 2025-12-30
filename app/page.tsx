@@ -12,7 +12,7 @@ import { useSession } from 'next-auth/react';
 import { Brain, CheckCircle2, RotateCcw, Pencil } from 'lucide-react';
 
 // Hooks
-import { useTasks, useProjects } from '@/hooks';
+import { useTasks, useProjects, useCelebration } from '@/hooks';
 
 // Components
 import { Sidebar, Header } from '@/components/layout';
@@ -24,13 +24,14 @@ import { AIBreakdownModal } from '@/components/AIBreakdownModal';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import { CreateProjectModal } from '@/components/CreateProjectModal';
 import { SmartCaptureModal } from '@/components/SmartCaptureModal';
+import { CelebrationMessage } from '@/components/CelebrationMessage';
 
 // Utilities & Constants
 import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeekend } from '@/lib/utils/date';
 import { TIME_BLOCKS } from '@/lib/constants';
 
 // Types
-import { Task, Subtask, TimeBlock, DragItem } from '@/types';
+import { Task, Subtask, TimeBlock, DragItem, TaskStatus } from '@/types';
 
 // ============================================
 // Main Component
@@ -72,6 +73,18 @@ export default function FocusFlowApp() {
         deleteProject,
         getProjectById,
     } = useProjects({ isAuthenticated });
+
+    // Celebration system for task completion
+    const {
+        celebrate,
+        message: celebrationMessage,
+        todayStreak,
+        incrementStreak,
+    } = useCelebration({
+        enabled: true,
+        soundEnabled: false, // Can be made configurable via settings
+        intensity: 'normal',
+    });
 
     // ============================================
     // Local UI State
@@ -221,6 +234,15 @@ export default function FocusFlowApp() {
         console.log('Dragging', item);
     }, []);
 
+    // Wrap updateStatus to trigger celebration on completion
+    const handleStatusChange = useCallback((taskId: string, status: TaskStatus) => {
+        updateStatus(taskId, status);
+        if (status === 'completed') {
+            const newStreak = incrementStreak();
+            celebrate(newStreak);
+        }
+    }, [updateStatus, incrementStreak, celebrate]);
+
     const handleDrop = useCallback(async (taskId: string, targetDate: string, targetBlock: TimeBlock) => {
         await moveTask(taskId, targetDate, targetBlock);
     }, [moveTask]);
@@ -271,7 +293,7 @@ export default function FocusFlowApp() {
                 inboxTasks={inboxTasks}
                 selectedTaskId={selectedTaskId}
                 onSelectTask={setSelectedTaskId}
-                onStatusChange={updateStatus}
+                onStatusChange={handleStatusChange}
                 onPause={pauseTask}
                 onToggleSubtask={toggleSubtask}
                 onStartDrag={handleStartDrag}
@@ -297,6 +319,7 @@ export default function FocusFlowApp() {
                     viewDays={viewDays}
                     onViewDaysChange={setViewDays}
                     onAddTask={() => setSmartCaptureModalOpen(true)}
+                    todayStreak={todayStreak}
                 />
 
                 {/* Timeline View */}
@@ -362,7 +385,7 @@ export default function FocusFlowApp() {
                                                 projects={projects}
                                                 selectedTaskId={selectedTaskId}
                                                 onSelectTask={setSelectedTaskId}
-                                                onStatusChange={updateStatus}
+                                                onStatusChange={handleStatusChange}
                                                 onPause={pauseTask}
                                                 onToggleSubtask={toggleSubtask}
                                                 onStartDrag={handleStartDrag}
@@ -524,6 +547,9 @@ export default function FocusFlowApp() {
                 onClose={() => setSmartCaptureModalOpen(false)}
                 onTasksCreated={refreshTasks}
             />
+
+            {/* Celebration message overlay */}
+            <CelebrationMessage message={celebrationMessage} />
         </div>
     );
 }

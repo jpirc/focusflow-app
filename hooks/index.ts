@@ -4,3 +4,4 @@
 
 export { useTasks } from './useTasks';
 export { useProjects } from './useProjects';
+export { useCelebration } from './useCelebration';

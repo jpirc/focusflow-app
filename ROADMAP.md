@@ -428,11 +428,302 @@ model UserMetrics {
 ```
 
 ### Priority Order for Next Sprint
-1. **Auto-Rollover** (high impact, relatively simple)
-2. **Task Timer** (foundational for analytics)
+1. ~~**Auto-Rollover** (high impact, relatively simple)~~ ✅ DONE
+2. **Task Timer** (foundational for analytics) - IN PROGRESS
 3. **Task Age Tracking** (builds on existing timestamps)
 4. **Basic Notifications** (unlocks engagement)
 5. **Velocity Dashboard** (motivating, uses timer data)
+
+---
+
+## 🔥 ACTIVE SPRINT: Focus & Momentum (Dec 2024)
+
+The following features are prioritized for immediate implementation, ordered by impact and dependency.
+
+### Sprint Goals
+- Create external time structure (fight time blindness)
+- Provide dopamine/motivation (celebrations, streaks)
+- Reduce friction for capture (parking lot)
+- Add daily structure (Top 3, daily review)
+
+---
+
+### 1. Completion Celebrations 🎉
+**Status:** NOT STARTED | **Priority:** HIGH | **Effort:** LOW
+
+Dopamine hits when tasks are completed.
+
+**Implementation:**
+- [ ] Confetti animation on task completion (use canvas-confetti or CSS)
+- [ ] Optional sound effect (respect system preferences)
+- [ ] Encouraging messages rotation: "Nice!", "You're on fire!", "Crushed it!"
+- [ ] Streak counter in header: "🔥 5 tasks today"
+- [ ] Special celebration for completing all Top 3
+
+**Events to track:**
+- `celebration_shown` (type: confetti/sound/message, task_id, streak_count)
+
+**Files to modify:**
+- `hooks/useTasks.ts` - trigger celebration on status change to completed
+- `components/TaskCard.tsx` - visual feedback
+- `app/page.tsx` - streak counter display
+- `app/globals.css` - confetti animation
+
+**User settings needed:**
+- `celebrationsEnabled: boolean`
+- `celebrationSound: boolean`
+- `celebrationIntensity: 'subtle' | 'normal' | 'extra'`
+
+---
+
+### 2. Time Overrun Warnings ⏰
+**Status:** NOT STARTED | **Priority:** HIGH | **Effort:** LOW
+
+Visual cues when tasks exceed estimated time.
+
+**Implementation:**
+- [ ] Color change on elapsed time display:
+  - Green: < 100% of estimate
+  - Yellow: 100-150% of estimate
+  - Orange: 150-200% of estimate
+  - Red: > 200% of estimate
+- [ ] Pulsing animation when overrun
+- [ ] Tooltip: "This task was estimated at 30m, you've been working for 45m"
+- [ ] Optional notification at 100% and 150%
+
+**Events to track:**
+- `time_warning_triggered` (task_id, warning_level, elapsed_minutes, estimated_minutes)
+
+**Files to modify:**
+- `components/TaskCard.tsx` - enhance existing elapsed time display
+- `lib/constants.ts` - add warning thresholds
+
+---
+
+### 3. Parking Lot Quick Capture 🅿️
+**Status:** NOT STARTED | **Priority:** HIGH | **Effort:** LOW
+
+Capture intrusive thoughts without derailing focus.
+
+**Implementation:**
+- [ ] New "Parking Lot" section in sidebar (separate from Inbox)
+- [ ] Super minimal capture: just title, one click/keystroke
+- [ ] Keyboard shortcut: `Cmd+Shift+P`
+- [ ] Visual distinction from regular tasks (dashed border, gray)
+- [ ] "Process Parking Lot" prompt during daily planning
+- [ ] Convert to real task or delete
+
+**Database:**
+- Add `isParkingLot: Boolean @default(false)` to Task model
+- OR create separate `ParkingLotItem` model (simpler, less clutter)
+
+**Events to track:**
+- `parking_lot_captured` (during_focus_session: boolean, time_of_day)
+- `parking_lot_processed` (action: 'converted' | 'deleted' | 'kept')
+
+**Files to modify:**
+- `prisma/schema.prisma` - add field or model
+- `components/layout/Sidebar.tsx` - add Parking Lot section
+- `hooks/useTasks.ts` or new `useParkingLot.ts` hook
+- `app/api/parking-lot/route.ts` - new API endpoint
+
+---
+
+### 4. Top 3 Daily Priorities ⭐
+**Status:** NOT STARTED | **Priority:** HIGH | **Effort:** MEDIUM
+
+Force prioritization to reduce overwhelm.
+
+**Implementation:**
+- [ ] Morning prompt modal: "What are your 3 must-dos today?"
+- [ ] Star/pin indicator on priority tasks (⭐ badge)
+- [ ] Top 3 section at top of today's column
+- [ ] End-of-day check: "You completed 2/3 priorities!"
+- [ ] Track Top 3 completion rate in analytics
+
+**Database:**
+- Add `isTopPriority: Boolean @default(false)` to Task model
+- Add `topPriorityDate: String?` (the date it was marked as Top 3)
+
+**Events to track:**
+- `daily_priorities_set` (task_ids[], time_of_day, day_of_week)
+- `daily_priorities_completed` (completed_count, total: 3)
+
+**UI Components:**
+- `components/DailyPrioritiesModal.tsx` - morning prompt
+- `components/TopThreeSection.tsx` - display in day column
+
+**Files to modify:**
+- `prisma/schema.prisma`
+- `app/page.tsx` - trigger morning prompt, show Top 3 section
+- `components/TaskCard.tsx` - star badge
+- `hooks/useTasks.ts` - mark as Top 3 functions
+
+---
+
+### 5. Focus Timer (Pomodoro) 🍅
+**Status:** NOT STARTED | **Priority:** HIGH | **Effort:** MEDIUM
+
+External time structure for focus sessions.
+
+**Implementation:**
+- [ ] Timer presets: 25m, 15m, 5m, custom
+- [ ] Large visible countdown (header bar or floating widget)
+- [ ] Start from task card or global button
+- [ ] Link to specific task (optional)
+- [ ] Break reminder when timer ends
+- [ ] Track focus sessions
+
+**Database:**
+```prisma
+model FocusSession {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  taskId        String?
+  task          Task?     @relation(fields: [taskId], references: [id])
+  plannedMinutes Int
+  actualMinutes  Int?
+  startedAt     DateTime  @default(now())
+  endedAt       DateTime?
+  completedNaturally Boolean @default(false)
+  createdAt     DateTime  @default(now())
+}
+```
+
+**Events to track:**
+- `focus_session_started` (duration, task_id, time_of_day)
+- `focus_session_completed` (actual_duration, completed_naturally)
+- `focus_session_abandoned` (duration_before_quit)
+- `break_started` (after_focus_session: boolean)
+
+**UI Components:**
+- `components/FocusTimer.tsx` - the timer UI
+- `components/FocusTimerWidget.tsx` - floating/header version
+- `hooks/useFocusTimer.ts` - timer state management
+
+---
+
+### 6. Quick Win Suggestions 💨
+**Status:** NOT STARTED | **Priority:** MEDIUM | **Effort:** LOW
+
+Surface short tasks when energy is low.
+
+**Implementation:**
+- [ ] "Need a quick win?" section (tasks < 15 min)
+- [ ] Show after completing a task: "Nice! Here's another quick one..."
+- [ ] Filter by: shortest, oldest, or blocking others
+- [ ] Energy-appropriate (show low-energy tasks in evening)
+
+**Events to track:**
+- `quick_win_suggested` (task_id, context, time_of_day)
+- `quick_win_accepted` (task_id)
+- `quick_win_dismissed`
+
+**Files to modify:**
+- `app/page.tsx` - quick win section/modal
+- `lib/intelligence/suggestions.ts` - add quick win suggestion type
+
+---
+
+### 7. Daily Review Prompt 📝
+**Status:** NOT STARTED | **Priority:** MEDIUM | **Effort:** MEDIUM
+
+End-of-day reflection for self-awareness.
+
+**Implementation:**
+- [ ] Evening prompt (trigger at 6pm or manually)
+- [ ] Quick mood check: 😫 😕 😐 🙂 😊
+- [ ] "What went well?" / "What was hard?" text fields (optional)
+- [ ] Show completion stats for the day
+- [ ] Suggest moving incomplete tasks
+- [ ] Save reflection for analytics
+
+**Database:**
+```prisma
+model DailyReview {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  date         String   // YYYY-MM-DD
+  mood         Int?     // 1-5
+  wentWell     String?
+  wasHard      String?
+  tasksCompleted Int
+  tasksPending   Int
+  createdAt    DateTime @default(now())
+}
+```
+
+**Events to track:**
+- `daily_review_completed` (mood, has_reflection, tasks_completed)
+- `daily_review_skipped`
+
+---
+
+### 8. "I'm Stuck" Button 🆘
+**Status:** NOT STARTED | **Priority:** MEDIUM | **Effort:** MEDIUM
+
+One-click help for procrastinated tasks.
+
+**Implementation:**
+- [ ] Button on task card menu: "I'm stuck"
+- [ ] AI analyzes task and suggests:
+  - Break it down into smaller steps
+  - Change the time/energy level
+  - "Just start for 5 minutes"
+  - Delegate or drop it
+- [ ] Track which suggestions work
+
+**Events to track:**
+- `stuck_button_pressed` (task_id, rollover_count, time_on_task)
+- `stuck_suggestion_shown` (suggestion_type)
+- `stuck_suggestion_accepted` (suggestion_type, did_complete_after)
+
+**Files to modify:**
+- `components/TaskCard.tsx` - add stuck button to menu
+- `components/StuckHelperModal.tsx` - new modal
+- `lib/ai/stuck-helper.ts` - AI prompt logic
+
+---
+
+## 📊 Event Tracking Status
+
+Ensure these events are tracked before building analytics features:
+
+**Currently Tracked:**
+- [x] `task_created`
+- [x] `task_completed`
+- [x] `task_started`
+- [x] `task_paused`
+- [x] `task_moved`
+- [x] `subtask_completed`
+- [x] `timer_started` (defined, may not be active)
+
+**Need to Add:**
+- [ ] `focus_session_started`
+- [ ] `focus_session_completed`
+- [ ] `focus_session_abandoned`
+- [ ] `daily_priorities_set`
+- [ ] `daily_review_completed`
+- [ ] `stuck_button_pressed`
+- [ ] `quick_win_suggested`
+- [ ] `parking_lot_captured`
+- [ ] `celebration_shown`
+- [ ] `time_warning_triggered`
+
+---
+
+## 📈 Success Metrics
+
+| Metric | Target | How to Measure |
+|--------|--------|----------------|
+| Task completion rate | +20% | Completed / Created per week |
+| Estimation accuracy | < 30% variance | Actual vs Estimated time |
+| Daily return rate | > 70% | Users active 5+ days/week |
+| Focus session completion | > 60% | Completed / Started |
+| Top 3 completion | > 50% | Days with all 3 done |
+| Rollover reduction | -30% | Avg rollover count trend |
 
 ---
 
@@ -448,4 +739,4 @@ When ready to implement a feature:
 
 ---
 
-_Last updated: December 19, 2025_
+_Last updated: December 30, 2024_

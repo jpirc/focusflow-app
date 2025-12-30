@@ -157,6 +157,41 @@ kbd {
   box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
+/* Celebration animations */
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.3) translateY(20px);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.05) translateY(-10px);
+  }
+  70% {
+    transform: translateX(-50%) scale(0.95) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1) translateY(0);
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.5s ease-out;
+}
+
+@keyframes streak-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(249, 115, 22, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.8);
+  }
+}
+
+.animate-streak-glow {
+  animation: streak-glow 2s ease-in-out infinite;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,

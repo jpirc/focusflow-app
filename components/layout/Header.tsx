@@ -5,7 +5,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Plus, Flame } from 'lucide-react';
 import { addDays, getWeekStart } from '@/lib/utils/date';
 import { VIEW_DAY_OPTIONS } from '@/lib/constants';
 
@@ -23,6 +23,8 @@ interface HeaderProps {
     viewDays: number;
     onViewDaysChange: (days: number) => void;
     onAddTask: () => void;
+    /** Today's completed task streak count */
+    todayStreak?: number;
 }
 
 export function Header({
@@ -31,10 +33,25 @@ export function Header({
     viewDays,
     onViewDaysChange,
     onAddTask,
+    todayStreak = 0,
 }: HeaderProps) {
     return (
         <header className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
             <div className="flex items-center gap-3">
+                {/* Today's Streak Counter */}
+                {todayStreak > 0 && (
+                    <div
+                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
+                            todayStreak >= 5
+                                ? 'bg-orange-100 text-orange-600 animate-streak-glow'
+                                : 'bg-gray-100 text-gray-600'
+                        }`}
+                        title={`${todayStreak} task${todayStreak > 1 ? 's' : ''} completed today!`}
+                    >
+                        <Flame size={14} className={todayStreak >= 5 ? 'text-orange-500' : 'text-gray-400'} />
+                        <span>{todayStreak}</span>
+                    </div>
+                )}
                 {/* Date Navigation */}
                 <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                     <button
