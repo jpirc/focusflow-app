@@ -127,6 +127,7 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
     const [showMenu, setShowMenu] = useState(false);
     const [menuStyle, setMenuStyle] = useState<{ top: number; left: number } | null>(null);
     const [elapsedMinutes, setElapsedMinutes] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
     const menuButtonRef = useRef<HTMLButtonElement | null>(null);
 
     const dependencyTasks = (task.dependsOn || []).map(id => allTasks.find(t => t.id === id)).filter(Boolean as any);
@@ -178,14 +179,28 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
             onDragStart={(e) => {
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/plain', task.id);
+                // Create a custom drag image from just this element
+                const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
+                dragImage.style.position = 'absolute';
+                dragImage.style.top = '-1000px';
+                dragImage.style.opacity = '0.9';
+                dragImage.style.transform = 'rotate(2deg)';
+                dragImage.style.maxWidth = '250px';
+                document.body.appendChild(dragImage);
+                e.dataTransfer.setDragImage(dragImage, 20, 20);
+                // Clean up the cloned element after drag starts
+                setTimeout(() => document.body.removeChild(dragImage), 0);
+                setIsDragging(true);
                 onStartDrag({ taskId: task.id, sourceDate: task.date, sourceTimeBlock: task.timeBlock });
             }}
+            onDragEnd={() => setIsDragging(false)}
             onClick={() => onSelect(task.id)}
             className={[
                 'group relative rounded-md border-l-3 transition-all duration-150 cursor-grab active:cursor-grabbing',
                 isSelected ? 'ring-2 ring-purple-400 ring-offset-1 bg-purple-50/50' : 'hover:bg-gray-50/80',
                 task.status === 'completed' ? 'opacity-50' : '',
                 hasBlockingDeps ? 'border-r border-r-amber-400 border-dashed' : '',
+                isDragging ? 'opacity-50 scale-95' : '',
             ].filter(Boolean).join(' ')}
             style={{ 
                 borderLeftColor: project.color,

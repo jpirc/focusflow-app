@@ -97,11 +97,27 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+
     const session = await getAuthSession();
     if (!session?.user?.id) return unauthorizedResponse();
 
-    const { data, error } = await validateRequest(req, createTaskSchema);
-    if (error) return error;
+    // Log the raw request body for debugging
+    let rawBody = null;
+    try {
+        rawBody = await req.json();
+        console.log('TASK CREATE RAW BODY:', JSON.stringify(rawBody));
+    } catch (e) {
+        console.log('TASK CREATE: Failed to parse JSON body');
+    }
+
+    // Re-parse the request for validation (since req.json() can only be called once)
+    const req2 = new Request(req.url, { method: req.method, headers: req.headers, body: rawBody ? JSON.stringify(rawBody) : undefined });
+    const { data, error } = await validateRequest(req2, createTaskSchema);
+    if (error) {
+        // Log the Zod error details for debugging
+        console.log('TASK CREATE ZOD ERROR:', JSON.stringify(error));
+        return error;
+    }
 
     try {
         // Build data object with only defined values
