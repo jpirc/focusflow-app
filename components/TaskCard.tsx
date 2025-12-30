@@ -173,6 +173,24 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
     // Check if there's meaningful content for tooltip
     const hasTooltipContent = task.description || project.name || task.estimatedMinutes;
 
+    // Calculate time overrun status for in-progress tasks
+    const getTimeStatus = () => {
+        if (task.status !== 'in-progress' || !task.estimatedMinutes || elapsedMinutes === 0) {
+            return { level: 'normal', color: 'text-blue-500', bgColor: 'bg-blue-50', pulse: false };
+        }
+        const percentage = (elapsedMinutes / task.estimatedMinutes) * 100;
+        if (percentage < 100) {
+            return { level: 'normal', color: 'text-blue-500', bgColor: 'bg-blue-50', pulse: false };
+        } else if (percentage < 150) {
+            return { level: 'warning', color: 'text-yellow-600', bgColor: 'bg-yellow-50', pulse: false };
+        } else if (percentage < 200) {
+            return { level: 'overrun', color: 'text-orange-600', bgColor: 'bg-orange-50', pulse: true };
+        } else {
+            return { level: 'critical', color: 'text-red-600', bgColor: 'bg-red-50', pulse: true };
+        }
+    };
+    const timeStatus = getTimeStatus();
+
     return (
         <div
             draggable
@@ -271,11 +289,20 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                         
                         {/* Inline indicators */}
                         <div className="flex items-center gap-1 flex-shrink-0 text-[9px] text-gray-400">
-                            {/* Elapsed time for in-progress tasks */}
+                            {/* Elapsed time for in-progress tasks with overrun warnings */}
                             {task.status === 'in-progress' && task.startedAt && (
-                                <span className="flex items-center gap-0.5 text-blue-500 font-medium">
-                                    <Clock size={9} className="animate-pulse" />
+                                <span
+                                    className={`flex items-center gap-0.5 font-medium px-1 py-0.5 rounded ${timeStatus.color} ${timeStatus.bgColor} ${timeStatus.pulse ? 'animate-pulse' : ''}`}
+                                    title={task.estimatedMinutes
+                                        ? `Estimated: ${task.estimatedMinutes}m • Elapsed: ${elapsedMinutes}m${timeStatus.level !== 'normal' ? ` (${Math.round((elapsedMinutes / task.estimatedMinutes) * 100)}% of estimate)` : ''}`
+                                        : `Elapsed: ${elapsedMinutes}m`
+                                    }
+                                >
+                                    <Clock size={9} />
                                     {elapsedMinutes}m
+                                    {task.estimatedMinutes && timeStatus.level !== 'normal' && (
+                                        <span className="text-[8px] opacity-75">/{task.estimatedMinutes}m</span>
+                                    )}
                                 </span>
                             )}
                             {(task.rolloverCount || 0) > 0 && task.status !== 'completed' && (
