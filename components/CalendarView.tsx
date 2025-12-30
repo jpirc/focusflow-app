@@ -27,7 +27,9 @@ interface CalendarDay {
     isCurrentMonth: boolean;
     isToday: boolean;
     isWeekend: boolean;
+    isPast: boolean;
     tasks: Task[];
+    completedCount: number;
 }
 
 export function CalendarView({
@@ -63,6 +65,9 @@ export function CalendarView({
         const days: CalendarDay[] = [];
         const current = new Date(startDate);
         
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         while (current <= endDate) {
             const dateStr = formatDate(current);
             const dayTasks = tasks.filter(t =>
@@ -70,7 +75,17 @@ export function CalendarView({
                 t.status !== 'completed' &&
                 (!selectedProjectId || t.projectId === selectedProjectId)
             );
-            
+
+            // Count tasks completed on this day (by completedAt date)
+            const completedCount = tasks.filter(t => {
+                if (t.status !== 'completed' || !t.completedAt) return false;
+                const completedDate = formatDate(new Date(t.completedAt));
+                return completedDate === dateStr && (!selectedProjectId || t.projectId === selectedProjectId);
+            }).length;
+
+            const currentDay = new Date(current);
+            currentDay.setHours(0, 0, 0, 0);
+
             days.push({
                 date: new Date(current),
                 dateStr,
@@ -78,9 +93,11 @@ export function CalendarView({
                 isCurrentMonth: current.getMonth() === month,
                 isToday: isToday(dateStr),
                 isWeekend: isWeekend(current),
+                isPast: currentDay < today,
                 tasks: dayTasks,
+                completedCount,
             });
-            
+
             current.setDate(current.getDate() + 1);
         }
         
@@ -140,20 +157,32 @@ export function CalendarView({
                         onDragLeave={() => setDragOverDate(null)}
                         onDrop={(e) => handleDrop(e, day.dateStr)}
                     >
-                        {/* Day number */}
-                        <div className={`text-[10px] font-medium px-1 py-0.5 ${
-                            day.isToday
-                                ? 'text-purple-600 font-bold'
-                                : !day.isCurrentMonth
-                                    ? 'text-gray-300'
-                                    : 'text-gray-600'
-                        }`}>
-                            {day.isToday ? (
-                                <span className="bg-purple-600 text-white rounded-full px-1.5 py-0.5">
-                                    {day.dayOfMonth}
-                                </span>
-                            ) : (
-                                day.dayOfMonth
+                        {/* Day header with number and completed badge */}
+                        <div className="flex items-center justify-between px-1 py-0.5">
+                            <div className={`text-[10px] font-medium ${
+                                day.isToday
+                                    ? 'text-purple-600 font-bold'
+                                    : !day.isCurrentMonth
+                                        ? 'text-gray-300'
+                                        : 'text-gray-600'
+                            }`}>
+                                {day.isToday ? (
+                                    <span className="bg-purple-600 text-white rounded-full px-1.5 py-0.5">
+                                        {day.dayOfMonth}
+                                    </span>
+                                ) : (
+                                    day.dayOfMonth
+                                )}
+                            </div>
+                            {/* Completed tasks badge for past days */}
+                            {day.completedCount > 0 && (day.isPast || day.isToday) && (
+                                <div
+                                    className="flex items-center gap-0.5 text-[9px] text-green-600 bg-green-50 px-1 py-0.5 rounded"
+                                    title={`${day.completedCount} task${day.completedCount > 1 ? 's' : ''} completed`}
+                                >
+                                    <CheckCircle2 size={9} />
+                                    <span>{day.completedCount}</span>
+                                </div>
                             )}
                         </div>
 
