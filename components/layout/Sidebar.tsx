@@ -174,6 +174,7 @@ export function Sidebar({
                                         task={task}
                                         project={getProjectById(task.projectId)}
                                         allTasks={tasks}
+                                        allProjects={projects}
                                         isSelected={selectedTaskId === task.id}
                                         onSelect={onSelectTask}
                                         onUpdate={onUpdate}

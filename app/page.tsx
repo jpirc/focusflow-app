@@ -33,7 +33,7 @@ import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeeken
 import { TIME_BLOCKS } from '@/lib/constants';
 
 // Types
-import { Task, Subtask, TimeBlock, DragItem, TaskStatus } from '@/types';
+import { Task, Subtask, TimeBlock, DragItem, TaskStatus, Project } from '@/types';
 
 // ============================================
 // Main Component
@@ -395,7 +395,7 @@ export default function FocusFlowApp() {
                 onUpdateProject={(id, updates) => {
                     const project = projects.find(p => p.id === id);
                     if (project) {
-                        setEditingProject({ id: project.id, name: updates.name || project.name, color: updates.color || project.color, icon: updates.icon || project.icon });
+                        setEditingProject({ ...project, name: updates.name || project.name, color: updates.color || project.color, icon: updates.icon || project.icon });
                         setCreateProjectModalOpen(true);
                     }
                     return Promise.resolve(true);

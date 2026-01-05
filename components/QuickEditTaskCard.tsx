@@ -683,7 +683,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     };
 
     const handleTimeChange = (estimatedMinutes: number | null) => {
-        onUpdate(task.id, { estimatedMinutes });
+        onUpdate(task.id, { estimatedMinutes: estimatedMinutes ?? undefined });
     };
 
     const handleProjectChange = (projectId: string) => {
