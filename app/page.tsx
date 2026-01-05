@@ -454,7 +454,24 @@ export default function FocusFlowApp() {
 
                                     {/* Time Blocks */}
                                     <div className={`flex-1 overflow-y-auto pr-0.5 pb-2 ${viewDays === 7 ? 'space-y-0.5' : 'space-y-2'}`}>
-                                        {TIME_BLOCKS.map(block => (
+                                        {TIME_BLOCKS
+                                            .filter(block => {
+                                                // For today, hide past time blocks
+                                                if (!day.isToday) return true;
+                                                
+                                                const now = new Date();
+                                                const currentHour = now.getHours();
+                                                
+                                                // Hide morning (6-12) if it's past noon
+                                                if (block.id === 'morning' && currentHour >= 12) return false;
+                                                // Hide afternoon (12-17) if it's past 5pm
+                                                if (block.id === 'afternoon' && currentHour >= 17) return false;
+                                                // Hide evening (17-22) if it's past 10pm
+                                                if (block.id === 'evening' && currentHour >= 22) return false;
+                                                
+                                                return true;
+                                            })
+                                            .map(block => (
                                             <TimeBlockColumn
                                                 key={`${day.dateStr}-${block.id}`}
                                                 block={block}

@@ -12,6 +12,7 @@ import { VIEW_DAY_OPTIONS } from '@/lib/constants';
 // Label mapping for view options
 const VIEW_LABELS: Record<number, string> = {
     1: '1 Day',
+    2: '2 Days',
     3: '3 Days',
     7: 'Week',
     30: 'Month',
@@ -95,11 +96,11 @@ export function Header({
                                 onViewDaysChange(days);
                                 const today = new Date();
                                 today.setHours(0, 0, 0, 0);
-                                // For 1-day and 3-day views, snap to today
+                                // For 1-day, 2-day, and 3-day views, snap to today
                                 // For week view, snap to start of week
                                 if (days === 7) {
                                     onDateChange(getWeekStart(today));
-                                } else if (days === 1 || days === 3) {
+                                } else if (days === 1 || days === 2 || days === 3) {
                                     onDateChange(today);
                                 }
                             }}
