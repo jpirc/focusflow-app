@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { Settings, LogOut, MoreVertical, ChevronDown, ChevronRight, Inbox, FolderKanban, PanelLeftClose, PanelLeft, BarChart3 } from 'lucide-react';
 import { Task, Project } from '@/types';
-import { TaskCard } from '@/components/TaskCard';
+import { QuickEditTaskCard } from '@/components/QuickEditTaskCard';
 
 interface SidebarProps {
     // State
@@ -24,6 +24,7 @@ interface SidebarProps {
     onSelectTask: (id: string | null) => void;
 
     // Task handlers
+    onUpdate: (id: string, updates: Partial<Task>) => void;
     onStatusChange: (id: string, status: any) => void;
     onPause: (id: string) => void;
     onToggleSubtask: (taskId: string, subtaskId: string) => void;
@@ -51,6 +52,7 @@ export function Sidebar({
     inboxTasks,
     selectedTaskId,
     onSelectTask,
+    onUpdate,
     onStatusChange,
     onPause,
     onToggleSubtask,
@@ -170,13 +172,14 @@ export function Sidebar({
                         {isOpen && !inboxCollapsed && (
                             <div className="space-y-2 mt-2">
                                 {inboxTasks.map(task => (
-                                    <TaskCard
+                                    <QuickEditTaskCard
                                         key={task.id}
                                         task={task}
                                         project={getProjectById(task.projectId)}
                                         allTasks={tasks}
                                         isSelected={selectedTaskId === task.id}
                                         onSelect={onSelectTask}
+                                        onUpdate={onUpdate}
                                         onStatusChange={onStatusChange}
                                         onPause={onPause}
                                         onToggleSubtask={onToggleSubtask}

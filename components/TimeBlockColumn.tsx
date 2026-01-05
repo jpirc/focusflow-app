@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Task, Project, Subtask, TaskStatus, TimeBlock, DragItem, TimeBlockConfig } from '../types';
-import { TaskCard } from './TaskCard';
+import { QuickEditTaskCard } from './QuickEditTaskCard';
 
 interface TimeBlockColumnProps {
     block: TimeBlockConfig;
@@ -10,6 +10,7 @@ interface TimeBlockColumnProps {
     date: string;
     selectedTaskId: string | null;
     onSelectTask: (id: string) => void;
+    onUpdate: (id: string, updates: Partial<Task>) => void;
     onStatusChange: (id: string, status: TaskStatus) => void;
     onPause: (id: string) => void;
     onToggleSubtask: (taskId: string, subtaskId: string) => void;
@@ -24,7 +25,7 @@ interface TimeBlockColumnProps {
 
 export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
     block, tasks, allTasks, projects, date, selectedTaskId,
-    onSelectTask, onStatusChange, onPause, onToggleSubtask, onStartDrag, onDrop, onDelete,
+    onSelectTask, onUpdate, onStatusChange, onPause, onToggleSubtask, onStartDrag, onDrop, onDelete,
     onAIBreakdown, onUpdateSubtasks, onEdit, compact = false
 }) => {
     const [isDragOver, setIsDragOver] = useState(false);
@@ -90,13 +91,14 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
                 {tasks.map(task => {
                     const project = projects.find(p => p.id === task.projectId) || { id: 'default', name: 'No Project', color: '#6b7280', bgColor: '#f3f4f6', icon: 'folder' };
                     return (
-                        <TaskCard
+                        <QuickEditTaskCard
                             key={task.id}
                             task={task}
                             project={project}
                             allTasks={allTasks}
                             isSelected={selectedTaskId === task.id}
                             onSelect={onSelectTask}
+                            onUpdate={onUpdate}
                             onStatusChange={onStatusChange}
                             onPause={onPause}
                             onToggleSubtask={onToggleSubtask}

@@ -16,7 +16,7 @@ import { useTasks, useProjects, useCelebration } from '@/hooks';
 
 // Components
 import { Sidebar, Header } from '@/components/layout';
-import { TaskCard } from '@/components/TaskCard';
+import { QuickEditTaskCard } from '@/components/QuickEditTaskCard';
 import { TimeBlockColumn } from '@/components/TimeBlockColumn';
 import { UpcomingDayColumn } from '@/components/UpcomingDayColumn';
 import { CalendarView } from '@/components/CalendarView';
@@ -358,6 +358,7 @@ export default function FocusFlowApp() {
                 inboxTasks={inboxTasks}
                 selectedTaskId={selectedTaskId}
                 onSelectTask={setSelectedTaskId}
+                onUpdate={updateTask}
                 onStatusChange={handleStatusChange}
                 onPause={pauseTask}
                 onToggleSubtask={toggleSubtask}
@@ -463,6 +464,7 @@ export default function FocusFlowApp() {
                                                 projects={projects}
                                                 selectedTaskId={selectedTaskId}
                                                 onSelectTask={setSelectedTaskId}
+                                                onUpdate={updateTask}
                                                 onStatusChange={handleStatusChange}
                                                 onPause={pauseTask}
                                                 onToggleSubtask={toggleSubtask}
