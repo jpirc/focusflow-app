@@ -579,6 +579,18 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                     {/* Quick actions - show on hover */}
                     {!compact && (
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        {!isCompleted && task.status !== 'in-progress' && !hasBlockingDeps && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onStatusChange(task.id, 'in-progress');
+                                }}
+                                className="p-1 rounded hover:bg-blue-100 text-gray-400 hover:text-blue-600 transition-colors"
+                                title="Start task (track time)"
+                            >
+                                <Play size={14} />
+                            </button>
+                        )}
                         {!isCompleted && (
                             <button
                                 onClick={(e) => {
