@@ -4,12 +4,22 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Brain, LogOut, ArrowLeft, Mail } from 'lucide-react';
+import { Brain, LogOut, ArrowLeft, Mail, Eye } from 'lucide-react';
+import { VIEW_DAY_OPTIONS } from '@/lib/constants';
 
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [defaultViewDays, setDefaultViewDays] = useState(2);
+
+  // Load default view preference
+  useEffect(() => {
+    const saved = localStorage.getItem('defaultViewDays');
+    if (saved) {
+      setDefaultViewDays(parseInt(saved, 10));
+    }
+  }, []);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -34,6 +44,11 @@ export default function SettingsPage() {
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: '/login' });
+  };
+
+  const handleViewDaysChange = (days: number) => {
+    setDefaultViewDays(days);
+    localStorage.setItem('defaultViewDays', days.toString());
   };
 
   return (
@@ -102,6 +117,38 @@ export default function SettingsPage() {
                   {session?.user?.email?.includes('@') ? 'Email/Credentials' : 'OAuth Provider'}
                 </span>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Preferences Section */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-6">Preferences</h2>
+
+          <div className="space-y-4">
+            {/* Default View */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Default Calendar View
+              </label>
+              <div className="flex items-center gap-2 flex-wrap">
+                {VIEW_DAY_OPTIONS.map((days) => (
+                  <button
+                    key={days}
+                    onClick={() => handleViewDaysChange(days)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      defaultViewDays === days
+                        ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                        : 'bg-gray-100 text-gray-700 border-2 border-transparent hover:bg-gray-200'
+                    }`}
+                  >
+                    {days} {days === 1 ? 'Day' : 'Days'}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Choose how many days to show when you open FocusFlow
+              </p>
             </div>
           </div>
         </div>

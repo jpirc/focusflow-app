@@ -11,6 +11,29 @@ import { Settings, LogOut, MoreVertical, ChevronDown, ChevronRight, Inbox, Folde
 import { Task, Project } from '@/types';
 import { QuickEditTaskCard } from '@/components/QuickEditTaskCard';
 
+const projectIconMap: Record<string, string> = {
+    // Work & Business
+    briefcase: '💼', laptop: '💻', chart: '📊', calendar: '📅', clipboard: '📋',
+    phone: '📱', email: '📧', rocket: '🚀',
+    // Learning & Knowledge
+    book: '📚', graduation: '🎓', lightbulb: '💡', pencil: '✏️', notebook: '📓', microscope: '🔬',
+    // Life & Health
+    heart: '❤️', dumbbell: '💪', apple: '🍎', yoga: '🧘', running: '🏃', bicycle: '🚴',
+    // Home & Family
+    home: '🏠', family: '👨‍👩‍👧‍👦', baby: '👶', pet: '🐕', plant: '🌱', cooking: '🍳',
+    // Creative & Hobbies
+    art: '🎨', music: '🎵', camera: '📷', game: '🎮', guitar: '🎸', movie: '🎬',
+    // Finance & Money
+    money: '💰', bank: '🏦', 'chart-up': '📈', piggy: '🐷', 'credit-card': '💳',
+    // Goals & Targets
+    target: '🎯', trophy: '🏆', star: '⭐', fire: '🔥', gem: '💎', crown: '👑',
+    // Travel & Adventure
+    plane: '✈️', world: '🌍', beach: '🏖️', mountain: '⛰️', camping: '🏕️',
+    // General & Misc
+    folder: '📁', coffee: '☕', pizza: '🍕', gift: '🎁', balloon: '🎈',
+    sunny: '☀️', moon: '🌙', rainbow: '🌈',
+};
+
 interface SidebarProps {
     // State
     isOpen: boolean;
@@ -39,7 +62,7 @@ interface SidebarProps {
     selectedProjectId: string | null;
     onSelectProject: (id: string | null) => void;
     onCreateProject: () => void;
-    onUpdateProject: (id: string, name: string) => Promise<boolean>;
+    onUpdateProject: (id: string, updates: { name?: string; color?: string; icon?: string }) => Promise<boolean>;
     onDeleteProject: (id: string) => void;
     getProjectById: (id: string | undefined) => Project;
 }
@@ -69,39 +92,13 @@ export function Sidebar({
     onDeleteProject,
     getProjectById,
 }: SidebarProps) {
-    // Project editing state
-    const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
-    const [editingProjectName, setEditingProjectName] = useState('');
+    // Project menu state
     const [projectMenuOpenId, setProjectMenuOpenId] = useState<string | null>(null);
     const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
     // Collapsible section state
     const [inboxCollapsed, setInboxCollapsed] = useState(false);
     const [projectsCollapsed, setProjectsCollapsed] = useState(false);
-
-    const handleStartEditProject = (project: Project) => {
-        setEditingProjectId(project.id);
-        setEditingProjectName(project.name);
-        setProjectMenuOpenId(null);
-    };
-
-    const handleCancelEditProject = () => {
-        setEditingProjectId(null);
-        setEditingProjectName('');
-    };
-
-    const handleSaveProjectName = async (projectId: string) => {
-        const trimmed = editingProjectName.trim();
-        if (!trimmed) {
-            handleCancelEditProject();
-            return;
-        }
-
-        const success = await onUpdateProject(projectId, trimmed);
-        if (success) {
-            handleCancelEditProject();
-        }
-    };
 
     const handleConfirmDeleteProject = async (projectId: string) => {
         onDeleteProject(projectId);
@@ -238,40 +235,15 @@ export function Sidebar({
                             <div className="space-y-0.5">
                                 {projects.map(project => (
                                     <div key={project.id} className="group relative">
-                                        {editingProjectId === project.id ? (
-                                            <div className="flex items-center gap-2 px-2 py-2 bg-white rounded-lg border border-gray-200">
-                                                <input
-                                                    type="text"
-                                                    value={editingProjectName}
-                                                    onChange={(e) => setEditingProjectName(e.target.value)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') handleSaveProjectName(project.id);
-                                                        if (e.key === 'Escape') handleCancelEditProject();
-                                                    }}
-                                                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
-                                                    autoFocus
-                                                />
-                                                <button
-                                                    onClick={() => handleSaveProjectName(project.id)}
-                                                    className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
-                                                >
-                                                    Save
-                                                </button>
-                                                <button
-                                                    onClick={handleCancelEditProject}
-                                                    className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div
-                                                className={`w-full flex items-center gap-2 px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer ${
-                                                    selectedProjectId === project.id ? 'bg-purple-50 text-purple-700 font-medium' : ''
-                                                }`}
-                                                onClick={() => onSelectProject(project.id)}
-                                            >
-                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }} />
+                                        <div
+                                            className={`w-full flex items-center gap-2 px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer ${
+                                                selectedProjectId === project.id ? 'bg-purple-50 text-purple-700 font-medium' : ''
+                                            }`}
+                                            onClick={() => onSelectProject(project.id)}
+                                        >
+                                                <div className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 text-xs" style={{ backgroundColor: project.color }}>
+                                                    {projectIconMap[project.icon] || '📁'}
+                                                </div>
                                                 <span className="flex-1 text-left">{project.name}</span>
                                                 {selectedProjectId === project.id && (
                                                     <span className="text-xs">✓</span>
@@ -293,7 +265,8 @@ export function Sidebar({
                                                             className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                handleStartEditProject(project);
+                                                                onUpdateProject(project.id, { name: project.name, color: project.color, icon: project.icon });
+                                                                setProjectMenuOpenId(null);
                                                             }}
                                                         >
                                                             Edit
@@ -311,7 +284,6 @@ export function Sidebar({
                                                     </div>
                                                 )}
                                             </div>
-                                        )}
                                     </div>
                                 ))}
                             </div>

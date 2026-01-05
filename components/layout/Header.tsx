@@ -26,6 +26,8 @@ interface HeaderProps {
     onAddTask: () => void;
     /** Today's completed task streak count */
     todayStreak?: number;
+    /** Currently active task (in-progress) */
+    activeTask?: { id: string; title: string; projectColor: string; elapsedMinutes: number } | null;
 }
 
 export function Header({
@@ -35,8 +37,30 @@ export function Header({
     onViewDaysChange,
     onAddTask,
     todayStreak = 0,
+    activeTask,
 }: HeaderProps) {
     return (
+        <>
+        {/* Active Task Banner - PROMINENT NUDGE */}
+        {activeTask && (
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 flex items-center justify-between border-b-2 border-blue-700 shadow-lg animate-pulse">
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-white rounded-full animate-ping" />
+                        <div className="w-2 h-2 bg-white rounded-full" />
+                    </div>
+                    <div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wider opacity-90">Currently Working On</div>
+                        <div className="text-sm font-bold">{activeTask.title}</div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    <span className="text-sm font-bold">{activeTask.elapsedMinutes}m</span>
+                    <span className="text-xs opacity-75">elapsed</span>
+                </div>
+            </div>
+        )}
         <header className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
             <div className="flex items-center gap-3">
                 {/* Today's Streak Counter */}
@@ -125,5 +149,6 @@ export function Header({
                 </button>
             </div>
         </header>
+        </>
     );
 }

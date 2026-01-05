@@ -21,7 +21,7 @@ import {
     ChevronUp, ChevronDown, GripVertical, CheckCircle2, Circle,
     Sparkles, ArrowRight, Target, Flag, BatteryLow, BatteryMedium, BatteryFull,
     Coffee, Briefcase, Home, Heart, Dumbbell, BookOpen, RotateCcw, Clock, Star,
-    Check, X, Calendar
+    Check, X, Calendar, Plus
 } from 'lucide-react';
 import { Task, Project, Subtask, TaskStatus, Priority, EnergyLevel, DragItem, TimeBlock } from '../types';
 import { RolloverWarning } from './RolloverWarning';
@@ -37,6 +37,74 @@ const iconMap: Record<string, React.ReactNode> = {
     dumbbell: <Dumbbell size={14} />,
     book: <BookOpen size={14} />,
     target: <Target size={14} />,
+};
+
+const projectIconMap: Record<string, string> = {
+    // Work & Business
+    briefcase: '💼',
+    laptop: '💻',
+    chart: '📊',
+    calendar: '📅',
+    clipboard: '📋',
+    phone: '📱',
+    email: '📧',
+    rocket: '🚀',
+    // Learning & Knowledge
+    book: '📚',
+    graduation: '🎓',
+    lightbulb: '💡',
+    pencil: '✏️',
+    notebook: '📓',
+    microscope: '🔬',
+    // Life & Health
+    heart: '❤️',
+    dumbbell: '💪',
+    apple: '🍎',
+    yoga: '🧘',
+    running: '🏃',
+    bicycle: '🚴',
+    // Home & Family
+    home: '🏠',
+    family: '👨‍👩‍👧‍👦',
+    baby: '👶',
+    pet: '🐕',
+    plant: '🌱',
+    cooking: '🍳',
+    // Creative & Hobbies
+    art: '🎨',
+    music: '🎵',
+    camera: '📷',
+    game: '🎮',
+    guitar: '🎸',
+    movie: '🎬',
+    // Finance & Money
+    money: '💰',
+    bank: '🏦',
+    'chart-up': '📈',
+    piggy: '🐷',
+    'credit-card': '💳',
+    // Goals & Targets
+    target: '🎯',
+    trophy: '🏆',
+    star: '⭐',
+    fire: '🔥',
+    gem: '💎',
+    crown: '👑',
+    // Travel & Adventure
+    plane: '✈️',
+    world: '🌍',
+    beach: '🏖️',
+    mountain: '⛰️',
+    camping: '🏕️',
+    // General & Misc
+    folder: '📁',
+    coffee: '☕',
+    pizza: '🍕',
+    gift: '🎁',
+    balloon: '🎈',
+    sunny: '☀️',
+    moon: '🌙',
+    rainbow: '🌈',
 };
 
 // Editable Priority Badge with dropdown
@@ -61,10 +129,10 @@ export const EditablePriorityBadge: React.FC<{
     }, [showDropdown]);
 
     const styles = {
-        low: { bg: 'bg-slate-100', text: 'text-slate-600', hover: 'hover:bg-slate-200' },
-        medium: { bg: 'bg-blue-100', text: 'text-blue-700', hover: 'hover:bg-blue-200' },
-        high: { bg: 'bg-orange-100', text: 'text-orange-700', hover: 'hover:bg-orange-200' },
-        urgent: { bg: 'bg-red-100', text: 'text-red-700', hover: 'hover:bg-red-200' },
+        low: { color: '#9CA3AF', label: 'Low' },
+        medium: { color: '#3B82F6', label: 'Medium' },
+        high: { color: '#F97316', label: 'High' },
+        urgent: { color: '#EF4444', label: 'Urgent' },
     };
 
     const current = styles[priority];
@@ -78,15 +146,15 @@ export const EditablePriorityBadge: React.FC<{
                     if (!disabled) setShowDropdown(!showDropdown);
                 }}
                 disabled={disabled}
-                className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${current.bg} ${current.text} ${disabled ? 'cursor-default' : 'cursor-pointer ' + current.hover} transition-colors`}
-                title={disabled ? undefined : "Click to change priority"}
+                className={`w-3 h-3 rounded-full ${disabled ? 'cursor-default' : 'cursor-pointer hover:ring-2 hover:ring-offset-1'} transition-all flex items-center justify-center`}
+                style={{ backgroundColor: current.color }}
+                title={disabled ? current.label : `${current.label} priority (click to change)`}
             >
-                {priority === 'urgent' && <Flag size={10} className="inline mr-0.5" />}
-                {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                {priority === 'urgent' && <Flag size={7} className="text-white" />}
             </button>
             
             {showDropdown && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 py-1">
+                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 min-w-[120px]">
                     {priorities.map((p) => {
                         const style = styles[p];
                         return (
@@ -97,11 +165,13 @@ export const EditablePriorityBadge: React.FC<{
                                     onChange(p);
                                     setShowDropdown(false);
                                 }}
-                                className={`w-full text-left px-3 py-1.5 text-xs ${style.text} ${style.hover} flex items-center gap-1`}
+                                className="w-full text-left px-3 py-1.5 text-xs text-gray-900 hover:bg-gray-100 flex items-center gap-2"
                             >
-                                {p === 'urgent' && <Flag size={12} />}
-                                {p.charAt(0).toUpperCase() + p.slice(1)}
-                                {p === priority && <Check size={12} className="ml-auto" />}
+                                <div className="w-2.5 h-2.5 rounded-full flex items-center justify-center" style={{ backgroundColor: style.color }}>
+                                    {p === 'urgent' && <Flag size={7} className="text-white" />}
+                                </div>
+                                {style.label}
+                                {p === priority && <Check size={12} className="ml-auto text-gray-600" />}
                             </button>
                         );
                     })}
@@ -133,10 +203,10 @@ export const EditableTimeBlockBadge: React.FC<{
     }, [showDropdown]);
 
     const blocks = [
-        { value: 'anytime' as TimeBlock, label: 'Anytime', icon: <Clock size={12} /> },
-        { value: 'morning' as TimeBlock, label: 'Morning', icon: <Coffee size={12} /> },
-        { value: 'afternoon' as TimeBlock, label: 'Afternoon', icon: <Briefcase size={12} /> },
-        { value: 'evening' as TimeBlock, label: 'Evening', icon: <Home size={12} /> },
+        { value: 'anytime' as TimeBlock, label: 'Anytime', icon: <Clock size={11} />, color: 'text-gray-500' },
+        { value: 'morning' as TimeBlock, label: 'Morning', icon: <Coffee size={11} />, color: 'text-amber-500' },
+        { value: 'afternoon' as TimeBlock, label: 'Afternoon', icon: <Briefcase size={11} />, color: 'text-blue-500' },
+        { value: 'evening' as TimeBlock, label: 'Evening', icon: <Home size={11} />, color: 'text-indigo-500' },
     ];
 
     const current = blocks.find(b => b.value === timeBlock) || blocks[0];
@@ -149,11 +219,10 @@ export const EditableTimeBlockBadge: React.FC<{
                     if (!disabled) setShowDropdown(!showDropdown);
                 }}
                 disabled={disabled}
-                className={`text-[10px] font-medium px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 ${disabled ? 'cursor-default' : 'cursor-pointer hover:bg-purple-200'} transition-colors flex items-center gap-1`}
-                title={disabled ? undefined : "Click to change time block"}
+                className={`${current.color} ${disabled ? 'cursor-default' : 'cursor-pointer hover:opacity-70'} transition-opacity`}
+                title={disabled ? current.label : `${current.label} (click to change)`}
             >
                 {current.icon}
-                {current.label}
             </button>
             
             {showDropdown && (
@@ -166,7 +235,7 @@ export const EditableTimeBlockBadge: React.FC<{
                                 onChange(block.value);
                                 setShowDropdown(false);
                             }}
-                            className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 flex items-center gap-2"
+                            className="w-full text-left px-3 py-1.5 text-xs text-gray-900 hover:bg-gray-100 flex items-center gap-2"
                         >
                             {block.icon}
                             {block.label}
@@ -232,9 +301,9 @@ export const EditableEnergyBadge: React.FC<{
                                 onChange(lvl.value);
                                 setShowDropdown(false);
                             }}
-                            className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 flex items-center gap-2 ${lvl.color}`}
+                            className={`w-full text-left px-3 py-1.5 text-xs text-gray-900 hover:bg-gray-100 flex items-center gap-2`}
                         >
-                            {lvl.icon}
+                            <span className={lvl.color}>{lvl.icon}</span>
                             {lvl.label}
                             {lvl.value === level && <Check size={12} className="ml-auto text-gray-600" />}
                         </button>
@@ -262,6 +331,206 @@ export const RolloverBadge: React.FC<{ count: number }> = ({ count }) => {
             <RotateCcw size={10} />
             {count}
         </span>
+    );
+};
+
+// Editable Time Estimate Badge
+export const EditableTimeBadge: React.FC<{ 
+    estimatedMinutes: number | null; 
+    onChange: (minutes: number | null) => void;
+    disabled?: boolean;
+}> = ({ estimatedMinutes, onChange, disabled = false }) => {
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [customValue, setCustomValue] = useState(estimatedMinutes?.toString() || '');
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setShowDropdown(false);
+            }
+        };
+        if (showDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showDropdown]);
+
+    const presets = [15, 30, 45, 60, 90, 120];
+
+    const handleCustomSubmit = () => {
+        const num = parseInt(customValue);
+        if (!isNaN(num) && num > 0) {
+            onChange(num);
+            setShowDropdown(false);
+        }
+    };
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (!disabled) {
+                        setShowDropdown(!showDropdown);
+                        setCustomValue(estimatedMinutes?.toString() || '');
+                    }
+                }}
+                disabled={disabled}
+                className={`flex items-center gap-0.5 text-gray-500 text-[9px] ${disabled ? 'cursor-default' : 'cursor-pointer hover:text-gray-700 hover:bg-gray-100'} px-1 py-0.5 rounded transition-colors`}
+                title={disabled ? `${estimatedMinutes || '?'} minutes` : "Click to set time estimate"}
+            >
+                <Clock size={9} />
+                <span className="font-medium">{estimatedMinutes || '?'}</span>
+            </button>
+            
+            {showDropdown && (
+                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 min-w-[120px]">
+                    <div className="px-2 py-1 text-[9px] text-gray-500 uppercase tracking-wide">Quick</div>
+                    {presets.map((minutes) => (
+                        <button
+                            key={minutes}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onChange(minutes);
+                                setShowDropdown(false);
+                            }}
+                            className="w-full text-left px-3 py-1.5 text-xs text-gray-900 hover:bg-gray-100 flex items-center justify-between"
+                        >
+                            {minutes}m
+                            {minutes === estimatedMinutes && <Check size={12} className="text-gray-600" />}
+                        </button>
+                    ))}
+                    <div className="border-t border-gray-200 my-1" />
+                    <div className="px-3 py-1.5">
+                        <input
+                            type="number"
+                            value={customValue}
+                            onChange={(e) => setCustomValue(e.target.value)}
+                            onKeyDown={(e) => {
+                                e.stopPropagation();
+                                if (e.key === 'Enter') handleCustomSubmit();
+                            }}
+                            placeholder="Custom"
+                            className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
+                            min="1"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onChange(null);
+                            setShowDropdown(false);
+                        }}
+                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 text-gray-600"
+                    >
+                        Clear estimate
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Editable Project Badge  
+export const EditableProjectBadge: React.FC<{ 
+    project: Project;
+    allProjects: Project[];
+    onChange: (projectId: string) => void;
+    disabled?: boolean;
+}> = ({ project, allProjects, onChange, disabled = false }) => {
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setShowDropdown(false);
+            }
+        };
+        if (showDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showDropdown]);
+
+    // Show compact dot with tooltip for projects
+    if (project.id === 'default') {
+        return (
+            <div className="relative" ref={dropdownRef}>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (!disabled) setShowDropdown(!showDropdown);
+                    }}
+                    disabled={disabled}
+                    className={`w-5 h-5 rounded border border-dashed border-gray-300 flex items-center justify-center ${disabled ? 'cursor-default' : 'cursor-pointer hover:border-gray-400 hover:bg-gray-50'} transition-all text-[10px]`}
+                    title={disabled ? 'No project' : 'Click to assign project'}
+                >
+                    +
+                </button>
+                {showDropdown && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 max-h-60 overflow-y-auto min-w-[150px]">
+                        {allProjects.filter(p => p.id !== 'default').map((proj) => (
+                            <button
+                                key={proj.id}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onChange(proj.id);
+                                    setShowDropdown(false);
+                                }}
+                                className="w-full text-left px-3 py-1.5 text-xs text-gray-900 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                                <div className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 text-xs" style={{ backgroundColor: proj.color }}>
+                                    {projectIconMap[proj.icon] || '📁'}
+                                </div>
+                                <span className="flex-1 truncate">{proj.name}</span>
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (!disabled) setShowDropdown(!showDropdown);
+                }}
+                disabled={disabled}
+                className={`w-5 h-5 rounded flex items-center justify-center text-xs ${disabled ? 'cursor-default' : 'cursor-pointer hover:ring-2 hover:ring-offset-1'} transition-all`}
+                style={{ backgroundColor: project.color }}
+                title={disabled ? project.name : `${project.name} (click to change)`}
+            >
+                {projectIconMap[project.icon] || '📁'}
+            </button>
+            
+            {showDropdown && (
+                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 max-h-60 overflow-y-auto min-w-[150px]">
+                    {allProjects.map((proj) => (
+                        <button
+                            key={proj.id}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onChange(proj.id);
+                                setShowDropdown(false);
+                            }}
+                            className="w-full text-left px-3 py-1.5 text-xs text-gray-900 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                            <div className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 text-xs" style={{ backgroundColor: proj.color }}>
+                                {projectIconMap[proj.icon] || '📁'}
+                            </div>
+                            <span className="flex-1 truncate">{proj.name}</span>
+                            {proj.id === project.id && <Check size={12} className="text-gray-600 flex-shrink-0" />}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
     );
 };
 
@@ -295,6 +564,7 @@ interface QuickEditTaskCardProps {
     task: Task;
     project: Project;
     allTasks: Task[];
+    allProjects: Project[];
     isSelected: boolean;
     onSelect: (id: string) => void;
     onUpdate: (id: string, updates: Partial<Task>) => void;
@@ -319,7 +589,7 @@ function lightenColor(hex: string, amount: number = 0.85): string {
 }
 
 export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
-    const { task, project, allTasks, isSelected, onSelect, onUpdate, onStatusChange, onPause,
+    const { task, project, allTasks, allProjects, isSelected, onSelect, onUpdate, onStatusChange, onPause,
         onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, compact = false } = props;
 
     const [expanded, setExpanded] = useState(false);
@@ -412,6 +682,14 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
         onUpdate(task.id, { energyLevel });
     };
 
+    const handleTimeChange = (estimatedMinutes: number | null) => {
+        onUpdate(task.id, { estimatedMinutes });
+    };
+
+    const handleProjectChange = (projectId: string) => {
+        onUpdate(task.id, { projectId });
+    };
+
     const onMenuToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
         setShowMenu(v => !v);
@@ -440,6 +718,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     const timeStatus = getTimeStatus();
 
     const isCompleted = task.status === 'completed';
+    const isPaused = task.status === 'pending' && (task.actualMinutes || 0) > 0;
 
     return (
         <div
@@ -466,6 +745,8 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                 isEditingTitle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing',
                 isSelected ? 'ring-2 ring-purple-400 ring-offset-1 bg-purple-50/50' : 'hover:bg-gray-50/80',
                 isCompleted ? 'opacity-50' : '',
+                task.status === 'in-progress' ? 'ring-4 ring-blue-400 ring-offset-2 shadow-2xl shadow-blue-500/50 animate-pulse' : '',
+                isPaused ? 'ring-2 ring-amber-300 ring-offset-1 bg-amber-50/30' : '',
                 hasBlockingDeps ? 'border-r border-r-amber-400 border-dashed' : '',
                 isDragging ? 'opacity-50 scale-95' : '',
             ].filter(Boolean).join(' ')}
@@ -628,19 +909,23 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                 </div>
 
                 {/* Metadata row - Editable badges */}
-                <div className={`flex items-center ${compact ? 'gap-1' : 'gap-1.5'} flex-wrap ${compact ? 'text-[9px]' : 'text-[10px]'} text-gray-600`}>
+                <div className={`flex items-center ${compact ? 'gap-0.5' : 'gap-1'} flex-wrap ${compact ? 'text-[9px]' : 'text-[10px]'} text-gray-600`}>
+                    <EditableProjectBadge
+                        project={project}
+                        allProjects={allProjects}
+                        onChange={handleProjectChange}
+                        disabled={isCompleted}
+                    />
                     <EditablePriorityBadge
                         priority={task.priority}
                         onChange={handlePriorityChange}
                         disabled={isCompleted}
                     />
-                    {task.energyLevel && (
-                        <EditableEnergyBadge
-                            level={task.energyLevel}
-                            onChange={handleEnergyChange}
-                            disabled={isCompleted}
-                        />
-                    )}
+                    <EditableEnergyBadge
+                        level={task.energyLevel || 'medium'}
+                        onChange={handleEnergyChange}
+                        disabled={isCompleted}
+                    />
                     <EditableTimeBlockBadge
                         timeBlock={task.timeBlock}
                         onChange={handleTimeBlockChange}
@@ -656,45 +941,46 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                         <RolloverBadge count={task.rolloverCount || 0} />
                     )}
                     <TaskAgeBadge createdAt={task.createdAt} />
-                    {task.estimatedMinutes && (
-                        <span className="flex items-center gap-0.5 text-gray-500">
-                            <Clock size={10} />
-                            {task.estimatedMinutes}m
+                    {isPaused && (
+                        <span className="flex items-center gap-0 text-amber-700 bg-amber-100 border border-amber-300 px-1 py-0.5 rounded" title={`Paused - ${task.actualMinutes}m tracked`}>
+                            <Pause size={10} />
                         </span>
                     )}
+                    <EditableTimeBadge
+                        estimatedMinutes={task.estimatedMinutes}
+                        onChange={handleTimeChange}
+                        disabled={isCompleted}
+                    />
                 </div>
 
                 {/* In-progress timer */}
                 {task.status === 'in-progress' && elapsedMinutes > 0 && !compact && (
-                    <div className={`flex items-center justify-between text-xs ${timeStatus.color} ${timeStatus.bgColor} px-2 py-1 rounded-md ${timeStatus.pulse ? 'animate-pulse' : ''}`}>
-                        <div className="flex items-center gap-1">
-                            <Play size={12} />
-                            <span className="font-medium">{elapsedMinutes}m elapsed</span>
-                        </div>
+                    <div className={`flex items-center gap-1 text-[10px] ${timeStatus.color} ${timeStatus.bgColor} px-1.5 py-0.5 rounded ${timeStatus.pulse ? 'animate-pulse' : ''}`}>
+                        <Play size={10} />
+                        <span className="font-medium">{elapsedMinutes}</span>
                         {task.estimatedMinutes && (
-                            <span className="text-[10px] opacity-75">/ {task.estimatedMinutes}m est</span>
+                            <span className="opacity-60">/{task.estimatedMinutes}</span>
                         )}
                     </div>
                 )}
 
                 {/* Subtasks progress (if any) */}
                 {hasSubtasks && !compact && (
-                    <div className="flex items-center gap-2 text-[10px] text-gray-500">
-                        <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                        <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden" title={`${completedSubtasks} of ${totalSubtasks} subtasks completed`}>
                             <div
                                 className="h-full bg-green-500 transition-all duration-300"
                                 style={{ width: `${(completedSubtasks / totalSubtasks) * 100}%` }}
                             />
                         </div>
-                        <span>{completedSubtasks}/{totalSubtasks}</span>
                     </div>
                 )}
 
                 {/* Blocking dependencies warning */}
                 {hasBlockingDeps && (
-                    <div className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded flex items-center gap-1">
-                        <Link2 size={10} />
-                        Blocked by {dependencyTasks.filter((t: any) => t?.status !== 'completed').length} task(s)
+                    <div className="text-[9px] text-amber-600 bg-amber-50 px-1 py-0.5 rounded flex items-center gap-0.5" title={`Blocked by ${dependencyTasks.filter((t: any) => t?.status !== 'completed').length} incomplete task(s)`}>
+                        <Link2 size={9} />
+                        {dependencyTasks.filter((t: any) => t?.status !== 'completed').length}
                     </div>
                 )}
             </div>

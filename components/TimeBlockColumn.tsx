@@ -96,6 +96,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
                             task={task}
                             project={project}
                             allTasks={allTasks}
+                            allProjects={projects}
                             isSelected={selectedTaskId === task.id}
                             onSelect={onSelectTask}
                             onUpdate={onUpdate}

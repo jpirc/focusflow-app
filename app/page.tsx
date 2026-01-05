@@ -99,7 +99,13 @@ export default function FocusFlowApp() {
         now.setHours(0, 0, 0, 0);
         return now;
     });
-    const [viewDays, setViewDays] = useState(3);
+    const [viewDays, setViewDays] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('defaultViewDays');
+            return saved ? parseInt(saved, 10) : 2;
+        }
+        return 2;
+    });
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
@@ -108,15 +114,16 @@ export default function FocusFlowApp() {
     const [taskToEditId, setTaskToEditId] = useState<string | null>(null);
     const [aiModalOpen, setAiModalOpen] = useState(false);
     const [taskForAI, setTaskForAI] = useState<Task | null>(null);
+    const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
+    const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [smartCaptureModalOpen, setSmartCaptureModalOpen] = useState(false);
+    const [dailyPrioritiesModalOpen, setDailyPrioritiesModalOpen] = useState(false);
 
     // Derive the current task to edit from the tasks array (stays in sync with subtask updates)
     const taskToEdit = useMemo(() => 
         taskToEditId ? tasks.find(t => t.id === taskToEditId) || null : null,
         [taskToEditId, tasks]
     );
-    const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
-    const [smartCaptureModalOpen, setSmartCaptureModalOpen] = useState(false);
-    const [dailyPrioritiesModalOpen, setDailyPrioritiesModalOpen] = useState(false);
 
     // ============================================
     // Computed Values
@@ -141,6 +148,20 @@ export default function FocusFlowApp() {
             .map(t => t.id),
         [tasks, todayDateStr]
     );
+
+    // Active task (currently in-progress) for header nudge
+    const activeTask = useMemo(() => {
+        const task = tasks.find(t => t.status === 'in-progress');
+        if (!task || !task.startedAt) return null;
+        const project = projects.find(p => p.id === task.projectId);
+        const elapsedMinutes = Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 60000);
+        return {
+            id: task.id,
+            title: task.title,
+            projectColor: project?.color || '#6b7280',
+            elapsedMinutes,
+        };
+    }, [tasks, projects]);
 
     // For week view (7 days), start from Sunday of current week
     const displayDays = useMemo(() => {
@@ -316,8 +337,8 @@ export default function FocusFlowApp() {
         await createProject({ name, color, icon });
     }, [createProject]);
 
-    const handleUpdateProjectName = useCallback(async (id: string, name: string): Promise<boolean> => {
-        return await updateProject(id, { name });
+    const handleUpdateProject = useCallback(async (id: string, updates: { name?: string; color?: string; icon?: string }): Promise<boolean> => {
+        return await updateProject(id, updates);
     }, [updateProject]);
 
     // Update subtasks helper (for TaskCard compatibility)
@@ -371,7 +392,14 @@ export default function FocusFlowApp() {
                 selectedProjectId={selectedProjectId}
                 onSelectProject={selectProject}
                 onCreateProject={() => setCreateProjectModalOpen(true)}
-                onUpdateProject={handleUpdateProjectName}
+                onUpdateProject={(id, updates) => {
+                    const project = projects.find(p => p.id === id);
+                    if (project) {
+                        setEditingProject({ id: project.id, name: updates.name || project.name, color: updates.color || project.color, icon: updates.icon || project.icon });
+                        setCreateProjectModalOpen(true);
+                    }
+                    return Promise.resolve(true);
+                }}
                 onDeleteProject={deleteProject}
                 getProjectById={getProjectById}
             />
@@ -386,22 +414,22 @@ export default function FocusFlowApp() {
                     onViewDaysChange={setViewDays}
                     onAddTask={() => setSmartCaptureModalOpen(true)}
                     todayStreak={todayStreak}
+                    activeTask={activeTask}
                 />
 
-                {/* Timeline View */}
-                <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 sm:p-3 lg:p-4">
-                    {viewDays === 30 ? (
-                        <CalendarView
-                            currentDate={currentDate}
-                            tasks={tasks}
-                            projects={projects}
-                            selectedProjectId={selectedProjectId}
-                            selectedTaskId={selectedTaskId}
-                            onSelectTask={setSelectedTaskId}
-                            onDrop={handleDrop}
-                            onEdit={handleEditTask}
-                        />
-                    ) : (
+                {/* View Content */}
+                {viewDays === 30 ? (
+                    <CalendarView
+                        currentDate={currentDate}
+                        tasks={tasks}
+                        projects={projects}
+                        selectedProjectId={selectedProjectId}
+                        selectedTaskId={selectedTaskId}
+                        onSelectTask={setSelectedTaskId}
+                        onDrop={handleDrop}
+                        onEdit={handleEditTask}
+                    />
+                ) : (
                     <div className="flex gap-2 sm:gap-3 lg:gap-4 h-full">
                         {/* Main Day Columns */}
                         <div className={`flex-1 flex h-full min-w-0 ${
@@ -606,8 +634,7 @@ export default function FocusFlowApp() {
                             </div>
                         )}
                     </div>
-                    )}
-                </div>
+                )}
             </div>
 
             {/* Modals */}
@@ -642,8 +669,13 @@ export default function FocusFlowApp() {
 
             <CreateProjectModal
                 isOpen={createProjectModalOpen}
-                onClose={() => setCreateProjectModalOpen(false)}
+                onClose={() => {
+                    setCreateProjectModalOpen(false);
+                    setEditingProject(null);
+                }}
                 onCreate={handleCreateProject}
+                editProject={editingProject}
+                onUpdate={(id, name, color, icon) => handleUpdateProject(id, { name, color, icon })}
             />
 
             <SmartCaptureModal
