@@ -5,7 +5,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Plus, Flame } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Plus, Flame, Pause, CheckCircle2 } from 'lucide-react';
 import { addDays, getWeekStart } from '@/lib/utils/date';
 import { VIEW_DAY_OPTIONS } from '@/lib/constants';
 
@@ -28,6 +28,10 @@ interface HeaderProps {
     todayStreak?: number;
     /** Currently active task (in-progress) */
     activeTask?: { id: string; title: string; projectColor: string; elapsedMinutes: number } | null;
+    /** Called when user pauses the active task */
+    onPauseActiveTask?: () => void;
+    /** Called when user completes the active task */
+    onCompleteActiveTask?: () => void;
 }
 
 export function Header({
@@ -38,6 +42,8 @@ export function Header({
     onAddTask,
     todayStreak = 0,
     activeTask,
+    onPauseActiveTask,
+    onCompleteActiveTask,
 }: HeaderProps) {
     return (
         <>
@@ -54,10 +60,32 @@ export function Header({
                         <div className="text-sm font-bold">{activeTask.title}</div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                    <span className="text-sm font-bold">{activeTask.elapsedMinutes}m</span>
-                    <span className="text-xs opacity-75">elapsed</span>
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                        <span className="text-sm font-bold">{activeTask.elapsedMinutes}m</span>
+                        <span className="text-xs opacity-75">elapsed</span>
+                    </div>
+                    {onPauseActiveTask && (
+                        <button
+                            onClick={onPauseActiveTask}
+                            className="bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all"
+                            title="Pause task"
+                        >
+                            <Pause size={14} />
+                            Pause
+                        </button>
+                    )}
+                    {onCompleteActiveTask && (
+                        <button
+                            onClick={onCompleteActiveTask}
+                            className="bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all"
+                            title="Complete task"
+                        >
+                            <CheckCircle2 size={14} />
+                            Complete
+                        </button>
+                    )}
                 </div>
             </div>
         )}

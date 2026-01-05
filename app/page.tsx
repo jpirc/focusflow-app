@@ -415,6 +415,8 @@ export default function FocusFlowApp() {
                     onAddTask={() => setSmartCaptureModalOpen(true)}
                     todayStreak={todayStreak}
                     activeTask={activeTask}
+                    onPauseActiveTask={activeTask ? () => pauseTask(activeTask.id) : undefined}
+                    onCompleteActiveTask={activeTask ? () => updateStatus(activeTask.id, 'completed') : undefined}
                 />
 
                 {/* View Content */}
