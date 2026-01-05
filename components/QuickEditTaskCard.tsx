@@ -556,6 +556,65 @@ export const TaskAgeBadge: React.FC<{ createdAt: string }> = ({ createdAt }) => 
     );
 };
 
+// Dependency Badge - Shows if task is blocked, linked, or blocking others
+export const DependencyBadge: React.FC<{ 
+    task: Task; 
+    allTasks: Task[];
+    onClick?: () => void;
+}> = ({ task, allTasks, onClick }) => {
+    // Check if task has incomplete dependencies (blocked)
+    const dependencyTasks = (task.dependencies || []).map(dep => dep.dependsOn).filter(Boolean);
+    const hasBlockingDeps = dependencyTasks.some(dep => 
+        dep.status !== 'completed' && dep.status !== 'skipped'
+    );
+    
+    // Check if other tasks depend on this one
+    const dependentTasks = allTasks.filter(t => 
+        t.dependencies?.some(dep => dep.dependsOnId === task.id)
+    );
+    const hasDependents = dependentTasks.length > 0;
+    
+    // Don't show badge if no dependencies at all
+    if (dependencyTasks.length === 0 && !hasDependents) return null;
+    
+    // Determine badge state
+    const isBlocked = hasBlockingDeps;
+    const isLinked = dependencyTasks.length > 0 && !hasBlockingDeps;
+    const isBlocking = hasDependents;
+    
+    // Visual configs
+    const config = isBlocked 
+        ? { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300', icon: '🔒', label: 'Blocked' }
+        : isBlocking && isLinked
+        ? { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300', icon: '⛓️', label: 'Linked' }
+        : isBlocking
+        ? { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300', icon: '⛓️', label: 'Blocking' }
+        : { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300', icon: '🔗', label: 'Linked' };
+    
+    const tooltip = isBlocked
+        ? `Blocked by ${dependencyTasks.filter(d => d.status !== 'completed').length} task(s)`
+        : isBlocking && isLinked
+        ? `${dependentTasks.length} task(s) waiting • ${dependencyTasks.length} completed`
+        : isBlocking
+        ? `${dependentTasks.length} task(s) waiting on this`
+        : `${dependencyTasks.length} dependency completed`;
+    
+    return (
+        <button
+            onClick={(e) => {
+                e.stopPropagation();
+                onClick?.();
+            }}
+            className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${config.bg} ${config.text} ${config.border} flex items-center gap-0.5 ${onClick ? 'hover:opacity-80 cursor-pointer' : ''}`}
+            title={tooltip}
+        >
+            <span>{config.icon}</span>
+            {isBlocked && dependencyTasks.filter(d => d.status !== 'completed').length}
+            {isBlocking && !isBlocked && dependentTasks.length}
+        </button>
+    );
+};
+
 // ============================================
 // MAIN COMPONENT
 // ============================================
@@ -941,6 +1000,11 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                         <RolloverBadge count={task.rolloverCount || 0} />
                     )}
                     <TaskAgeBadge createdAt={task.createdAt} />
+                    <DependencyBadge 
+                        task={task} 
+                        allTasks={allTasks}
+                        onClick={() => onEdit(task)}
+                    />
                     {isPaused && (
                         <span className="flex items-center gap-0 text-amber-700 bg-amber-100 border border-amber-300 px-1 py-0.5 rounded" title={`Paused - ${task.actualMinutes}m tracked`}>
                             <Pause size={10} />

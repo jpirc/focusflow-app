@@ -26,11 +26,22 @@ export function DependencySelector({
     const [isAdding, setIsAdding] = useState(false);
     const [selectedTaskId, setSelectedTaskId] = useState('');
 
-    // Filter out current task and already selected dependencies
+    // Filter out current task, already selected dependencies, and completed tasks
     const dependencyIds = new Set(currentDependencies.map(d => d.dependsOnId));
     const selectableTasks = availableTasks.filter(
-        t => t.id !== taskId && !dependencyIds.has(t.id)
+        t => t.id !== taskId && 
+        !dependencyIds.has(t.id) && 
+        t.status !== 'completed' && 
+        t.status !== 'skipped'
     );
+
+    // Group tasks by project for better organization
+    const groupedTasks = selectableTasks.reduce((acc, task) => {
+        const key = task.projectId || 'no-project';
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(task);
+        return acc;
+    }, {} as Record<string, typeof selectableTasks>);
 
     const handleAdd = () => {
         if (selectedTaskId) {
@@ -94,18 +105,39 @@ export function DependencySelector({
             {/* Add dependency */}
             {isAdding ? (
                 <div className="space-y-1.5">
-                    <select
-                        value={selectedTaskId}
-                        onChange={(e) => setSelectedTaskId(e.target.value)}
-                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                        <option value="">Select task...</option>
-                        {selectableTasks.map((task) => (
-                            <option key={task.id} value={task.id}>
-                                {task.title}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="max-h-48 overflow-y-auto border border-gray-300 rounded">
+                        {Object.keys(groupedTasks).length === 0 ? (
+                            <div className="px-3 py-2 text-xs text-gray-400 italic">
+                                No active tasks available
+                            </div>
+                        ) : (
+                            Object.entries(groupedTasks).map(([projectId, tasks]) => (
+                                <div key={projectId} className="border-b border-gray-100 last:border-0">
+                                    {tasks.map((task) => (
+                                        <button
+                                            key={task.id}
+                                            onClick={() => setSelectedTaskId(task.id)}
+                                            className={`w-full text-left px-3 py-2 text-xs hover:bg-purple-50 transition-colors border-l-2 ${
+                                                selectedTaskId === task.id
+                                                    ? 'bg-purple-50 border-purple-500'
+                                                    : 'border-transparent'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                                                    task.status === 'in-progress' ? 'bg-blue-500' : 'bg-gray-400'
+                                                }`} />
+                                                <span className="flex-1 truncate text-gray-900">{task.title}</span>
+                                                {task.priority === 'urgent' && (
+                                                    <span className="text-red-500 text-[10px]">!</span>
+                                                )}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            ))
+                        )}
+                    </div>
                     <div className="flex gap-1.5">
                         <button
                             onClick={handleAdd}
