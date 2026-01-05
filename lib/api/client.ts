@@ -79,6 +79,8 @@ export interface UpdateTaskInput {
     estimatedMinutes?: number;
     actualMinutes?: number | null;
     completed?: boolean;
+    isTopPriority?: boolean;
+    topPriorityDate?: string | null;
 }
 
 export const taskApi = {

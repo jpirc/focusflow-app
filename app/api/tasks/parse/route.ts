@@ -3,9 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 // Get today's date info for the AI prompt
 function getDateContext(): string {
@@ -15,6 +15,79 @@ function getDateContext(): string {
                       'July', 'August', 'September', 'October', 'November', 'December'];
   
   return `Today is ${dayNames[now.getDay()]}, ${monthNames[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}. The current time is ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}.`;
+}
+
+// Fallback parser when OpenAI isn't available
+function parseTasksFallback(text: string): any {
+  const lines = text.split('\n').filter(line => line.trim());
+  
+  const tasks = lines.map(line => {
+    const trimmed = line.trim();
+    
+    // Extract priority
+    let priority = 'medium';
+    if (/urgent|asap|critical|important/i.test(trimmed)) {
+      priority = 'urgent';
+    } else if (/high priority|high/i.test(trimmed)) {
+      priority = 'high';
+    } else if (/low priority|low|later|sometime/i.test(trimmed)) {
+      priority = 'low';
+    }
+    
+    // Extract time block
+    let timeBlock = 'anytime';
+    let date = null;
+    
+    if (/morning|am|breakfast/i.test(trimmed)) {
+      timeBlock = 'morning';
+    } else if (/afternoon|lunch|pm/i.test(trimmed) && !/evening|night/i.test(trimmed)) {
+      timeBlock = 'afternoon';
+    } else if (/evening|night|dinner/i.test(trimmed)) {
+      timeBlock = 'evening';
+    }
+    
+    // Extract date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (/today/i.test(trimmed)) {
+      date = today.toISOString().split('T')[0];
+    } else if (/tomorrow/i.test(trimmed)) {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      date = tomorrow.toISOString().split('T')[0];
+    }
+    
+    // Clean up title (remove date/time/priority keywords)
+    let title = trimmed
+      .replace(/\b(urgent|asap|high priority|low priority|important|critical)\b/gi, '')
+      .replace(/\b(today|tomorrow|morning|afternoon|evening|night)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Remove common list markers
+    title = title.replace(/^[-•*]\s*/, '').trim();
+    
+    // Infer icon based on keywords
+    let icon = 'target';
+    if (/email|call|meeting|work|project/i.test(title)) icon = 'briefcase';
+    if (/clean|house|home|laundry/i.test(title)) icon = 'home';
+    if (/gym|workout|exercise|run/i.test(title)) icon = 'dumbbell';
+    if (/read|learn|study/i.test(title)) icon = 'book';
+    if (/health|doctor|medical/i.test(title)) icon = 'heart';
+    
+    return {
+      title: title || 'New Task',
+      date,
+      timeBlock: date ? timeBlock : null,
+      estimatedMinutes: 30,
+      priority,
+      energyLevel: 'medium',
+      icon,
+    };
+  });
+  
+  return { tasks };
 }
 
 export async function POST(request: NextRequest) {
@@ -31,9 +104,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });
     }
 
-    // Check if OpenAI API key is configured
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
+    // Use fallback parser if OpenAI isn't configured
+    if (!openai) {
+      const parsed = parseTasksFallback(text);
+      return NextResponse.json(parsed);
     }
 
     const dateContext = getDateContext();

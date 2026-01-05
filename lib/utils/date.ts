@@ -232,3 +232,47 @@ export function getDaysBetweenTodayAndDate(
     
     return result;
 }
+
+/**
+ * Get the current time block based on the current hour
+ */
+export function getCurrentTimeBlock(): 'morning' | 'afternoon' | 'evening' | 'anytime' {
+    const hour = new Date().getHours();
+    
+    if (hour >= 6 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 17) return 'afternoon';
+    if (hour >= 17 && hour < 22) return 'evening';
+    
+    // After 10 PM or before 6 AM, return 'anytime' (no auto-bump)
+    return 'anytime';
+}
+
+/**
+ * Get the next time block after the current one
+ */
+export function getNextTimeBlock(currentBlock: string): 'morning' | 'afternoon' | 'evening' | 'anytime' {
+    if (currentBlock === 'morning') return 'afternoon';
+    if (currentBlock === 'afternoon') return 'evening';
+    // Evening stays evening (or moves to next day's morning via rollover)
+    return 'anytime';
+}
+
+/**
+ * Check if we're currently past a given time block
+ */
+export function isPastTimeBlock(timeBlock: string): boolean {
+    const hour = new Date().getHours();
+    
+    if (timeBlock === 'morning') {
+        return hour >= 12; // Past morning if it's noon or later
+    }
+    if (timeBlock === 'afternoon') {
+        return hour >= 17; // Past afternoon if it's 5 PM or later
+    }
+    if (timeBlock === 'evening') {
+        return hour >= 22; // Past evening if it's 10 PM or later
+    }
+    
+    return false; // 'anytime' is never past
+}
+

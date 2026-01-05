@@ -6,9 +6,10 @@ import {
     Play, Pause, Wand2, MoreHorizontal, Edit3, Link2, Copy, Trash2,
     ChevronUp, ChevronDown, GripVertical, CheckCircle2, Circle,
     Sparkles, ArrowRight, Target, Flag, BatteryLow, BatteryMedium, BatteryFull,
-    Coffee, Briefcase, Home, Heart, Dumbbell, BookOpen, RotateCcw, Clock
+    Coffee, Briefcase, Home, Heart, Dumbbell, BookOpen, RotateCcw, Clock, Star
 } from 'lucide-react';
 import { Task, Project, Subtask, TaskStatus, Priority, EnergyLevel, DragItem } from '../types';
+import { RolloverWarning } from './RolloverWarning';
 // BADGES & UTILS
 // ============================================
 
@@ -274,8 +275,15 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                     )}
                 </button>
 
+                {/* Top 3 star indicator */}
+                {task.isTopPriority && task.status !== 'completed' && (
+                    <span title="Top 3 Priority">
+                        <Star size={12} className="text-amber-500 fill-amber-500 flex-shrink-0" />
+                    </span>
+                )}
+
                 {/* Priority dot */}
-                {showPriorityDot && task.status !== 'completed' && (
+                {showPriorityDot && task.status !== 'completed' && !task.isTopPriority && (
                     <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1 ${priorityColor}`} title={task.priority} />
                 )}
 
@@ -306,9 +314,18 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                                 </span>
                             )}
                             {(task.rolloverCount || 0) > 0 && task.status !== 'completed' && (
-                                <span className={`flex items-center ${(task.rolloverCount || 0) >= 3 ? 'text-orange-500' : ''}`}>
-                                    <RotateCcw size={8} />{task.rolloverCount}
-                                </span>
+                                (task.rolloverCount || 0) >= 3 ? (
+                                    <RolloverWarning
+                                        rolloverCount={task.rolloverCount || 0}
+                                        onBreakdown={() => onAIBreakdown(task)}
+                                        onArchive={() => onDelete(task.id)}
+                                        compact={compact}
+                                    />
+                                ) : (
+                                    <span className="flex items-center text-gray-500">
+                                        <RotateCcw size={8} />{task.rolloverCount}
+                                    </span>
+                                )
                             )}
                             {task.estimatedMinutes && !compact && (
                                 <span>{task.estimatedMinutes}m</span>
