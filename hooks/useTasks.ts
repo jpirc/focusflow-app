@@ -22,6 +22,8 @@ interface UseTasksReturn {
     loading: boolean;
     rolledOverTasks: Array<{ id: string; title: string; originalDate: string | null }>;
     dismissRolloverNotification: () => void;
+    unblockedTasks: Array<{ task: Task; completedDependency: string }>;
+    dismissUnblockedNotification: () => void;
 
     // Task CRUD
     createTask: (input: CreateTaskInput) => Promise<Task | null>;
@@ -57,6 +59,7 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [rolledOverTasks, setRolledOverTasks] = useState<Array<{ id: string; title: string; originalDate: string | null }>>([]);
+    const [unblockedTasks, setUnblockedTasks] = useState<Array<{ task: Task; completedDependency: string }>>([]);
 
     // ============================================
     // Fetch & Refresh
@@ -203,6 +206,34 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
     const updateStatus = useCallback(async (id: string, status: TaskStatus) => {
         // Optimistic update - set timestamps based on status
         const now = new Date().toISOString();
+        
+        // If completing a task, check for newly unblocked tasks
+        if (status === 'completed') {
+            const completedTask = tasks.find(t => t.id === id);
+            if (completedTask) {
+                // Find tasks that depend on this completed task
+                const newlyUnblocked = tasks.filter(task => 
+                    task.dependencies?.some(dep => dep.dependsOnId === id) &&
+                    task.status !== 'completed' &&
+                    // Check if ALL dependencies are now completed
+                    task.dependencies.every(dep => {
+                        const depTask = tasks.find(t => t.id === dep.dependsOnId);
+                        return depTask?.status === 'completed' || dep.dependsOnId === id;
+                    })
+                );
+                
+                if (newlyUnblocked.length > 0) {
+                    setUnblockedTasks(prev => [
+                        ...prev,
+                        ...newlyUnblocked.map(task => ({
+                            task,
+                            completedDependency: completedTask.title
+                        }))
+                    ]);
+                }
+            }
+        }
+        
         setTasks(prev => prev.map(t => {
             if (t.id !== id) return t;
             const updates: Partial<typeof t> = { status };
@@ -230,7 +261,7 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
         if (result.error) {
             await refreshTasks(); // Rollback
         }
-    }, [isAuthenticated, refreshTasks]);
+    }, [isAuthenticated, refreshTasks, tasks]);
 
     const pauseTask = useCallback(async (id: string) => {
         // Optimistic update - pause task and accumulate elapsed time
@@ -531,6 +562,8 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
         loading,
         rolledOverTasks,
         dismissRolloverNotification: () => setRolledOverTasks([]),
+        unblockedTasks,
+        dismissUnblockedNotification: () => setUnblockedTasks([]),
         createTask,
         updateTask,
         deleteTask,

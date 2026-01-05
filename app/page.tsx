@@ -28,6 +28,7 @@ import { CelebrationMessage } from '@/components/CelebrationMessage';
 import { DailyPrioritiesModal } from '@/components/DailyPrioritiesModal';
 import { Top3Section } from '@/components/Top3Section';
 import { RolloverNotification } from '@/components/RolloverNotification';
+import { UnblockedTasksNotification } from '@/components/UnblockedTasksNotification';
 
 // Utilities & Constants
 import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeekend } from '@/lib/utils/date';
@@ -53,6 +54,8 @@ export default function FocusFlowApp() {
         loading,
         rolledOverTasks,
         dismissRolloverNotification,
+        unblockedTasks,
+        dismissUnblockedNotification,
         createTask,
         updateTask,
         deleteTask,
@@ -427,6 +430,13 @@ export default function FocusFlowApp() {
                     rolledOverTasks={rolledOverTasks}
                     allTasks={tasks}
                     onDismiss={dismissRolloverNotification}
+                />
+
+                {/* Unblocked Tasks Notification */}
+                <UnblockedTasksNotification
+                    unblockedTasks={unblockedTasks}
+                    onDismiss={dismissUnblockedNotification}
+                    onMoveToToday={(taskId) => moveTask(taskId, formatDate(new Date()), 'anytime')}
                 />
 
                 {/* View Content */}
