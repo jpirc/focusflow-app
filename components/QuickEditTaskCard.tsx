@@ -500,9 +500,9 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                 </div>
             )}
 
-            <div className="p-2.5 space-y-1.5">
+            <div className={compact ? 'p-1.5 space-y-1' : 'p-2.5 space-y-1.5'}>
                 {/* Header row - Status + Title + Quick Actions */}
-                <div className="flex items-start gap-1.5">
+                <div className={`flex items-start ${compact ? 'gap-1' : 'gap-1.5'}`}>
                     {/* Status toggle */}
                     <button
                         onClick={(e) => {
@@ -518,12 +518,12 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                             }
                         }}
                         disabled={hasBlockingDeps && task.status === 'pending'}
-                        className={`flex-shrink-0 mt-0.5 ${hasBlockingDeps && task.status === 'pending' ? 'opacity-30 cursor-not-allowed' : ''}`}
+                        className={`flex-shrink-0 ${compact ? 'mt-0' : 'mt-0.5'} ${hasBlockingDeps && task.status === 'pending' ? 'opacity-30 cursor-not-allowed' : ''}`}
                     >
-                        {task.status === 'completed' && <CheckCircle2 size={18} className="text-green-500" />}
-                        {task.status === 'in-progress' && <Pause size={18} className="text-blue-500" />}
+                        {task.status === 'completed' && <CheckCircle2 size={compact ? 16 : 18} className="text-green-500" />}
+                        {task.status === 'in-progress' && <Pause size={compact ? 16 : 18} className="text-blue-500" />}
                         {task.status !== 'completed' && task.status !== 'in-progress' && (
-                            <Circle size={18} className="text-gray-400 hover:text-blue-500 transition-colors" />
+                            <Circle size={compact ? 16 : 18} className="text-gray-400 hover:text-blue-500 transition-colors" />
                         )}
                     </button>
 
@@ -565,27 +565,19 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                             <div
                                 onDoubleClick={handleTitleDoubleClick}
                                 className="relative"
-                                title={isCompleted ? undefined : "Double-click to edit"}
                             >
-                                <p className={`text-sm font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'} ${isCompleted ? '' : 'cursor-text'}`}>
+                                <p className={`${compact ? 'text-xs' : 'text-sm'} font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'} ${isCompleted ? '' : 'cursor-text'}`}>
                                     {showPriorityDot && <span className={`inline-block w-1.5 h-1.5 rounded-full ${priorityColor} mr-1.5 align-middle`}></span>}
                                     {task.icon && iconMap[task.icon] && <span className="inline-block mr-1.5 align-middle">{iconMap[task.icon]}</span>}
                                     {task.isTopPriority && <Star size={14} className="inline mr-1 text-amber-500 fill-amber-500" />}
                                     {task.title}
                                 </p>
-                                {/* Hint on hover */}
-                                {!isCompleted && (
-                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
-                                        <div className="absolute right-0 top-0 text-[9px] text-gray-400 bg-white px-1 rounded">
-                                            double-click to edit
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         )}
                     </div>
 
                     {/* Quick actions - show on hover */}
+                    {!compact && (
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                         {!isCompleted && (
                             <button
@@ -620,10 +612,11 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                             <MoreHorizontal size={14} />
                         </button>
                     </div>
+                    )}
                 </div>
 
                 {/* Metadata row - Editable badges */}
-                <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-gray-600">
+                <div className={`flex items-center ${compact ? 'gap-1' : 'gap-1.5'} flex-wrap ${compact ? 'text-[9px]' : 'text-[10px]'} text-gray-600`}>
                     <EditablePriorityBadge
                         priority={task.priority}
                         onChange={handlePriorityChange}
@@ -660,7 +653,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                 </div>
 
                 {/* In-progress timer */}
-                {task.status === 'in-progress' && elapsedMinutes > 0 && (
+                {task.status === 'in-progress' && elapsedMinutes > 0 && !compact && (
                     <div className={`flex items-center justify-between text-xs ${timeStatus.color} ${timeStatus.bgColor} px-2 py-1 rounded-md ${timeStatus.pulse ? 'animate-pulse' : ''}`}>
                         <div className="flex items-center gap-1">
                             <Play size={12} />
