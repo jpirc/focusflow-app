@@ -8,6 +8,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Task, Subtask, TaskStatus, TimeBlock, TaskDependency } from '@/types';
 import { taskApi, dependencyApi, CreateTaskInput, UpdateTaskInput } from '@/lib/api/client';
+import { formatDate, getCurrentTimeBlock, isPastTimeBlock, getNextTimeBlock } from '@/lib/utils/date';
 
 interface UseTasksOptions {
     /** Whether user is authenticated */
@@ -19,28 +20,31 @@ interface UseTasksOptions {
 interface UseTasksReturn {
     tasks: Task[];
     loading: boolean;
-    
+
     // Task CRUD
     createTask: (input: CreateTaskInput) => Promise<Task | null>;
     updateTask: (id: string, updates: UpdateTaskInput) => Promise<void>;
     deleteTask: (id: string) => Promise<boolean>;
-    
+
     // Status & positioning
     updateStatus: (id: string, status: TaskStatus) => Promise<void>;
     pauseTask: (id: string) => Promise<void>;
     uncompleteToInbox: (id: string) => Promise<void>;
     moveTask: (taskId: string, date: string, timeBlock: TimeBlock) => Promise<void>;
-    
+
     // Subtasks
     addSubtask: (taskId: string, title: string, estimatedMinutes?: number) => Promise<void>;
     toggleSubtask: (taskId: string, subtaskId: string) => Promise<void>;
     updateSubtask: (taskId: string, subtaskId: string, updates: Partial<Subtask>) => Promise<void>;
     deleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
-    
+
     // Dependencies
     addDependency: (taskId: string, dependsOnId: string) => Promise<void>;
     removeDependency: (taskId: string, dependencyId: string) => Promise<void>;
-    
+
+    // Top 3 Priorities
+    setTopPriorities: (taskIds: string[], dateStr: string) => Promise<void>;
+
     // Bulk operations
     applyAIBreakdown: (taskId: string, subtasks: Subtask[]) => void;
     clearFinishedTasks: (taskIds: string[]) => Promise<void>;
@@ -85,6 +89,49 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
 
         init();
     }, [isAuthenticated, refreshTasks]);
+
+    // ============================================
+    // Smart Auto-Bump: Move past time blocks to current
+    // ============================================
+
+    useEffect(() => {
+        if (!isAuthenticated || loading || tasks.length === 0) return;
+
+        const autoBumpTasks = async () => {
+            const todayStr = formatDate(new Date());
+            const currentBlock = getCurrentTimeBlock();
+            
+            // Skip if it's too early or too late (outside 6am-10pm)
+            if (currentBlock === 'anytime') return;
+
+            // Find today's tasks that are in past time blocks
+            const tasksToBump = tasks.filter(t => 
+                t.date === todayStr &&
+                t.status === 'pending' &&
+                t.timeBlock !== 'anytime' &&
+                isPastTimeBlock(t.timeBlock)
+            );
+
+            if (tasksToBump.length === 0) return;
+
+            console.log(`Auto-bumping ${tasksToBump.length} tasks to ${currentBlock}`);
+
+            // Bump tasks to current time block
+            for (const task of tasksToBump) {
+                await taskApi.update(task.id, { timeBlock: currentBlock });
+            }
+
+            // Refresh to show updated tasks
+            await refreshTasks();
+        };
+
+        // Run once on load after tasks are fetched
+        autoBumpTasks();
+
+        // Optional: Re-check every 30 minutes
+        const interval = setInterval(autoBumpTasks, 30 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, [isAuthenticated, loading, tasks, refreshTasks]);
 
     // ============================================
     // Task CRUD
@@ -384,6 +431,65 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
     }, [isAuthenticated, refreshTasks]);
 
     // ============================================
+    // Top 3 Priorities
+    // ============================================
+
+    const setTopPriorities = useCallback(async (taskIds: string[], dateStr: string) => {
+        // Optimistic update - clear old top priorities for this date, set new ones
+        // AND schedule inbox tasks to today
+        setTasks(prev => prev.map(t => {
+            // Clear existing top priority for this date
+            if (t.topPriorityDate === dateStr) {
+                return { ...t, isTopPriority: false, topPriorityDate: null };
+            }
+            // Set new top priorities AND schedule to today if in inbox
+            if (taskIds.includes(t.id)) {
+                return { 
+                    ...t, 
+                    isTopPriority: true, 
+                    topPriorityDate: dateStr,
+                    // If task is in inbox (no date), schedule it for today
+                    date: t.date || dateStr,
+                    timeBlock: t.date ? t.timeBlock : 'anytime', // Keep existing block or default to anytime
+                };
+            }
+            return t;
+        }));
+
+        if (!isAuthenticated) return;
+
+        // First, clear any existing top priorities for this date
+        const existingTopPriorities = tasks.filter(t => t.topPriorityDate === dateStr && !taskIds.includes(t.id));
+        const clearPromises = existingTopPriorities.map(t =>
+            taskApi.update(t.id, { isTopPriority: false, topPriorityDate: null })
+        );
+
+        // Then, set the new top priorities (and schedule inbox tasks to today)
+        const setPromises = taskIds.map(id => {
+            const task = tasks.find(t => t.id === id);
+            const updates: any = { 
+                isTopPriority: true, 
+                topPriorityDate: dateStr,
+            };
+            
+            // If task is in inbox (no date), schedule it for today
+            if (task && !task.date) {
+                updates.date = dateStr;
+                updates.timeBlock = 'anytime';
+            }
+            
+            return taskApi.update(id, updates);
+        });
+
+        const results = await Promise.all([...clearPromises, ...setPromises]);
+
+        // If any failed, refresh to sync
+        if (results.some(r => r.error)) {
+            await refreshTasks();
+        }
+    }, [isAuthenticated, tasks, refreshTasks]);
+
+    // ============================================
     // Bulk Operations
     // ============================================
 
@@ -430,6 +536,7 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
         deleteSubtask,
         addDependency,
         removeDependency,
+        setTopPriorities,
         applyAIBreakdown,
         clearFinishedTasks,
         refreshTasks,

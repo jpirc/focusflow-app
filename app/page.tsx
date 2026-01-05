@@ -9,7 +9,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { Brain, CheckCircle2, RotateCcw, Pencil } from 'lucide-react';
+import { Brain, CheckCircle2, RotateCcw, Pencil, Trash2 } from 'lucide-react';
 
 // Hooks
 import { useTasks, useProjects, useCelebration } from '@/hooks';
@@ -25,6 +25,8 @@ import { EditTaskModal } from '@/components/EditTaskModal';
 import { CreateProjectModal } from '@/components/CreateProjectModal';
 import { SmartCaptureModal } from '@/components/SmartCaptureModal';
 import { CelebrationMessage } from '@/components/CelebrationMessage';
+import { DailyPrioritiesModal } from '@/components/DailyPrioritiesModal';
+import { Top3Section } from '@/components/Top3Section';
 
 // Utilities & Constants
 import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeekend } from '@/lib/utils/date';
@@ -60,6 +62,7 @@ export default function FocusFlowApp() {
         deleteSubtask,
         addDependency,
         removeDependency,
+        setTopPriorities,
         applyAIBreakdown,
         refreshTasks,
     } = useTasks({ isAuthenticated });
@@ -113,18 +116,30 @@ export default function FocusFlowApp() {
     );
     const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
     const [smartCaptureModalOpen, setSmartCaptureModalOpen] = useState(false);
+    const [dailyPrioritiesModalOpen, setDailyPrioritiesModalOpen] = useState(false);
 
     // ============================================
     // Computed Values
     // ============================================
 
-    const inboxTasks = useMemo(() => 
+    const inboxTasks = useMemo(() =>
         tasks.filter(t =>
-            !t.date && 
-            t.status !== 'completed' && 
+            !t.date &&
+            t.status !== 'completed' &&
             (!selectedProjectId || t.projectId === selectedProjectId)
         ),
         [tasks, selectedProjectId]
+    );
+
+    // Today's date string for Top 3 priorities
+    const todayDateStr = useMemo(() => formatDate(new Date()), []);
+
+    // Get existing Top 3 priorities for today
+    const todayTopPriorities = useMemo(() =>
+        tasks
+            .filter(t => t.isTopPriority && t.topPriorityDate === todayDateStr)
+            .map(t => t.id),
+        [tasks, todayDateStr]
     );
 
     // For week view (7 days), start from Sunday of current week
@@ -211,6 +226,44 @@ export default function FocusFlowApp() {
     }, [session, loading]);
 
     // ============================================
+    // Morning Prompt for Top 3 Priorities
+    // ============================================
+
+    useEffect(() => {
+        if (loading || !session) return;
+
+        // Check if we should show the morning prompt
+        const checkMorningPrompt = () => {
+            const now = new Date();
+            const hour = now.getHours();
+
+            // Only show between 5 AM and 11 AM
+            if (hour < 5 || hour >= 11) return;
+
+            // Check if user has already set Top 3 for today
+            if (todayTopPriorities.length > 0) return;
+
+            // Check if user has already dismissed the prompt today
+            const dismissedKey = `focusflow_top3_dismissed_${todayDateStr}`;
+            if (localStorage.getItem(dismissedKey)) return;
+
+            // Check if there are any tasks to prioritize
+            const todayTasks = tasks.filter(t =>
+                t.status !== 'completed' &&
+                (t.date === todayDateStr || t.date === null)
+            );
+            if (todayTasks.length === 0) return;
+
+            // Show the modal
+            setDailyPrioritiesModalOpen(true);
+        };
+
+        // Small delay to let tasks load
+        const timer = setTimeout(checkMorningPrompt, 1000);
+        return () => clearTimeout(timer);
+    }, [loading, session, tasks, todayDateStr, todayTopPriorities.length]);
+
+    // ============================================
     // Handlers
     // ============================================
 
@@ -229,6 +282,18 @@ export default function FocusFlowApp() {
             applyAIBreakdown(taskForAI.id, subtasks);
         }
     }, [taskForAI, applyAIBreakdown]);
+
+    const handleCloseDailyPriorities = useCallback(() => {
+        setDailyPrioritiesModalOpen(false);
+        // Mark as dismissed for today
+        const dismissedKey = `focusflow_top3_dismissed_${todayDateStr}`;
+        localStorage.setItem(dismissedKey, 'true');
+    }, [todayDateStr]);
+
+    const handleSetTopPriorities = useCallback(async (taskIds: string[]) => {
+        await setTopPriorities(taskIds, todayDateStr);
+        setDailyPrioritiesModalOpen(false);
+    }, [setTopPriorities, todayDateStr]);
 
     const handleStartDrag = useCallback((item: DragItem) => {
         console.log('Dragging', item);
@@ -373,6 +438,19 @@ export default function FocusFlowApp() {
                                         )}
                                     </div>
 
+                                    {/* Top 3 Priorities (only show on today in non-week view) */}
+                                    {day.isToday && viewDays !== 7 && (
+                                        <div className="mb-2">
+                                            <Top3Section
+                                                topPriorities={tasks.filter(t => t.isTopPriority && t.topPriorityDate === todayDateStr)}
+                                                projects={projects}
+                                                onEdit={handleEditTask}
+                                                onSetPriorities={() => setDailyPrioritiesModalOpen(true)}
+                                                onStatusChange={handleStatusChange}
+                                            />
+                                        </div>
+                                    )}
+
                                     {/* Time Blocks */}
                                     <div className={`flex-1 overflow-y-auto pr-0.5 pb-2 ${viewDays === 7 ? 'space-y-0.5' : 'space-y-2'}`}>
                                         {TIME_BLOCKS.map(block => (
@@ -439,6 +517,13 @@ export default function FocusFlowApp() {
                                                                     title="Edit task"
                                                                 >
                                                                     <Pencil size={viewDays === 7 ? 10 : 12} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => deleteTask(task.id)}
+                                                                    className="flex-shrink-0 p-0.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                                    title="Delete task"
+                                                                >
+                                                                    <Trash2 size={viewDays === 7 ? 10 : 12} />
                                                                 </button>
                                                                 {/* Hover tooltip with details (2s delay) */}
                                                                 {(task.description || task.estimatedMinutes || project) && viewDays !== 7 && (
@@ -546,6 +631,16 @@ export default function FocusFlowApp() {
                 isOpen={smartCaptureModalOpen}
                 onClose={() => setSmartCaptureModalOpen(false)}
                 onTasksCreated={refreshTasks}
+            />
+
+            <DailyPrioritiesModal
+                isOpen={dailyPrioritiesModalOpen}
+                onClose={handleCloseDailyPriorities}
+                tasks={tasks}
+                projects={projects}
+                todayDateStr={todayDateStr}
+                onSetTopPriorities={handleSetTopPriorities}
+                existingTopPriorities={todayTopPriorities}
             />
 
             {/* Celebration message overlay */}

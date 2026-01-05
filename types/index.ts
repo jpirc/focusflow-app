@@ -55,6 +55,8 @@ export interface Task {
     energyLevel: EnergyLevel;
     icon: string;
     rolloverCount?: number;
+    isTopPriority?: boolean;
+    topPriorityDate?: string | null;
     subtasks: Subtask[];
     dependencies?: TaskDependency[];
     dependsOn: string[];

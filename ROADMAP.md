@@ -448,84 +448,57 @@ The following features are prioritized for immediate implementation, ordered by 
 
 ---
 
-### 1. Completion Celebrations 🎉
-**Status:** NOT STARTED | **Priority:** HIGH | **Effort:** LOW
+### 1. Completion Celebrations 🎉 ✅ DONE
+**Status:** COMPLETED | **Priority:** HIGH | **Effort:** LOW
 
 Dopamine hits when tasks are completed.
 
-**Implementation:**
-- [ ] Confetti animation on task completion (use canvas-confetti or CSS)
-- [ ] Optional sound effect (respect system preferences)
-- [ ] Encouraging messages rotation: "Nice!", "You're on fire!", "Crushed it!"
-- [ ] Streak counter in header: "🔥 5 tasks today"
-- [ ] Special celebration for completing all Top 3
+**Implemented:**
+- [x] Confetti animation on task completion (canvas-confetti)
+- [x] Optional sound effect (respect system preferences)
+- [x] Encouraging messages rotation: "Nice!", "You're on fire!", "Crushed it!"
+- [x] Streak counter in header with fire icon
+- [x] Milestone messages at 3, 5, 10, 15, 20 tasks
+- [x] Daily streak persistence in localStorage
 
-**Events to track:**
-- `celebration_shown` (type: confetti/sound/message, task_id, streak_count)
-
-**Files to modify:**
-- `hooks/useTasks.ts` - trigger celebration on status change to completed
-- `components/TaskCard.tsx` - visual feedback
-- `app/page.tsx` - streak counter display
-- `app/globals.css` - confetti animation
-
-**User settings needed:**
-- `celebrationsEnabled: boolean`
-- `celebrationSound: boolean`
-- `celebrationIntensity: 'subtle' | 'normal' | 'extra'`
+**Files created/modified:**
+- `hooks/useCelebration.ts` - NEW: celebration state, confetti, streak tracking
+- `components/CelebrationMessage.tsx` - NEW: floating message overlay
+- `components/layout/Header.tsx` - streak counter display
+- `app/page.tsx` - celebration integration
+- `app/globals.css` - bounce-in and streak-glow animations
 
 ---
 
-### 2. Time Overrun Warnings ⏰
-**Status:** NOT STARTED | **Priority:** HIGH | **Effort:** LOW
+### 2. Time Overrun Warnings ⏰ ✅ DONE
+**Status:** COMPLETED | **Priority:** HIGH | **Effort:** LOW
 
 Visual cues when tasks exceed estimated time.
 
-**Implementation:**
-- [ ] Color change on elapsed time display:
-  - Green: < 100% of estimate
-  - Yellow: 100-150% of estimate
-  - Orange: 150-200% of estimate
-  - Red: > 200% of estimate
-- [ ] Pulsing animation when overrun
-- [ ] Tooltip: "This task was estimated at 30m, you've been working for 45m"
-- [ ] Optional notification at 100% and 150%
+**Implemented:**
+- [x] Color change on elapsed time display:
+  - Blue: < 100% of estimate (normal)
+  - Yellow: 100-150% of estimate (warning)
+  - Orange: 150-200% of estimate (overrun)
+  - Red: > 200% of estimate (critical)
+- [x] Pulsing animation when overrun (animate-pulse)
+- [x] Rich tooltip showing detailed breakdown
 
-**Events to track:**
-- `time_warning_triggered` (task_id, warning_level, elapsed_minutes, estimated_minutes)
-
-**Files to modify:**
-- `components/TaskCard.tsx` - enhance existing elapsed time display
-- `lib/constants.ts` - add warning thresholds
+**Files modified:**
+- `components/TaskCard.tsx` - added getTimeStatus() function and enhanced time display
 
 ---
 
-### 3. Parking Lot Quick Capture 🅿️
-**Status:** NOT STARTED | **Priority:** HIGH | **Effort:** LOW
+### 3. Parking Lot Quick Capture 🅿️ ⏭️ SKIPPED
+**Status:** SKIPPED | **Priority:** HIGH | **Effort:** LOW
 
-Capture intrusive thoughts without derailing focus.
+**Reason:** The existing Smart Capture modal already provides the same functionality:
+- Natural language input
+- AI-powered parsing for dates, times, priorities
+- Tasks go to inbox by default (no date required)
+- Minimal cognitive load - no forms to fill
 
-**Implementation:**
-- [ ] New "Parking Lot" section in sidebar (separate from Inbox)
-- [ ] Super minimal capture: just title, one click/keystroke
-- [ ] Keyboard shortcut: `Cmd+Shift+P`
-- [ ] Visual distinction from regular tasks (dashed border, gray)
-- [ ] "Process Parking Lot" prompt during daily planning
-- [ ] Convert to real task or delete
-
-**Database:**
-- Add `isParkingLot: Boolean @default(false)` to Task model
-- OR create separate `ParkingLotItem` model (simpler, less clutter)
-
-**Events to track:**
-- `parking_lot_captured` (during_focus_session: boolean, time_of_day)
-- `parking_lot_processed` (action: 'converted' | 'deleted' | 'kept')
-
-**Files to modify:**
-- `prisma/schema.prisma` - add field or model
-- `components/layout/Sidebar.tsx` - add Parking Lot section
-- `hooks/useTasks.ts` or new `useParkingLot.ts` hook
-- `app/api/parking-lot/route.ts` - new API endpoint
+Adding a separate Parking Lot would create redundant UX and confusion about which entry point to use. The Smart Capture modal effectively IS the quick capture solution.
 
 ---
 

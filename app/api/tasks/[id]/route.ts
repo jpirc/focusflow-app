@@ -29,6 +29,8 @@ const updateTaskSchema = z.object({
     actualMinutes: z.number().nullable().optional(),
     startedAt: z.string().nullable().optional(),
     completed: z.boolean().optional(),
+    isTopPriority: z.boolean().optional(),
+    topPriorityDate: z.string().nullable().optional(),
 });
 
 export async function GET(
