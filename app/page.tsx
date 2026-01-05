@@ -554,7 +554,7 @@ export default function FocusFlowApp() {
                                                         Done ({day.completedTasks.length})
                                                     </span>
                                                 </div>
-                                                <div className={viewDays === 7 ? 'space-y-0.5' : 'space-y-1'}>
+                                                <div className={`${viewDays === 7 ? 'space-y-0.5' : 'space-y-1'} max-h-48 overflow-y-auto`}>
                                                     {day.completedTasks.map(task => {
                                                         const project = projects.find(p => p.id === task.projectId);
                                                         return (
