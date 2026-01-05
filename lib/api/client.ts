@@ -123,8 +123,8 @@ export const taskApi = {
     /**
      * Rollover incomplete tasks from past days
      */
-    async rollover(): Promise<ApiResult<{ count: number }>> {
-        return apiFetch<{ count: number }>('/api/tasks/rollover', {
+    async rollover(): Promise<ApiResult<{ count: number; tasks: Array<{ id: string; title: string; originalDate: string | null }> }>> {
+        return apiFetch<{ count: number; tasks: Array<{ id: string; title: string; originalDate: string | null }> }>('/api/tasks/rollover', {
             method: 'POST',
         });
     },

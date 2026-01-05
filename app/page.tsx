@@ -27,6 +27,7 @@ import { SmartCaptureModal } from '@/components/SmartCaptureModal';
 import { CelebrationMessage } from '@/components/CelebrationMessage';
 import { DailyPrioritiesModal } from '@/components/DailyPrioritiesModal';
 import { Top3Section } from '@/components/Top3Section';
+import { RolloverNotification } from '@/components/RolloverNotification';
 
 // Utilities & Constants
 import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeekend } from '@/lib/utils/date';
@@ -50,6 +51,8 @@ export default function FocusFlowApp() {
     const {
         tasks,
         loading,
+        rolledOverTasks,
+        dismissRolloverNotification,
         createTask,
         updateTask,
         deleteTask,
@@ -417,6 +420,13 @@ export default function FocusFlowApp() {
                     activeTask={activeTask}
                     onPauseActiveTask={activeTask ? () => pauseTask(activeTask.id) : undefined}
                     onCompleteActiveTask={activeTask ? () => updateStatus(activeTask.id, 'completed') : undefined}
+                />
+
+                {/* Rollover Notification */}
+                <RolloverNotification
+                    rolledOverTasks={rolledOverTasks}
+                    allTasks={tasks}
+                    onDismiss={dismissRolloverNotification}
                 />
 
                 {/* View Content */}

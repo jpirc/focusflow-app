@@ -20,6 +20,8 @@ interface UseTasksOptions {
 interface UseTasksReturn {
     tasks: Task[];
     loading: boolean;
+    rolledOverTasks: Array<{ id: string; title: string; originalDate: string | null }>;
+    dismissRolloverNotification: () => void;
 
     // Task CRUD
     createTask: (input: CreateTaskInput) => Promise<Task | null>;
@@ -54,6 +56,7 @@ interface UseTasksReturn {
 export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): UseTasksReturn {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
+    const [rolledOverTasks, setRolledOverTasks] = useState<Array<{ id: string; title: string; originalDate: string | null }>>([]);
 
     // ============================================
     // Fetch & Refresh
@@ -82,7 +85,10 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
 
         const init = async () => {
             // Rollover incomplete past tasks
-            await taskApi.rollover();
+            const rolloverResult = await taskApi.rollover();
+            if (rolloverResult.data && rolloverResult.data.count > 0) {
+                setRolledOverTasks(rolloverResult.data.tasks);
+            }
             // Then fetch all tasks
             await refreshTasks();
         };
@@ -523,6 +529,8 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
     return {
         tasks,
         loading,
+        rolledOverTasks,
+        dismissRolloverNotification: () => setRolledOverTasks([]),
         createTask,
         updateTask,
         deleteTask,
