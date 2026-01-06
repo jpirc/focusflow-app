@@ -31,9 +31,25 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
     const [isDragOver, setIsDragOver] = useState(false);
 
     const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        setIsDragOver(true);
+        // Only activate column drag-over if not hovering over a task
+        const target = e.target as HTMLElement;
+        const isOverTask = target.closest('[data-task-id]');
+        if (!isOverTask) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            setIsDragOver(true);
+        } else {
+            e.preventDefault();
+            setIsDragOver(false);
+        }
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        const target = e.relatedTarget as HTMLElement;
+        const isStillInColumn = e.currentTarget.contains(target);
+        if (!isStillInColumn) {
+            setIsDragOver(false);
+        }
     };
 
     const handleDrop = (e: React.DragEvent) => {
@@ -79,7 +95,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
                 ${isDragOver ? 'border-purple-400 bg-purple-50 scale-[1.02] border-2' : style.border}
             `}
             onDragOver={handleDragOver}
-            onDragLeave={() => setIsDragOver(false)}
+            onDragLeave={handleDragLeave}
             onDrop={handleDrop}
         >
             {/* Block header */}
@@ -107,25 +123,26 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
                 {tasks.map(task => {
                     const project = projects.find(p => p.id === task.projectId) || { id: 'default', name: 'No Project', color: '#6b7280', bgColor: '#f3f4f6', icon: 'folder' };
                     return (
-                        <QuickEditTaskCard
-                            key={task.id}
-                            task={task}
-                            project={project}
-                            allTasks={allTasks}
-                            allProjects={projects}
-                            isSelected={selectedTaskId === task.id}
-                            onSelect={onSelectTask}
-                            onUpdate={onUpdate}
-                            onStatusChange={onStatusChange}
-                            onPause={onPause}
-                            onToggleSubtask={onToggleSubtask}
-                            onStartDrag={onStartDrag}
-                            onDelete={onDelete}
-                            onAIBreakdown={onAIBreakdown}
-                            onUpdateSubtasks={onUpdateSubtasks}
-                            onEdit={onEdit}
-                            compact={compact}
-                        />
+                        <div key={task.id} data-task-id={task.id}>
+                            <QuickEditTaskCard
+                                task={task}
+                                project={project}
+                                allTasks={allTasks}
+                                allProjects={projects}
+                                isSelected={selectedTaskId === task.id}
+                                onSelect={onSelectTask}
+                                onUpdate={onUpdate}
+                                onStatusChange={onStatusChange}
+                                onPause={onPause}
+                                onToggleSubtask={onToggleSubtask}
+                                onStartDrag={onStartDrag}
+                                onDelete={onDelete}
+                                onAIBreakdown={onAIBreakdown}
+                                onUpdateSubtasks={onUpdateSubtasks}
+                                onEdit={onEdit}
+                                compact={compact}
+                            />
+                        </div>
                     );
                 })}
 
