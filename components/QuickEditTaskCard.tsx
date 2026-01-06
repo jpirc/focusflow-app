@@ -803,12 +803,11 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                 onStartDrag({ taskId: task.id, sourceDate: task.date, sourceTimeBlock: task.timeBlock });
             }}
             onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const draggedTaskId = e.dataTransfer.getData('text/plain');
-                if (draggedTaskId !== task.id) {
-                    setIsDragOver(true);
-                }
+                e.preventDefault(); // Required for drop to work
+                e.dataTransfer.dropEffect = 'move';
+                // Note: Cannot access getData in dragOver, only in drop
+                // We'll set isDragOver true - it will be a visual indicator for any drag
+                setIsDragOver(true);
             }}
             onDragLeave={() => setIsDragOver(false)}
             onDrop={(e) => {

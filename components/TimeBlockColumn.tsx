@@ -31,15 +31,15 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
     const [isDragOver, setIsDragOver] = useState(false);
 
     const handleDragOver = (e: React.DragEvent) => {
-        // Only activate column drag-over if not hovering over a task
+        e.preventDefault(); // MUST always prevent default to allow drop
+        e.dataTransfer.dropEffect = 'move';
+        
+        // Only activate visual drag-over if not hovering over a task
         const target = e.target as HTMLElement;
         const isOverTask = target.closest('[data-task-id]');
         if (!isOverTask) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
             setIsDragOver(true);
         } else {
-            e.preventDefault();
             setIsDragOver(false);
         }
     };
