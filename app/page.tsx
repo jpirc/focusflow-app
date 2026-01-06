@@ -51,6 +51,7 @@ export default function FocusFlowApp() {
 
     const {
         tasks,
+        setTasks,
         loading,
         rolledOverTasks,
         dismissRolloverNotification,
@@ -355,10 +356,15 @@ export default function FocusFlowApp() {
     }, [updateStatus, incrementStreak, celebrate]);
 
     const handleDrop = useCallback(async (taskId: string, targetDate: string, targetBlock: TimeBlock, insertBeforeTaskId?: string) => {
+        console.log('[DRAG] handleDrop called:', { taskId, targetDate, targetBlock, insertBeforeTaskId });
         const task = tasks.find(t => t.id === taskId);
-        if (!task) return;
+        if (!task) {
+            console.log('[DRAG] Task not found:', taskId);
+            return;
+        }
         
         const isSameBucket = task.date === targetDate && task.timeBlock === targetBlock;
+        console.log('[DRAG] isSameBucket:', isSameBucket, 'insertBeforeTaskId:', insertBeforeTaskId);
         
         if (isSameBucket && insertBeforeTaskId) {
             // Reordering within same bucket
@@ -366,24 +372,48 @@ export default function FocusFlowApp() {
                 .filter(t => t.date === targetDate && t.timeBlock === targetBlock)
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
             
+            console.log('[DRAG] Bucket tasks:', bucketTasks.map(t => ({ id: t.id, title: t.title, order: t.order })));
             const currentIndex = bucketTasks.findIndex(t => t.id === taskId);
             const targetIndex = bucketTasks.findIndex(t => t.id === insertBeforeTaskId);
+            console.log('[DRAG] Indexes - current:', currentIndex, 'target:', targetIndex);
             
             if (currentIndex !== -1 && targetIndex !== -1 && currentIndex !== targetIndex) {
+                console.log('[DRAG] Reordering - moving from', currentIndex, 'to', targetIndex);
                 // Reorder tasks
                 const reorderedTasks = [...bucketTasks];
                 const [moved] = reorderedTasks.splice(currentIndex, 1);
                 reorderedTasks.splice(targetIndex > currentIndex ? targetIndex - 1 : targetIndex, 0, moved);
                 
-                // Update order for all tasks in the bucket - BATCHED for performance
-                await Promise.all(
-                    reorderedTasks.map((task, i) =>
-                        updateTask(task.id, { order: i })
-                    )
-                );
+                console.log('[DRAG] New order:', reorderedTasks.map(t => ({ id: t.id, title: t.title })));
                 
-                // Refresh to ensure we have the latest state
-                await refreshTasks();
+                // OPTIMISTIC UPDATE - reorder array AND update order field
+                setTasks(prev => {
+                    // Separate tasks: those in the bucket vs others
+                    const bucketTaskIds = new Set(reorderedTasks.map(t => t.id));
+                    const otherTasks = prev.filter(t => !bucketTaskIds.has(t.id));
+                    
+                    // Update order field on reordered tasks
+                    const updatedBucketTasks = reorderedTasks.map((task, i) => ({
+                        ...prev.find(t => t.id === task.id)!,
+                        order: i
+                    }));
+                    
+                    // Combine: others + reordered bucket tasks
+                    return [...otherTasks, ...updatedBucketTasks];
+                });
+                
+                // Fire API updates in background (don't await)
+                Promise.all(
+                    reorderedTasks.map((task, i) => {
+                        console.log('[DRAG] Updating task', task.title, 'order to', i);
+                        return updateTask(task.id, { order: i });
+                    })
+                ).catch(err => {
+                    console.error('[DRAG] Reorder failed, refreshing:', err);
+                    refreshTasks(); // Only refresh on error
+                });
+            } else {
+                console.log('[DRAG] Skipping reorder - conditions not met');
             }
         } else {
             // Moving to different bucket - use existing logic

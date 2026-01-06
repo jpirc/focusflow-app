@@ -19,6 +19,7 @@ interface UseTasksOptions {
 
 interface UseTasksReturn {
     tasks: Task[];
+    setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
     loading: boolean;
     rolledOverTasks: Array<{ id: string; title: string; originalDate: string | null }>;
     dismissRolloverNotification: () => void;
@@ -559,6 +560,7 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
 
     return {
         tasks,
+        setTasks,
         loading,
         rolledOverTasks,
         dismissRolloverNotification: () => setRolledOverTasks([]),

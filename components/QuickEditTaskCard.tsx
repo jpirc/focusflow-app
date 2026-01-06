@@ -813,12 +813,16 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
             onDragLeave={() => setIsDragOver(false)}
             onDrop={(e) => {
                 e.preventDefault();
-                e.stopPropagation();
+                // DO NOT stopPropagation - let it bubble to TimeBlockColumn!
                 setIsDragOver(false);
                 const draggedTaskId = e.dataTransfer.getData('text/plain');
+                console.log('[CARD] onDrop - draggedTaskId:', draggedTaskId, 'this task:', task.id, task.title);
                 if (draggedTaskId && draggedTaskId !== task.id) {
                     // Signal to parent that we want to reorder before this task
+                    console.log('[CARD] Setting __dropBeforeTaskId to:', task.id);
                     (window as any).__dropBeforeTaskId = task.id;
+                } else {
+                    console.log('[CARD] Not setting dropBefore - same task or no dragged task');
                 }
             }}
             onDragEnd={() => setIsDragging(false)}
