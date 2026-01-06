@@ -805,24 +805,26 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
             onDragOver={(e) => {
                 e.preventDefault(); // Required for drop to work
                 e.dataTransfer.dropEffect = 'move';
-                // Note: Cannot access getData in dragOver, only in drop
-                // We'll set isDragOver true - it will be a visual indicator for any drag
-                setIsDragOver(true);
+                // Set window global here so TimeBlockColumn can read it in onDrop
+                // This fires continuously while dragging over, ensuring it's set
+                if (!isDragging) { // Don't set when dragging this same task
+                    setIsDragOver(true);
+                    (window as any).__dropBeforeTaskId = task.id;
+                }
             }}
-            onDragLeave={() => setIsDragOver(false)}
+            onDragLeave={(e) => {
+                // Only clear if actually leaving (not going into a child)
+                const relatedTarget = e.relatedTarget as HTMLElement;
+                if (!e.currentTarget.contains(relatedTarget)) {
+                    setIsDragOver(false);
+                    // Clear the window global when leaving
+                    delete (window as any).__dropBeforeTaskId;
+                }
+            }}
             onDrop={(e) => {
                 e.preventDefault();
-                // DO NOT stopPropagation - let it bubble to TimeBlockColumn!
+                // Let event bubble to TimeBlockColumn - it will read window.__dropBeforeTaskId
                 setIsDragOver(false);
-                const draggedTaskId = e.dataTransfer.getData('text/plain');
-                console.log('[CARD] onDrop - draggedTaskId:', draggedTaskId, 'this task:', task.id, task.title);
-                if (draggedTaskId && draggedTaskId !== task.id) {
-                    // Signal to parent that we want to reorder before this task
-                    console.log('[CARD] Setting __dropBeforeTaskId to:', task.id);
-                    (window as any).__dropBeforeTaskId = task.id;
-                } else {
-                    console.log('[CARD] Not setting dropBefore - same task or no dragged task');
-                }
             }}
             onDragEnd={() => setIsDragging(false)}
             onClick={() => !isEditingTitle && onSelect(task.id)}

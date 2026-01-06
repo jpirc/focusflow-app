@@ -58,6 +58,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
         const taskId = e.dataTransfer.getData('text/plain');
         const dropBeforeTaskId = (window as any).__dropBeforeTaskId;
         console.log('[COLUMN] handleDrop - taskId:', taskId, 'dropBeforeTaskId:', dropBeforeTaskId);
+        // Clean up the global
         delete (window as any).__dropBeforeTaskId;
         
         if (taskId) {
