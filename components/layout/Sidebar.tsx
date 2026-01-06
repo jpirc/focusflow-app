@@ -10,6 +10,7 @@ import { signOut } from 'next-auth/react';
 import { Settings, LogOut, MoreVertical, ChevronDown, ChevronRight, Inbox, FolderKanban, PanelLeftClose, PanelLeft, BarChart3 } from 'lucide-react';
 import { Task, Project } from '@/types';
 import { QuickEditTaskCard } from '@/components/QuickEditTaskCard';
+import { TimingInsightsCard } from '@/components/TimingInsightsCard';
 
 const projectIconMap: Record<string, string> = {
     // Work & Business
@@ -290,6 +291,13 @@ export function Sidebar({
                             </div>
                         )}
                     </div>
+
+                    {/* Timing Insights Card */}
+                    {isOpen && (
+                        <div className="mt-4">
+                            <TimingInsightsCard />
+                        </div>
+                    )}
                 </div>
 
                 {/* User Profile */}

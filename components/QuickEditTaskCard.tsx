@@ -564,9 +564,10 @@ export const DependencyBadge: React.FC<{
 }> = ({ task, allTasks, onClick }) => {
     // Check if task has incomplete dependencies (blocked)
     const dependencyTasks = (task.dependencies || []).map(dep => dep.dependsOn).filter(Boolean);
-    const hasBlockingDeps = dependencyTasks.some(dep => 
+    const blockingDeps = dependencyTasks.filter(dep => 
         dep.status !== 'completed' && dep.status !== 'skipped'
     );
+    const isTaskBlocked = blockingDeps.length > 0;
     
     // Check if other tasks depend on this one
     const dependentTasks = allTasks.filter(t => 
@@ -578,12 +579,11 @@ export const DependencyBadge: React.FC<{
     if (dependencyTasks.length === 0 && !hasDependents) return null;
     
     // Determine badge state
-    const isBlocked = hasBlockingDeps;
-    const isLinked = dependencyTasks.length > 0 && !hasBlockingDeps;
+    const isLinked = dependencyTasks.length > 0 && !isTaskBlocked;
     const isBlocking = hasDependents;
     
     // Visual configs
-    const config = isBlocked 
+    const config = isTaskBlocked 
         ? { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300', icon: '🔒', label: 'Blocked' }
         : isBlocking && isLinked
         ? { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300', icon: '⛓️', label: 'Linked' }
@@ -591,8 +591,8 @@ export const DependencyBadge: React.FC<{
         ? { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300', icon: '⛓️', label: 'Blocking' }
         : { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300', icon: '🔗', label: 'Linked' };
     
-    const tooltip = isBlocked
-        ? `Blocked by ${dependencyTasks.filter(d => d.status !== 'completed').length} task(s)`
+    const tooltip = isTaskBlocked
+        ? `Blocked by ${blockingDeps.length} task(s)`
         : isBlocking && isLinked
         ? `${dependentTasks.length} task(s) waiting • ${dependencyTasks.length} completed`
         : isBlocking
@@ -609,8 +609,8 @@ export const DependencyBadge: React.FC<{
             title={tooltip}
         >
             <span>{config.icon}</span>
-            {isBlocked && dependencyTasks.filter(d => d.status !== 'completed').length}
-            {isBlocking && !isBlocked && dependentTasks.length}
+            {isTaskBlocked && blockingDeps.length}
+            {isBlocking && !isTaskBlocked && dependentTasks.length}
         </button>
     );
 };
@@ -663,8 +663,11 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     const [editedTitle, setEditedTitle] = useState(task.title);
     const titleInputRef = useRef<HTMLInputElement>(null);
 
-    const dependencyTasks = (task.dependsOn || []).map(id => allTasks.find(t => t.id === id)).filter(Boolean as any);
-    const hasBlockingDeps = dependencyTasks.some((t: any) => t && t.status !== 'completed');
+    // Dependency blocking logic
+    const dependencyTasks = (task.dependencies || []).map(dep => dep.dependsOn).filter(Boolean);
+    const blockingDependencies = dependencyTasks.filter(dep => dep.status !== 'completed' && dep.status !== 'skipped');
+    const isBlocked = blockingDependencies.length > 0 && task.status !== 'completed';
+    
     const completedSubtasks = (task.subtasks || []).filter(s => s.completed).length;
     const totalSubtasks = (task.subtasks || []).length;
     const hasSubtasks = totalSubtasks > 0;
@@ -704,7 +707,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
 
     const handleTitleDoubleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (task.status !== 'completed') {
+        if (task.status !== 'completed' && !isBlocked) {
             setIsEditingTitle(true);
         }
     };
@@ -806,7 +809,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                 isCompleted ? 'opacity-50' : '',
                 task.status === 'in-progress' ? 'ring-4 ring-blue-400 ring-offset-2 shadow-2xl shadow-blue-500/50 animate-pulse' : '',
                 isPaused ? 'ring-2 ring-amber-300 ring-offset-1 bg-amber-50/30' : '',
-                hasBlockingDeps ? 'border-r border-r-amber-400 border-dashed' : '',
+                isBlocked ? 'opacity-60 bg-red-50/30 ring-2 ring-red-200' : '',
                 isDragging ? 'opacity-50 scale-95' : '',
             ].filter(Boolean).join(' ')}
             style={{ 
@@ -847,23 +850,34 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
+                            if (isBlocked) return; // Can't interact with blocked tasks
                             if (task.status === 'completed') {
                                 onStatusChange(task.id, 'pending');
                             } else if (task.status === 'in-progress') {
                                 onPause(task.id);
-                            } else if (hasBlockingDeps) {
-                                return; // Can't start if blocked
                             } else {
                                 onStatusChange(task.id, 'in-progress');
                             }
                         }}
-                        disabled={hasBlockingDeps && task.status === 'pending'}
-                        className={`flex-shrink-0 ${compact ? 'mt-0' : 'mt-0.5'} ${hasBlockingDeps && task.status === 'pending' ? 'opacity-30 cursor-not-allowed' : ''}`}
+                        disabled={isBlocked}
+                        className={`flex-shrink-0 ${compact ? 'mt-0' : 'mt-0.5'} ${isBlocked ? 'opacity-40 cursor-not-allowed' : ''}`}
+                        title={isBlocked ? `Blocked by ${blockingDependencies.length} task(s)` : undefined}
                     >
-                        {task.status === 'completed' && <CheckCircle2 size={compact ? 16 : 18} className="text-green-500" />}
-                        {task.status === 'in-progress' && <Pause size={compact ? 16 : 18} className="text-blue-500" />}
-                        {task.status !== 'completed' && task.status !== 'in-progress' && (
-                            <Circle size={compact ? 16 : 18} className="text-gray-400 hover:text-blue-500 transition-colors" />
+                        {isBlocked ? (
+                            <div className="relative">
+                                <Circle size={compact ? 16 : 18} className="text-red-400" />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-[10px]">🔒</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                {task.status === 'completed' && <CheckCircle2 size={compact ? 16 : 18} className="text-green-500" />}
+                                {task.status === 'in-progress' && <Pause size={compact ? 16 : 18} className="text-blue-500" />}
+                                {task.status !== 'completed' && task.status !== 'in-progress' && (
+                                    <Circle size={compact ? 16 : 18} className="text-gray-400 hover:text-blue-500 transition-colors" />
+                                )}
+                            </>
                         )}
                     </button>
 
@@ -919,7 +933,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                     {/* Quick actions - show on hover */}
                     {!compact && (
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                        {!isCompleted && task.status !== 'in-progress' && !hasBlockingDeps && (
+                        {!isCompleted && task.status !== 'in-progress' && !isBlocked && (
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -978,17 +992,17 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                     <EditablePriorityBadge
                         priority={task.priority}
                         onChange={handlePriorityChange}
-                        disabled={isCompleted}
+                        disabled={isCompleted || isBlocked}
                     />
                     <EditableEnergyBadge
                         level={task.energyLevel || 'medium'}
                         onChange={handleEnergyChange}
-                        disabled={isCompleted}
+                        disabled={isCompleted || isBlocked}
                     />
                     <EditableTimeBlockBadge
                         timeBlock={task.timeBlock}
                         onChange={handleTimeBlockChange}
-                        disabled={isCompleted}
+                        disabled={isCompleted || isBlocked}
                     />
                     {task.rolloverCount && task.rolloverCount >= 3 ? (
                         <RolloverWarning
@@ -1017,6 +1031,33 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                     />
                 </div>
 
+                {/* Blocking dependencies warning */}
+                {isBlocked && !compact && (
+                    <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded px-2 py-1.5 text-xs">
+                        <span className="text-base">🔒</span>
+                        <div className="flex-1">
+                            <span className="font-medium text-red-900">Blocked by:</span>
+                            <div className="text-red-700 mt-0.5 space-y-0.5">
+                                {blockingDependencies.slice(0, 2).map((dep, i) => (
+                                    <div key={i} className="truncate">• {dep.title}</div>
+                                ))}
+                                {blockingDependencies.length > 2 && (
+                                    <div className="text-red-600">+{blockingDependencies.length - 2} more</div>
+                                )}
+                            </div>
+                        </div>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(task);
+                            }}
+                            className="text-red-600 hover:text-red-700 text-xs font-medium"
+                        >
+                            View
+                        </button>
+                    </div>
+                )}
+
                 {/* In-progress timer */}
                 {task.status === 'in-progress' && elapsedMinutes > 0 && !compact && (
                     <div className={`flex items-center gap-1 text-[10px] ${timeStatus.color} ${timeStatus.bgColor} px-1.5 py-0.5 rounded ${timeStatus.pulse ? 'animate-pulse' : ''}`}>
@@ -1037,14 +1078,6 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                                 style={{ width: `${(completedSubtasks / totalSubtasks) * 100}%` }}
                             />
                         </div>
-                    </div>
-                )}
-
-                {/* Blocking dependencies warning */}
-                {hasBlockingDeps && (
-                    <div className="text-[9px] text-amber-600 bg-amber-50 px-1 py-0.5 rounded flex items-center gap-0.5" title={`Blocked by ${dependencyTasks.filter((t: any) => t?.status !== 'completed').length} incomplete task(s)`}>
-                        <Link2 size={9} />
-                        {dependencyTasks.filter((t: any) => t?.status !== 'completed').length}
                     </div>
                 )}
             </div>

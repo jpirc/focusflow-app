@@ -5,7 +5,9 @@ import { prisma } from '@/lib/prisma';
 
 /**
  * POST /api/tasks/rollover
- * Automatically moves incomplete tasks from past dates to today's "anytime" slot
+ * Rolls tasks forward through time blocks and days:
+ * - Within same day: morning → afternoon → evening
+ * - End of day: move incomplete tasks to next day's first available block
  */
 export async function POST(req: NextRequest) {
   try {
@@ -15,28 +17,71 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = session.user.id;
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const currentHour = now.getHours();
 
-    // Find all incomplete tasks with dates before today
-    const tasksToRollover = await prisma.task.findMany({
+    const rolledOverTasks: Array<{ id: string; title: string; originalDate: string | null }> = [];
+
+    // 1. Roll over tasks from yesterday to today (into anytime bucket for replanning)
+    const yesterdayTasks = await prisma.task.findMany({
       where: {
         userId,
-        date: {
-          not: null,
-          lt: today, // Less than today
-        },
-        status: {
-          notIn: ['completed'], // Don't roll over completed tasks
-        },
+        date: yesterdayStr,
+        status: { notIn: ['completed'] },
       },
-      select: {
-        id: true,
-        title: true,
-        date: true,
-      },
+      select: { id: true, title: true, date: true, timeBlock: true },
     });
 
-    if (tasksToRollover.length === 0) {
+    for (const task of yesterdayTasks) {
+      await prisma.task.update({
+        where: { id: task.id },
+        data: {
+          date: today,
+          timeBlock: 'anytime', // Reset to anytime for replanning
+          rolloverCount: { increment: 1 },
+        },
+      });
+      rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
+    }
+
+    // 2. Roll tasks forward through time blocks within today
+    const todayTasks = await prisma.task.findMany({
+      where: {
+        userId,
+        date: today,
+        status: { notIn: ['completed'] },
+        timeBlock: { not: 'anytime' }, // Don't roll over anytime tasks
+      },
+      select: { id: true, title: true, date: true, timeBlock: true },
+    });
+
+    for (const task of todayTasks) {
+      let newTimeBlock = task.timeBlock;
+      
+      // Morning (6-12) → Afternoon if it's past noon
+      if (task.timeBlock === 'morning' && currentHour >= 12) {
+        newTimeBlock = 'afternoon';
+      }
+      // Afternoon (12-17) → Evening if it's past 5pm
+      else if (task.timeBlock === 'afternoon' && currentHour >= 17) {
+        newTimeBlock = 'evening';
+      }
+      // Evening tasks stay in evening until end of day (handled by yesterday rollover)
+
+      if (newTimeBlock !== task.timeBlock) {
+        await prisma.task.update({
+          where: { id: task.id },
+          data: { timeBlock: newTimeBlock },
+        });
+        rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
+      }
+    }
+
+    if (rolledOverTasks.length === 0) {
       return NextResponse.json({
         message: 'No tasks to roll over',
         count: 0,
@@ -44,30 +89,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Update all tasks to today's date in "anytime" slot
-    const updateResult = await prisma.task.updateMany({
-      where: {
-        id: {
-          in: tasksToRollover.map((t) => t.id),
-        },
-      },
-      data: {
-        date: today,
-        timeBlock: 'anytime',
-        rolloverCount: {
-          increment: 1,
-        },
-      },
-    });
+    if (rolledOverTasks.length === 0) {
+      return NextResponse.json({
+        message: 'No tasks to roll over',
+        count: 0,
+        tasks: [],
+      });
+    }
 
     return NextResponse.json({
-      message: `Rolled over ${tasksToRollover.length} task${tasksToRollover.length === 1 ? '' : 's'} to today`,
-      count: tasksToRollover.length,
-      tasks: tasksToRollover.map((t) => ({
-        id: t.id,
-        title: t.title,
-        originalDate: t.date,
-      })),
+      message: `Rolled over ${rolledOverTasks.length} task${rolledOverTasks.length === 1 ? '' : 's'}`,
+      count: rolledOverTasks.length,
+      tasks: rolledOverTasks,
     });
   } catch (error: any) {
     console.error('Rollover error:', error);
