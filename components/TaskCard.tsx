@@ -241,10 +241,11 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                 hasBlockingDeps ? 'border-r border-r-amber-400 border-dashed' : '',
                 isDragging ? 'opacity-50 scale-95' : '',
                 isDragOver ? 'border-t-2 border-t-purple-500' : '',
+                task.isTopPriority ? 'ring-2 ring-purple-500 shadow-lg shadow-purple-200/50' : '',
             ].filter(Boolean).join(' ')}
             style={{ 
-                borderLeftColor: project.color,
-                borderLeftWidth: '3px',
+                borderLeftColor: task.isTopPriority ? '#a855f7' : project.color,
+                borderLeftWidth: task.isTopPriority ? '4px' : '3px',
                 backgroundColor: isSelected ? undefined : (project.id !== 'default' ? lightenColor(project.color, 0.95) : undefined),
             }}
         >
