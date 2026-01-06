@@ -793,7 +793,7 @@ export default function FocusFlowApp() {
                 onClose={handleCloseDailyPriorities}
                 tasks={tasks}
                 projects={projects}
-                todayDateStr={todayDateStr}
+
                 onSetTopPriorities={handleSetTopPriorities}
                 existingTopPriorities={todayTopPriorities}
             />

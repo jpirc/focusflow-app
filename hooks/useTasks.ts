@@ -473,51 +473,38 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
     // ============================================
 
     const setTopPriorities = useCallback(async (taskIds: string[], dateStr: string) => {
-        // Optimistic update - clear old top priorities for this date, set new ones
-        // AND schedule inbox tasks to today
+        // Optimistic update - set new priorities first, then clear old ones
         setTasks(prev => prev.map(t => {
-            // Clear existing top priority for this date
-            if (t.topPriorityDate === dateStr) {
-                return { ...t, isTopPriority: false, topPriorityDate: null };
-            }
-            // Set new top priorities AND schedule to today if in inbox
+            // If task should be a top priority, set it
             if (taskIds.includes(t.id)) {
                 return { 
                     ...t, 
                     isTopPriority: true, 
                     topPriorityDate: dateStr,
-                    // If task is in inbox (no date), schedule it for today
-                    date: t.date || dateStr,
-                    timeBlock: t.date ? t.timeBlock : 'anytime', // Keep existing block or default to anytime
                 };
+            }
+            // If task was a top priority for this date but is no longer selected, clear it
+            if (t.topPriorityDate === dateStr) {
+                return { ...t, isTopPriority: false, topPriorityDate: null };
             }
             return t;
         }));
 
         if (!isAuthenticated) return;
 
-        // First, clear any existing top priorities for this date
+        // Clear existing priorities for this date
         const existingTopPriorities = tasks.filter(t => t.topPriorityDate === dateStr && !taskIds.includes(t.id));
         const clearPromises = existingTopPriorities.map(t =>
             taskApi.update(t.id, { isTopPriority: false, topPriorityDate: null })
         );
 
-        // Then, set the new top priorities (and schedule inbox tasks to today)
-        const setPromises = taskIds.map(id => {
-            const task = tasks.find(t => t.id === id);
-            const updates: any = { 
+        // Set new priorities
+        const setPromises = taskIds.map(id =>
+            taskApi.update(id, { 
                 isTopPriority: true, 
                 topPriorityDate: dateStr,
-            };
-            
-            // If task is in inbox (no date), schedule it for today
-            if (task && !task.date) {
-                updates.date = dateStr;
-                updates.timeBlock = 'anytime';
-            }
-            
-            return taskApi.update(id, updates);
-        });
+            })
+        );
 
         const results = await Promise.all([...clearPromises, ...setPromises]);
 

@@ -40,6 +40,9 @@ export function Top3Section({
 
     const completedCount = topPriorities.filter(t => t.status === 'completed').length;
     const hasAnyPriorities = topPriorities.length > 0;
+    
+    // Create array of exactly 3 slots, filling missing ones with null
+    const prioritySlots = Array.from({ length: 3 }, (_, i) => topPriorities[i] || null);
 
     return (
         <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border-2 border-purple-200 mb-2 overflow-hidden">
@@ -55,7 +58,7 @@ export function Top3Section({
                     </h3>
                     {hasAnyPriorities && (
                         <span className="text-[10px] text-purple-600 font-medium">
-                            {completedCount}/3 ✓
+                            {completedCount}/{topPriorities.length} ✓
                         </span>
                     )}
                     {!hasAnyPriorities && (
@@ -66,16 +69,16 @@ export function Top3Section({
                 </div>
                 <div className="flex items-center gap-1">
                     {isExpanded && (
-                        <button
+                        <span
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onSetPriorities();
                             }}
-                            className="text-[10px] text-purple-600 hover:text-purple-700 hover:underline flex items-center gap-0.5 px-1"
+                            className="text-[10px] text-purple-600 hover:text-purple-700 hover:underline flex items-center gap-0.5 px-1 cursor-pointer"
                         >
                             <Edit2 size={10} />
                             Edit
-                        </button>
+                        </span>
                     )}
                     {isExpanded ? (
                         <ChevronUp size={14} className="text-purple-600" />
@@ -89,7 +92,7 @@ export function Top3Section({
             {isExpanded && (
                 <div className="px-2 pb-2">
                     <div className="space-y-1.5">
-                        {topPriorities.length === 0 ? (
+                        {!hasAnyPriorities ? (
                             <button
                                 onClick={onSetPriorities}
                                 className="w-full text-left p-2 bg-white/50 rounded border-2 border-dashed border-purple-300 hover:border-purple-400 hover:bg-white/70 transition-colors"
@@ -102,7 +105,26 @@ export function Top3Section({
                                 </p>
                             </button>
                         ) : (
-                            topPriorities.map((task, index) => {
+                            // Always show all 3 slots
+                            prioritySlots.map((task, index) => {
+                                if (!task) {
+                                    // Empty slot - show placeholder
+                                    return (
+                                        <button
+                                            key={`empty-${index}`}
+                                            onClick={onSetPriorities}
+                                            className="w-full flex items-center gap-2 p-1.5 bg-white/30 rounded border-2 border-dashed border-purple-200 hover:border-purple-300 hover:bg-white/50 transition-all"
+                                        >
+                                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 bg-purple-200 text-purple-400">
+                                                {index + 1}
+                                            </div>
+                                            <span className="text-[10px] text-purple-400 italic">
+                                                Add priority #{index + 1}
+                                            </span>
+                                        </button>
+                                    );
+                                }
+                                
                                 const project = getProject(task.projectId);
                                 const isCompleted = task.status === 'completed';
 
