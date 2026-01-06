@@ -656,6 +656,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     const [menuStyle, setMenuStyle] = useState<{ top: number; left: number } | null>(null);
     const [elapsedMinutes, setElapsedMinutes] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
+    const [isDragOver, setIsDragOver] = useState(false);
     const menuButtonRef = useRef<HTMLButtonElement | null>(null);
     
     // Inline editing state
@@ -788,6 +789,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
             onDragStart={(e) => {
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/plain', task.id);
+                e.dataTransfer.setData('task-order', String(task.order || 0));
                 const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
                 dragImage.style.position = 'absolute';
                 dragImage.style.top = '-1000px';
@@ -800,6 +802,25 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                 setIsDragging(true);
                 onStartDrag({ taskId: task.id, sourceDate: task.date, sourceTimeBlock: task.timeBlock });
             }}
+            onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const draggedTaskId = e.dataTransfer.getData('text/plain');
+                if (draggedTaskId !== task.id) {
+                    setIsDragOver(true);
+                }
+            }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragOver(false);
+                const draggedTaskId = e.dataTransfer.getData('text/plain');
+                if (draggedTaskId && draggedTaskId !== task.id) {
+                    // Signal to parent that we want to reorder before this task
+                    (window as any).__dropBeforeTaskId = task.id;
+                }
+            }}
             onDragEnd={() => setIsDragging(false)}
             onClick={() => !isEditingTitle && onSelect(task.id)}
             className={[
@@ -811,6 +832,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                 isPaused ? 'ring-2 ring-amber-300 ring-offset-1 bg-amber-50/30' : '',
                 isBlocked ? 'opacity-60 bg-red-50/30 ring-2 ring-red-200' : '',
                 isDragging ? 'opacity-50 scale-95' : '',
+                isDragOver ? 'border-t-2 border-t-purple-500' : '',
             ].filter(Boolean).join(' ')}
             style={{ 
                 borderLeftColor: project.color,

@@ -375,10 +375,12 @@ export default function FocusFlowApp() {
                 const [moved] = reorderedTasks.splice(currentIndex, 1);
                 reorderedTasks.splice(targetIndex > currentIndex ? targetIndex - 1 : targetIndex, 0, moved);
                 
-                // Update order for all tasks in the bucket
-                for (let i = 0; i < reorderedTasks.length; i++) {
-                    await updateTask(reorderedTasks[i].id, { order: i });
-                }
+                // Update order for all tasks in the bucket - BATCHED for performance
+                await Promise.all(
+                    reorderedTasks.map((task, i) =>
+                        updateTask(task.id, { order: i })
+                    )
+                );
             }
         } else {
             // Moving to different bucket - use existing logic
