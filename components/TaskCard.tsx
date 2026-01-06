@@ -228,11 +228,8 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                 setIsDragOver(false);
                 const draggedTaskId = e.dataTransfer.getData('text/plain');
                 if (draggedTaskId && draggedTaskId !== task.id) {
-                    // Call a new handler that will reorder tasks
-                    if (onUpdate) {
-                        // Signal to parent that we want to reorder before this task
-                        (window as any).__dropBeforeTaskId = task.id;
-                    }
+                    // Signal to parent that we want to reorder before this task
+                    (window as any).__dropBeforeTaskId = task.id;
                 }
             }}
             onDragEnd={() => setIsDragging(false)}
