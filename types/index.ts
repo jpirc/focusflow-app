@@ -45,6 +45,7 @@ export interface Task {
     projectId?: string;
     date: string | null;
     timeBlock: TimeBlock;
+    order?: number;
     estimatedMinutes: number;
     actualMinutes?: number;
     completed?: boolean;

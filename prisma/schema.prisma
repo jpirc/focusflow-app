@@ -95,6 +95,7 @@ model Task {
   // Scheduling
   date             String?   // ISO date string YYYY-MM-DD
   timeBlock        String    @default("anytime") // morning, afternoon, evening, anytime
+  order            Int       @default(0) // Order within the same date/timeBlock
   
   // Time tracking
   estimatedMinutes Int       @default(30)

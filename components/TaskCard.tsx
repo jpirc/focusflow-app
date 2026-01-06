@@ -128,8 +128,7 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
     const [showMenu, setShowMenu] = useState(false);
     const [menuStyle, setMenuStyle] = useState<{ top: number; left: number } | null>(null);
     const [elapsedMinutes, setElapsedMinutes] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
-    const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+    const [isDragging, setIsDragging] = useState(false);    const [isDragOver, setIsDragOver] = useState(false);    const menuButtonRef = useRef<HTMLButtonElement | null>(null);
 
     const dependencyTasks = (task.dependsOn || []).map(id => allTasks.find(t => t.id === id)).filter(Boolean as any);
     const hasBlockingDeps = dependencyTasks.some((t: any) => t && t.status !== 'completed');
@@ -199,6 +198,7 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
             onDragStart={(e) => {
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/plain', task.id);
+                e.dataTransfer.setData('task-order', String(task.order || 0));
                 // Create a custom drag image from just this element
                 const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
                 dragImage.style.position = 'absolute';
@@ -213,6 +213,28 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                 setIsDragging(true);
                 onStartDrag({ taskId: task.id, sourceDate: task.date, sourceTimeBlock: task.timeBlock });
             }}
+            onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const draggedTaskId = e.dataTransfer.getData('text/plain');
+                if (draggedTaskId !== task.id) {
+                    setIsDragOver(true);
+                }
+            }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragOver(false);
+                const draggedTaskId = e.dataTransfer.getData('text/plain');
+                if (draggedTaskId && draggedTaskId !== task.id) {
+                    // Call a new handler that will reorder tasks
+                    if (onUpdate) {
+                        // Signal to parent that we want to reorder before this task
+                        (window as any).__dropBeforeTaskId = task.id;
+                    }
+                }
+            }}
             onDragEnd={() => setIsDragging(false)}
             onClick={() => onSelect(task.id)}
             className={[
@@ -221,6 +243,7 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                 task.status === 'completed' ? 'opacity-50' : '',
                 hasBlockingDeps ? 'border-r border-r-amber-400 border-dashed' : '',
                 isDragging ? 'opacity-50 scale-95' : '',
+                isDragOver ? 'border-t-2 border-t-purple-500' : '',
             ].filter(Boolean).join(' ')}
             style={{ 
                 borderLeftColor: project.color,
@@ -298,35 +321,6 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                         
                         {/* Inline indicators */}
                         <div className="flex items-center gap-1 flex-shrink-0 text-[9px] text-gray-400">
-                            {/* Elapsed time for in-progress tasks with overrun warnings */}
-                            {task.status === 'in-progress' && task.startedAt && (
-                                <span
-                                    className={`flex items-center gap-0.5 font-medium px-1 py-0.5 rounded ${timeStatus.color} ${timeStatus.bgColor} ${timeStatus.pulse ? 'animate-pulse' : ''}`}
-                                    title={task.estimatedMinutes
-                                        ? `Estimated: ${task.estimatedMinutes}m • Elapsed: ${elapsedMinutes}m${timeStatus.level !== 'normal' ? ` (${Math.round((elapsedMinutes / task.estimatedMinutes) * 100)}% of estimate)` : ''}`
-                                        : `Elapsed: ${elapsedMinutes}m`
-                                    }
-                                >
-                                    <Clock size={9} />
-                                    {elapsedMinutes}m
-                                    {task.estimatedMinutes && timeStatus.level !== 'normal' && (
-                                        <span className="text-[8px] opacity-75">/{task.estimatedMinutes}m</span>
-                                    )}
-                                </span>
-                            )}
-                            {/* Show accumulated time for paused tasks */}
-                            {task.status !== 'in-progress' && task.status !== 'completed' && (task.actualMinutes || 0) > 0 && (
-                                <span
-                                    className="flex items-center gap-0.5 font-medium px-1 py-0.5 rounded bg-gray-100 text-gray-600"
-                                    title={`Time worked: ${task.actualMinutes}m${task.estimatedMinutes ? ` (${Math.round(((task.actualMinutes || 0) / task.estimatedMinutes) * 100)}% of ${task.estimatedMinutes}m estimate)` : ''}`}
-                                >
-                                    <Clock size={9} />
-                                    {task.actualMinutes}m
-                                    {task.estimatedMinutes && (
-                                        <span className="text-[8px] opacity-75">/{task.estimatedMinutes}m</span>
-                                    )}
-                                </span>
-                            )}
                             {(task.rolloverCount || 0) > 0 && task.status !== 'completed' && (
                                 (task.rolloverCount || 0) >= 3 ? (
                                     <RolloverWarning
@@ -347,6 +341,30 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                             {!compact && <EnergyBadge level={task.energyLevel} />}
                         </div>
                     </div>
+
+                    {/* Timer status line - shown prominently for active or paused tasks */}
+                    {((task.status === 'in-progress' && task.startedAt) || (task.status !== 'completed' && (task.actualMinutes || 0) > 0)) && (
+                        <div className="mt-1 flex items-center gap-1">
+                            {task.status === 'in-progress' && task.startedAt && (
+                                <div className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded ${timeStatus.color} ${timeStatus.bgColor} ${timeStatus.pulse ? 'animate-pulse' : ''}`}>
+                                    <Clock size={10} />
+                                    <span>Active - {elapsedMinutes}m tracked</span>
+                                    {task.estimatedMinutes && (
+                                        <span className="opacity-75">/ {task.estimatedMinutes}m</span>
+                                    )}
+                                </div>
+                            )}
+                            {task.status !== 'in-progress' && task.status !== 'completed' && (task.actualMinutes || 0) > 0 && (
+                                <div className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                                    <Clock size={10} />
+                                    <span>Paused - {task.actualMinutes}m tracked</span>
+                                    {task.estimatedMinutes && (
+                                        <span className="opacity-75">/ {task.estimatedMinutes}m</span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Subtasks - always visible */}
                     {hasSubtasks && (

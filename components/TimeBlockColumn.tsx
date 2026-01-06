@@ -15,7 +15,7 @@ interface TimeBlockColumnProps {
     onPause: (id: string) => void;
     onToggleSubtask: (taskId: string, subtaskId: string) => void;
     onStartDrag: (item: DragItem) => void;
-    onDrop: (taskId: string, targetDate: string, targetBlock: TimeBlock) => void;
+    onDrop: (taskId: string, targetDate: string, targetBlock: TimeBlock, insertBeforeOrder?: number) => void;
     onDelete: (id: string) => void;
     onAIBreakdown: (task: Task) => void;
     onUpdateSubtasks: (taskId: string, subtasks: Subtask[]) => void;
@@ -40,7 +40,23 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
         e.preventDefault();
         setIsDragOver(false);
         const taskId = e.dataTransfer.getData('text/plain');
-        if (taskId) onDrop(taskId, date, block.id);
+        const dropBeforeTaskId = (window as any).__dropBeforeTaskId;
+        delete (window as any).__dropBeforeTaskId;
+        
+        if (taskId) {
+            if (dropBeforeTaskId) {
+                // Dropped on a specific task - reorder before that task
+                const targetTask = tasks.find(t => t.id === dropBeforeTaskId);
+                if (targetTask) {
+                    onDrop(taskId, date, block.id, targetTask.order);
+                } else {
+                    onDrop(taskId, date, block.id);
+                }
+            } else {
+                // Dropped in empty space - append to end
+                onDrop(taskId, date, block.id);
+            }
+        }
     };
 
     const totalMinutes = tasks.reduce((sum, t) => sum + t.estimatedMinutes, 0);

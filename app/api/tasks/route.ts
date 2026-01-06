@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
         const parentTasks = await prisma.task.findMany({
             where,
             orderBy: [
-                { priority: 'desc' },
+                { order: 'asc' },
                 { createdAt: 'desc' },
             ],
             include: {
