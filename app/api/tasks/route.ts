@@ -24,6 +24,7 @@ const createTaskSchema = z.object({
     aiGenerated: z.boolean().optional(),
     completed: z.boolean().optional(),
     status: z.enum(['pending', 'in-progress', 'completed', 'skipped', 'carried-over']).optional(),
+    order: z.number().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -148,6 +149,7 @@ export async function POST(req: NextRequest) {
         if (data!.aiGenerated !== undefined) taskData.aiGenerated = data!.aiGenerated;
         if (data!.completed !== undefined) taskData.completed = data!.completed;
         if (data!.status !== undefined) taskData.status = data!.status;
+        if (data!.order !== undefined) taskData.order = data!.order;
 
         const task = await prisma.task.create({
             data: taskData,

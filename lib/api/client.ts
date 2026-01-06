@@ -65,6 +65,7 @@ export interface CreateTaskInput {
     energyLevel?: EnergyLevel;
     icon?: string;
     aiGenerated?: boolean;
+    order?: number;
 }
 
 export interface UpdateTaskInput {

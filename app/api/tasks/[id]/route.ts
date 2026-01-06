@@ -31,6 +31,7 @@ const updateTaskSchema = z.object({
     completed: z.boolean().optional(),
     isTopPriority: z.boolean().optional(),
     topPriorityDate: z.string().nullable().optional(),
+    order: z.number().optional(),
 });
 
 export async function GET(
