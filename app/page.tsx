@@ -354,20 +354,20 @@ export default function FocusFlowApp() {
         }
     }, [updateStatus, incrementStreak, celebrate]);
 
-    const handleDrop = useCallback(async (taskId: string, targetDate: string, targetBlock: TimeBlock, insertBeforeOrder?: number) => {
+    const handleDrop = useCallback(async (taskId: string, targetDate: string, targetBlock: TimeBlock, insertBeforeTaskId?: string) => {
         const task = tasks.find(t => t.id === taskId);
         if (!task) return;
         
         const isSameBucket = task.date === targetDate && task.timeBlock === targetBlock;
         
-        if (isSameBucket && insertBeforeOrder !== undefined) {
+        if (isSameBucket && insertBeforeTaskId) {
             // Reordering within same bucket
             const bucketTasks = tasks
                 .filter(t => t.date === targetDate && t.timeBlock === targetBlock)
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
             
             const currentIndex = bucketTasks.findIndex(t => t.id === taskId);
-            const targetIndex = bucketTasks.findIndex(t => (t.order || 0) === insertBeforeOrder);
+            const targetIndex = bucketTasks.findIndex(t => t.id === insertBeforeTaskId);
             
             if (currentIndex !== -1 && targetIndex !== -1 && currentIndex !== targetIndex) {
                 // Reorder tasks
