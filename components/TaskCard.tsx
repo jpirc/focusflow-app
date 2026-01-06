@@ -137,13 +137,14 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
     const totalSubtasks = (task.subtasks || []).length;
     const hasSubtasks = totalSubtasks > 0;
 
-    // Timer for in-progress tasks
+    // Timer for in-progress tasks (shows current session + accumulated time)
     useEffect(() => {
         if (task.status === 'in-progress' && task.startedAt) {
             const updateElapsed = () => {
                 const started = new Date(task.startedAt!).getTime();
-                const elapsed = Math.floor((Date.now() - started) / 60000);
-                setElapsedMinutes(elapsed);
+                const currentSessionMinutes = Math.floor((Date.now() - started) / 60000);
+                const accumulatedMinutes = task.actualMinutes || 0;
+                setElapsedMinutes(currentSessionMinutes + accumulatedMinutes);
             };
             updateElapsed();
             const interval = setInterval(updateElapsed, 60000); // Update every minute
@@ -151,7 +152,7 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
         } else {
             setElapsedMinutes(0);
         }
-    }, [task.status, task.startedAt]);
+    }, [task.status, task.startedAt, task.actualMinutes]);
 
     useEffect(() => {
         if (showMenu && menuButtonRef.current) {

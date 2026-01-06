@@ -102,18 +102,33 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
           </div>
 
           <p className="text-xs text-gray-500 mb-2">
-            Type naturally – dates, times, and priorities are auto-detected.
+            Type naturally – dates, times, priorities, and durations are auto-detected.
           </p>
 
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="e.g., 'Call mom tomorrow morning' or 'Finish report by Friday - high priority'"
-            className="w-full h-28 p-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+            placeholder="e.g., 'Call mom tomorrow morning - quick 15 min task' or 'Finish quarterly report by Friday afternoon - high priority 2 hours'"
+            className="w-full h-28 p-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono"
             autoFocus
             disabled={isLoading}
           />
+
+          <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded-lg">
+            <div className="flex items-start gap-2 text-xs text-purple-700">
+              <Sparkles className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <p className="font-medium">Supported patterns:</p>
+                <ul className="space-y-0.5 ml-2 text-purple-600">
+                  <li>• <span className="font-mono bg-white px-1 rounded">tomorrow morning</span> or <span className="font-mono bg-white px-1 rounded">Friday afternoon</span></li>
+                  <li>• <span className="font-mono bg-white px-1 rounded">urgent</span>, <span className="font-mono bg-white px-1 rounded">high priority</span>, or <span className="font-mono bg-white px-1 rounded">low priority</span></li>
+                  <li>• <span className="font-mono bg-white px-1 rounded">quick task</span> or <span className="font-mono bg-white px-1 rounded">complex project</span></li>
+                  <li>• <span className="font-mono bg-white px-1 rounded">30 min</span> or <span className="font-mono bg-white px-1 rounded">2 hours</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
 
           {error && (
             <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">

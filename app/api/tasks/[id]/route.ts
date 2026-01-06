@@ -117,8 +117,15 @@ export async function PUT(
             updateData.completedAt = null;
         }
         
-        // Clear startedAt if going back to pending
-        if (data!.status === 'pending' && existing.status !== 'pending') {
+        // When pausing (going to pending), accumulate elapsed time
+        if (data!.status === 'pending' && existing.status === 'in-progress') {
+            // Add current session's time to actualMinutes
+            let accumulatedMinutes = existing.actualMinutes || 0;
+            if (existing.startedAt) {
+                const elapsed = Math.round((Date.now() - new Date(existing.startedAt).getTime()) / 60000);
+                accumulatedMinutes += elapsed;
+            }
+            updateData.actualMinutes = accumulatedMinutes;
             updateData.startedAt = null;
         }
 

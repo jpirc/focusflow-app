@@ -156,18 +156,37 @@ export default function FocusFlowApp() {
     );
 
     // Active task (currently in-progress) for header nudge
+    const [elapsedTime, setElapsedTime] = useState(0);
+    
     const activeTask = useMemo(() => {
         const task = tasks.find(t => t.status === 'in-progress');
         if (!task || !task.startedAt) return null;
         const project = projects.find(p => p.id === task.projectId);
-        const elapsedMinutes = Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 60000);
         return {
             id: task.id,
             title: task.title,
             projectColor: project?.color || '#6b7280',
-            elapsedMinutes,
+            elapsedMinutes: elapsedTime,
+            startedAt: task.startedAt,
         };
-    }, [tasks, projects]);
+    }, [tasks, projects, elapsedTime]);
+
+    // Update elapsed time every minute for active task
+    useEffect(() => {
+        const task = tasks.find(t => t.status === 'in-progress');
+        if (task && task.startedAt) {
+            const updateElapsed = () => {
+                const currentSessionMinutes = Math.floor((Date.now() - new Date(task.startedAt!).getTime()) / 60000);
+                const accumulatedMinutes = task.actualMinutes || 0;
+                setElapsedTime(currentSessionMinutes + accumulatedMinutes);
+            };
+            updateElapsed(); // Initial update
+            const interval = setInterval(updateElapsed, 60000); // Update every minute
+            return () => clearInterval(interval);
+        } else {
+            setElapsedTime(0);
+        }
+    }, [tasks]);
 
     // For week view (7 days), start from Sunday of current week
     const displayDays = useMemo(() => {
