@@ -351,7 +351,7 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                                     )}
                                 </div>
                             )}
-                            {task.status !== 'in-progress' && task.status !== 'completed' && (task.actualMinutes || 0) > 0 && (
+                            {task.status !== 'in-progress' && (task.actualMinutes || 0) > 0 && (
                                 <div className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
                                     <Clock size={10} />
                                     <span>Paused - {task.actualMinutes}m tracked</span>
