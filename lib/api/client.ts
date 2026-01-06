@@ -81,6 +81,7 @@ export interface UpdateTaskInput {
     completed?: boolean;
     isTopPriority?: boolean;
     topPriorityDate?: string | null;
+    order?: number;
 }
 
 export const taskApi = {
