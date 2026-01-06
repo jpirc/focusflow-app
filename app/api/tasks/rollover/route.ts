@@ -17,11 +17,18 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = session.user.id;
+    
+    // IMPORTANT: Use .getFullYear(), .getMonth(), .getDate() instead of .toISOString()
+    // This uses the server's LOCAL timezone (not UTC) to match what the frontend sends.
+    // Make sure your server's timezone (TZ environment variable) matches your local timezone,
+    // or dates will be off by a day depending on time of day.
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
+    const yesterdayDate = new Date(now);
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterdayStr = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, '0')}-${String(yesterdayDate.getDate()).padStart(2, '0')}`;
+    
     const currentHour = now.getHours();
 
     const rolledOverTasks: Array<{ id: string; title: string; originalDate: string | null }> = [];
