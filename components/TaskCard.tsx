@@ -314,6 +314,19 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
                                     )}
                                 </span>
                             )}
+                            {/* Show accumulated time for paused tasks */}
+                            {task.status !== 'in-progress' && task.status !== 'completed' && (task.actualMinutes || 0) > 0 && (
+                                <span
+                                    className="flex items-center gap-0.5 font-medium px-1 py-0.5 rounded bg-gray-100 text-gray-600"
+                                    title={`Time worked: ${task.actualMinutes}m${task.estimatedMinutes ? ` (${Math.round(((task.actualMinutes || 0) / task.estimatedMinutes) * 100)}% of ${task.estimatedMinutes}m estimate)` : ''}`}
+                                >
+                                    <Clock size={9} />
+                                    {task.actualMinutes}m
+                                    {task.estimatedMinutes && (
+                                        <span className="text-[8px] opacity-75">/{task.estimatedMinutes}m</span>
+                                    )}
+                                </span>
+                            )}
                             {(task.rolloverCount || 0) > 0 && task.status !== 'completed' && (
                                 (task.rolloverCount || 0) >= 3 ? (
                                     <RolloverWarning
