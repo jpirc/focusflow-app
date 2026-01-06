@@ -4,14 +4,31 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Brain, LogOut, ArrowLeft, Mail, Eye } from 'lucide-react';
+import { Brain, LogOut, ArrowLeft, Mail, Clock } from 'lucide-react';
 import { VIEW_DAY_OPTIONS } from '@/lib/constants';
+
+const COMMON_TIMEZONES = [
+  { value: 'America/New_York', label: 'Eastern Time (ET)' },
+  { value: 'America/Chicago', label: 'Central Time (CT)' },
+  { value: 'America/Denver', label: 'Mountain Time (MT)' },
+  { value: 'America/Phoenix', label: 'Arizona (MST)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+  { value: 'America/Anchorage', label: 'Alaska Time (AKT)' },
+  { value: 'Pacific/Honolulu', label: 'Hawaii Time (HT)' },
+  { value: 'Europe/London', label: 'London (GMT/BST)' },
+  { value: 'Europe/Paris', label: 'Paris (CET)' },
+  { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+  { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
+  { value: 'Australia/Sydney', label: 'Sydney (AEDT)' },
+];
 
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [defaultViewDays, setDefaultViewDays] = useState(2);
+  const [timezone, setTimezone] = useState('America/Chicago');
+  const [savingTimezone, setSavingTimezone] = useState(false);
 
   // Load default view preference
   useEffect(() => {
@@ -20,6 +37,24 @@ export default function SettingsPage() {
       setDefaultViewDays(parseInt(saved, 10));
     }
   }, []);
+
+  // Load timezone preference
+  useEffect(() => {
+    const fetchTimezone = async () => {
+      try {
+        const res = await fetch('/api/user/timezone');
+        if (res.ok) {
+          const data = await res.json();
+          setTimezone(data.timezone);
+        }
+      } catch (error) {
+        console.error('Failed to load timezone:', error);
+      }
+    };
+    if (status === 'authenticated') {
+      fetchTimezone();
+    }
+  }, [status]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -49,6 +84,27 @@ export default function SettingsPage() {
   const handleViewDaysChange = (days: number) => {
     setDefaultViewDays(days);
     localStorage.setItem('defaultViewDays', days.toString());
+  };
+
+  const handleTimezoneChange = async (newTimezone: string) => {
+    setSavingTimezone(true);
+    try {
+      const res = await fetch('/api/user/timezone', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timezone: newTimezone }),
+      });
+      if (res.ok) {
+        setTimezone(newTimezone);
+      } else {
+        alert('Failed to update timezone');
+      }
+    } catch (error) {
+      console.error('Failed to save timezone:', error);
+      alert('Failed to update timezone');
+    } finally {
+      setSavingTimezone(false);
+    }
   };
 
   return (
@@ -125,7 +181,35 @@ export default function SettingsPage() {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">Preferences</h2>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Timezone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                <div className="flex items-center gap-2">
+                  <Clock size={16} />
+                  Timezone
+                </div>
+              </label>
+              <select
+                value={timezone}
+                onChange={(e) => handleTimezoneChange(e.target.value)}
+                disabled={savingTimezone}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {COMMON_TIMEZONES.map((tz) => (
+                  <option key={tz.value} value={tz.value}>
+                    {tz.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-2">
+                Used for task rollover and date calculations. Current time: {new Date().toLocaleString('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit', hour12: true })}
+              </p>
+              {savingTimezone && (
+                <p className="text-xs text-purple-600 mt-1">Saving...</p>
+              )}
+            </div>
+
             {/* Default View */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">

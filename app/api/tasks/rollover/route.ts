@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getTodayInTimezone, getCurrentHourInTimezone, formatDateInTimezone } from '@/lib/utils/timezone';
 
 /**
  * POST /api/tasks/rollover
@@ -18,18 +19,18 @@ export async function POST(req: NextRequest) {
 
     const userId = session.user.id;
     
-    // IMPORTANT: Use .getFullYear(), .getMonth(), .getDate() instead of .toISOString()
-    // This uses the server's LOCAL timezone (not UTC) to match what the frontend sends.
-    // Make sure your server's timezone (TZ environment variable) matches your local timezone,
-    // or dates will be off by a day depending on time of day.
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    // Get user's timezone setting
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true },
+    });
+    const userTimezone = user?.timezone || 'America/Chicago';
     
-    const yesterdayDate = new Date(now);
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const yesterdayStr = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, '0')}-${String(yesterdayDate.getDate()).padStart(2, '0')}`;
-    
-    const currentHour = now.getHours();
+    // Use timezone-aware date calculations
+    const today = getTodayInTimezone(userTimezone);
+    const yesterdayDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000);
+    const yesterdayStr = formatDateInTimezone(yesterdayDate, userTimezone);
+    const currentHour = getCurrentHourInTimezone(userTimezone);
 
     const rolledOverTasks: Array<{ id: string; title: string; originalDate: string | null }> = [];
 
