@@ -41,7 +41,7 @@ export function DailyPrioritiesModal({
     // All open (non-completed) tasks available for selection
     const availableTasks = useMemo(() => {
         return tasks
-            .filter(t => t.status !== 'completed' && !t.parentTaskId)
+            .filter(t => t.status !== 'completed')
             .sort((a, b) => {
                 const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
                 const aPriority = priorityOrder[a.priority] ?? 2;
