@@ -381,12 +381,15 @@ export default function FocusFlowApp() {
                         updateTask(task.id, { order: i })
                     )
                 );
+                
+                // Refresh to ensure we have the latest state
+                await refreshTasks();
             }
         } else {
             // Moving to different bucket - use existing logic
             await moveTask(taskId, targetDate, targetBlock);
         }
-    }, [tasks, moveTask, updateTask]);
+    }, [tasks, moveTask, updateTask, refreshTasks]);
 
     const handleCreateProject = useCallback(async (name: string, color: string, icon: string) => {
         await createProject({ name, color, icon });
