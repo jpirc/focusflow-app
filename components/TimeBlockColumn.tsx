@@ -103,19 +103,30 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
     };
 
     const style = blockStyles[block.id];
+    
+    // Calculate min height based on state
+    const minHeight = compact 
+        ? 'min-h-[48px]' 
+        : (block.id === 'anytime' && isCollapsed) 
+            ? 'min-h-[32px]' 
+            : 'min-h-[72px]';
+    
+    // Calculate padding based on state
+    const headerPadding = compact 
+        ? 'px-1 py-0.5' 
+        : (block.id === 'anytime' && isCollapsed) 
+            ? 'px-2 py-0.5' 
+            : 'px-2 py-1';
 
     return (
         <div
-            className={`flex-1 border bg-white transition-all duration-200
-                ${compact ? 'min-h-[48px]' : (block.id === 'anytime' && isCollapsed) ? 'min-h-[32px]' : 'min-h-[72px]'}
-                ${isDragOver ? 'border-purple-400 bg-purple-50 scale-[1.02] border-2' : style.border}
-            `}
+            className={`flex-1 border bg-white transition-all duration-200 ${minHeight} ${isDragOver ? 'border-purple-400 bg-purple-50 scale-[1.02] border-2' : style.border}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
         >
             {/* Block header */}
-            <div className={`flex items-center justify-between ${style.headerBg} ${compact ? 'px-1 py-0.5' : (block.id === 'anytime' && isCollapsed) ? 'px-2 py-0.5' : 'px-2 py-1'}`}>
+            <div className={`flex items-center justify-between ${style.headerBg} ${headerPadding}`}>
                 {block.id === 'anytime' ? (
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
