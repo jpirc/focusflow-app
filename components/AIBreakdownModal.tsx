@@ -354,7 +354,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                             </div>
 
                             {/* Tips */}
-                            {suggestion.tips && suggestion.tips.length > 0 && (
+                            {suggestion?.tips && suggestion.tips.length > 0 && (
                                 <div className="bg-amber-50 rounded-lg p-2 border border-amber-100">
                                     <h4 className="text-[10px] font-medium text-amber-800 flex items-center gap-1 mb-1">
                                         <Lightbulb size={10} />
