@@ -84,7 +84,7 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-white rounded-lg shadow-2xl w-full max-w-lg mx-4"
+        className="bg-white shadow-2xl w-full max-w-lg mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4">
@@ -110,12 +110,12 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="e.g., 'Call mom tomorrow morning - quick 15 min task' or 'Finish quarterly report by Friday afternoon - high priority 2 hours'"
-            className="w-full h-28 p-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono"
+            className="w-full h-28 p-3 text-sm border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono"
             autoFocus
             disabled={isLoading}
           />
 
-          <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded-lg">
+          <div className="mt-2 p-2 bg-purple-50 border border-purple-200">
             <div className="flex items-start gap-2 text-xs text-purple-700">
               <Sparkles className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <div className="space-y-0.5">
@@ -131,7 +131,7 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
           </div>
 
           {error && (
-            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+            <div className="mt-2 p-2 bg-red-50 border border-red-200 text-xs text-red-700">
               {error}
             </div>
           )}

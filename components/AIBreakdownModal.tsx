@@ -155,14 +155,14 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
             <div
-                className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden"
+                className="bg-white w-full max-w-md shadow-2xl overflow-hidden"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="bg-gradient-to-r from-purple-500 to-blue-500 px-4 py-3 text-white">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-white/20 rounded-lg">
+                            <div className="p-1.5 bg-white/20">
                                 <Brain size={16} />
                             </div>
                             <div>
@@ -170,7 +170,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                                 <p className="text-xs text-white/80 truncate max-w-[200px]">"{task.title}"</p>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
+                        <button onClick={onClose} className="p-1 hover:bg-white/20 transition-colors">
                             <X size={16} />
                         </button>
                     </div>
@@ -196,7 +196,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                             <p className="text-sm text-gray-600">{error}</p>
                             <button
                                 onClick={generateBreakdown}
-                                className="mt-3 px-3 py-1.5 bg-gray-100 rounded-lg text-xs hover:bg-gray-200"
+                                className="mt-3 px-3 py-1.5 bg-gray-100 text-xs hover:bg-gray-200"
                             >
                                 Try Again
                             </button>
@@ -204,7 +204,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                     ) : !suggestion && showQuestions ? (
                         /* Guided questions */
                         <div className="space-y-3">
-                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                            <div className="bg-purple-50 border border-purple-200 p-3">
                                 <p className="text-xs text-purple-800 font-medium mb-2 flex items-center gap-1">
                                     <Lightbulb size={12} /> Let's think through this together (optional)
                                 </p>
@@ -278,7 +278,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                                     {editableSubtasks.map((subtask, i) => (
                                         <div
                                             key={i}
-                                            className={`p-2 rounded-lg border transition-colors ${
+                                            className={`p-2 border transition-colors ${
                                                 subtask.selected 
                                                     ? 'bg-purple-50 border-purple-200' 
                                                     : 'bg-gray-50 border-gray-200 opacity-60'
@@ -355,7 +355,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
 
                             {/* Tips */}
                             {suggestion?.tips && suggestion.tips.length > 0 && (
-                                <div className="bg-amber-50 rounded-lg p-2 border border-amber-100">
+                                <div className="bg-amber-50 p-2 border border-amber-100">
                                     <h4 className="text-[10px] font-medium text-amber-800 flex items-center gap-1 mb-1">
                                         <Lightbulb size={10} />
                                         Tips

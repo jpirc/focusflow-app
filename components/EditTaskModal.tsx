@@ -78,7 +78,7 @@ export function EditTaskModal({
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                <div className="bg-white text-gray-900 rounded-xl shadow-2xl w-full max-w-lg p-4 relative max-h-[90vh] overflow-y-auto">
+                <div className="bg-white text-gray-900 shadow-2xl w-full max-w-lg p-4 relative max-h-[90vh] overflow-y-auto">
                 <button
                     onClick={onClose}
                     className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
@@ -94,7 +94,7 @@ export function EditTaskModal({
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-2.5 py-1.5 text-sm border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="Task title..."
                             autoFocus
                             required
@@ -105,7 +105,7 @@ export function EditTaskModal({
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                            className="w-full px-2.5 py-1.5 text-sm border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                             placeholder="Notes (optional)..."
                             rows={2}
                         />
@@ -116,9 +116,9 @@ export function EditTaskModal({
                             type="date"
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
-                            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         />
-                        <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                        <div className="flex border border-gray-300 overflow-hidden">
                             {[
                                 { id: 'anytime' as TimeBlock, icon: Clock, label: 'Any' },
                                 { id: 'morning' as TimeBlock, icon: Sun, label: 'AM' },
@@ -170,7 +170,7 @@ export function EditTaskModal({
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1">
                             <span className="text-xs text-gray-500">Priority:</span>
-                            <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                            <div className="flex border border-gray-300 overflow-hidden">
                                 {[
                                     { id: 'low', icon: ArrowDown, color: 'text-gray-400' },
                                     { id: 'medium', icon: ArrowRight, color: 'text-blue-500' },
@@ -195,7 +195,7 @@ export function EditTaskModal({
                         </div>
                         <div className="flex items-center gap-1">
                             <span className="text-xs text-gray-500">Energy:</span>
-                            <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                            <div className="flex border border-gray-300 overflow-hidden">
                                 {[
                                     { id: 'low', level: 1 },
                                     { id: 'medium', level: 2 },

@@ -58,7 +58,7 @@ export function UpcomingDayColumn({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={`
-                flex flex-col items-center justify-center p-2 rounded-lg border
+                flex flex-col items-center justify-center p-2 border
                 transition-all duration-200 cursor-pointer min-h-[60px]
                 ${isDragOver 
                     ? 'border-purple-400 bg-purple-50 scale-105 border-2' 

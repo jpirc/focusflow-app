@@ -78,7 +78,7 @@ export function DailyPrioritiesModal({
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
             <div
-                className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+                className="bg-white shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -115,7 +115,7 @@ export function DailyPrioritiesModal({
                                     <button
                                         key={task.id}
                                         onClick={() => toggleTask(task.id)}
-                                        className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
+                                        className={`w-full flex items-center gap-3 p-3 border-2 transition-all ${
                                             isSelected
                                                 ? 'border-purple-500 bg-purple-50'
                                                 : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50'

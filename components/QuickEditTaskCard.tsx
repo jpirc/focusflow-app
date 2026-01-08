@@ -673,7 +673,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     const completedSubtasks = (task.subtasks || []).filter(s => s.completed).length;
     const totalSubtasks = (task.subtasks || []).length;
     const hasSubtasks = totalSubtasks > 0;
-    const [subtasksExpanded, setSubtasksExpanded] = useState(subtasksExpandedAll);
+    const [subtasksExpanded, setSubtasksExpanded] = useState(false);
 
     // Update local state when global state changes
     useEffect(() => {
@@ -836,9 +836,9 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
             onDragEnd={() => setIsDragging(false)}
             onClick={() => !isEditingTitle && onSelect(task.id)}
             className={[
-                'group relative rounded-md border-l-3 transition-all duration-150',
+                'group relative border-l-4 transition-all duration-150 bg-white shadow-md border border-gray-200',
                 isEditingTitle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing',
-                isSelected ? 'ring-2 ring-purple-400 ring-offset-1 bg-purple-50/50' : 'hover:bg-gray-50/80',
+                isSelected ? 'ring-2 ring-purple-400 ring-offset-1 bg-purple-50/50' : 'hover:shadow-lg',
                 isCompleted ? 'opacity-50' : '',
                 task.status === 'in-progress' ? 'ring-4 ring-blue-400 ring-offset-2 shadow-2xl shadow-blue-500/50 animate-pulse' : '',
                 isPaused ? 'ring-2 ring-amber-300 ring-offset-1 bg-amber-50/30' : '',
@@ -848,14 +848,14 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
             ].filter(Boolean).join(' ')}
             style={{ 
                 borderLeftColor: project.color,
-                borderLeftWidth: '3px',
-                backgroundColor: isSelected ? undefined : (project.id !== 'default' ? lightenColor(project.color, 0.95) : undefined),
+                borderLeftWidth: '4px',
+                backgroundColor: isSelected ? undefined : (project.id !== 'default' ? lightenColor(project.color, 0.97) : undefined),
             }}
         >
             {/* Hover tooltip */}
             {hasTooltipContent && !compact && !isEditingTitle && (
                 <div className="absolute bottom-full left-0 right-0 mb-1.5 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 delay-0 group-hover:delay-[2000ms] pointer-events-none">
-                    <div className="bg-gray-900 text-white text-[10px] rounded-md shadow-lg p-2 max-w-[200px]">
+                    <div className="bg-gray-900 text-white text-[10px] shadow-lg p-2 max-w-[200px]">
                         {task.description && (
                             <p className="text-gray-200 leading-snug mb-1">{task.description}</p>
                         )}

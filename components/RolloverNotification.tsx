@@ -49,7 +49,7 @@ export function RolloverNotification({ rolledOverTasks, allTasks, onDismiss }: R
 
                             {/* Pattern Detection Warning */}
                             {frequentRollovers.length > 0 && (
-                                <div className="bg-amber-100 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+                                <div className="bg-amber-100 border border-amber-200 px-3 py-2 mt-2">
                                     <div className="flex items-start gap-2">
                                         <AlertTriangle size={14} className="text-amber-700 mt-0.5 flex-shrink-0" />
                                         <div className="flex-1">

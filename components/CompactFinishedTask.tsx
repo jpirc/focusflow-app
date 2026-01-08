@@ -20,7 +20,7 @@ interface CompactFinishedTaskProps {
 export function CompactFinishedTask({ task, project, onUncomplete, onEdit, onDelete }: CompactFinishedTaskProps) {
     return (
         <div
-            className="group flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+            className="group flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 cursor-pointer transition-colors"
             onClick={() => onEdit(task)}
         >
             {/* Completed checkmark */}

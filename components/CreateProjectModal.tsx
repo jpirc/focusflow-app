@@ -144,7 +144,7 @@ export function CreateProjectModal({
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white text-gray-900 rounded-xl shadow-2xl w-full max-w-sm p-4 relative">
+            <div className="bg-white text-gray-900 shadow-2xl w-full max-w-sm p-4 relative">
                 <button
                     onClick={onClose}
                     className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
@@ -160,7 +160,7 @@ export function CreateProjectModal({
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-2.5 py-1.5 text-sm border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="Project name..."
                             autoFocus
                             required
@@ -177,7 +177,7 @@ export function CreateProjectModal({
                                     key={presetColor}
                                     type="button"
                                     onClick={() => setColor(presetColor)}
-                                    className={`w-7 h-7 rounded-lg transition-all ${
+                                    className={`w-7 h-7 transition-all ${
                                         color === presetColor
                                             ? 'ring-2 ring-offset-1 ring-gray-400 scale-110'
                                             : 'hover:scale-105'
@@ -209,14 +209,14 @@ export function CreateProjectModal({
                         <label className="block text-xs font-medium text-gray-500 mb-1.5">
                             Icon
                         </label>
-                        <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                        <div className="max-h-48 overflow-y-auto border border-gray-200 p-2">
                             <div className="grid grid-cols-8 gap-1.5">
                                 {PROJECT_ICONS.map((i) => (
                                     <button
                                         key={i.id}
                                         type="button"
                                         onClick={() => setIcon(i.id)}
-                                        className={`w-8 h-8 rounded-lg border text-sm flex items-center justify-center transition-all ${
+                                        className={`w-8 h-8 border text-sm flex items-center justify-center transition-all ${
                                             icon === i.id
                                                 ? 'border-purple-400 bg-purple-50 scale-110'
                                                 : 'border-gray-200 hover:border-gray-300'

@@ -50,7 +50,7 @@ export function UnblockedTasksNotification({
                                     return (
                                         <div 
                                             key={task.id} 
-                                            className="bg-white border border-green-200 rounded-lg px-3 py-2"
+                                            className="bg-white border border-green-200 px-3 py-2"
                                         >
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="flex-1">

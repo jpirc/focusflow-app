@@ -80,7 +80,7 @@ export function TimingInsightsCard() {
 
     if (loading) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="bg-white border border-gray-200 p-4">
                 <div className="animate-pulse flex items-center gap-2">
                     <div className="w-8 h-8 bg-gray-200 rounded"></div>
                     <div className="flex-1">
@@ -98,7 +98,7 @@ export function TimingInsightsCard() {
 
     if (!insights.hasData) {
         return (
-            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200 p-4">
+            <div className="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 p-4">
                 <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
                         <Clock size={20} className="text-purple-600" />
@@ -116,7 +116,7 @@ export function TimingInsightsCard() {
     const { summary, breakdown, patterns, recentTrend } = insights;
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white border border-gray-200 overflow-hidden">
             {/* Header */}
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -164,15 +164,15 @@ export function TimingInsightsCard() {
                 <div className="border-t border-gray-200 p-4 space-y-4 bg-gray-50">
                     {/* Summary stats */}
                     <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-white rounded-lg p-2 border border-gray-200">
+                        <div className="bg-white p-2 border border-gray-200">
                             <div className="text-[10px] text-gray-500 uppercase mb-1">Avg Estimate</div>
                             <div className="text-sm font-semibold text-gray-900">{summary!.avgEstimated}m</div>
                         </div>
-                        <div className="bg-white rounded-lg p-2 border border-gray-200">
+                        <div className="bg-white p-2 border border-gray-200">
                             <div className="text-[10px] text-gray-500 uppercase mb-1">Avg Actual</div>
                             <div className="text-sm font-semibold text-gray-900">{summary!.avgActual}m</div>
                         </div>
-                        <div className="bg-white rounded-lg p-2 border border-gray-200">
+                        <div className="bg-white p-2 border border-gray-200">
                             <div className="text-[10px] text-gray-500 uppercase mb-1">Difference</div>
                             <div className={`text-sm font-semibold ${
                                 summary!.avgDifference > 0 ? 'text-amber-600' : summary!.avgDifference < 0 ? 'text-blue-600' : 'text-green-600'
@@ -184,9 +184,9 @@ export function TimingInsightsCard() {
 
                     {/* Breakdown */}
                     {breakdown && (
-                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="bg-white p-3 border border-gray-200">
                             <div className="text-xs font-medium text-gray-700 mb-2">Estimation Distribution</div>
-                            <div className="flex gap-1 h-6 rounded-full overflow-hidden">
+                            <div className="flex gap-1 h-6 overflow-hidden">
                                 {breakdown.underestimated > 0 && (
                                     <div 
                                         className="bg-amber-400 flex items-center justify-center text-[10px] text-white font-medium"
@@ -234,7 +234,7 @@ export function TimingInsightsCard() {
 
                     {/* Recent trend */}
                     {recentTrend && (
-                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="bg-white p-3 border border-gray-200">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="text-xs font-medium text-gray-700">Recent Trend (7 days)</div>
                                 {recentTrend.change !== 0 && (
@@ -253,7 +253,7 @@ export function TimingInsightsCard() {
                     )}
 
                     {/* All insights */}
-                    <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                    <div className="bg-purple-50 p-3 border border-purple-200">
                         <div className="flex items-center gap-1 mb-2">
                             <Zap size={14} className="text-purple-600" />
                             <div className="text-xs font-medium text-purple-900">Insights</div>
@@ -270,7 +270,7 @@ export function TimingInsightsCard() {
 
                     {/* Recent tasks */}
                     {insights.recentTasks && insights.recentTasks.length > 0 && (
-                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="bg-white p-3 border border-gray-200">
                             <div className="text-xs font-medium text-gray-700 mb-2">Recent Completions</div>
                             <div className="space-y-1.5">
                                 {insights.recentTasks.map((task, i) => (

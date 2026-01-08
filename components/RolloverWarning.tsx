@@ -52,7 +52,7 @@ export function RolloverWarning({
                     />
                     
                     {/* Menu */}
-                    <div className="absolute left-0 top-full mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
+                    <div className="absolute left-0 top-full mt-1 w-56 bg-white shadow-xl border border-gray-200 z-50 overflow-hidden">
                         <div className="p-2 bg-amber-50 border-b border-amber-200">
                             <div className="flex items-center gap-1.5 text-amber-800">
                                 <AlertTriangle size={14} />

@@ -90,7 +90,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
 
     return (
         <div
-            className={`flex-1 rounded-lg border bg-white transition-all duration-200
+            className={`flex-1 border bg-white transition-all duration-200
                 ${compact ? 'min-h-[48px]' : 'min-h-[72px]'}
                 ${isDragOver ? 'border-purple-400 bg-purple-50 scale-[1.02] border-2' : style.border}
             `}
@@ -99,7 +99,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
             onDrop={handleDrop}
         >
             {/* Block header */}
-            <div className={`flex items-center justify-between rounded-t-lg ${style.headerBg} ${compact ? 'px-1 py-0.5' : 'px-2 py-1'}`}>
+            <div className={`flex items-center justify-between ${style.headerBg} ${compact ? 'px-1 py-0.5' : 'px-2 py-1'}`}>
                 <div className="flex items-center gap-1">
                     <span className={style.icon}>
                         {block.icon}
@@ -148,7 +148,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
                 })}
 
                 {tasks.length === 0 && (
-                    <div className={`border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-gray-300 ${compact ? 'h-6 text-[9px]' : 'h-8 text-[10px]'}`}>
+                    <div className={`border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 ${compact ? 'h-6 text-[9px]' : 'h-8 text-[10px]'}`}>
                         {compact ? '+' : 'Drop here'}
                     </div>
                 )}

@@ -45,7 +45,7 @@ export function Top3Section({
     const prioritySlots = Array.from({ length: 3 }, (_, i) => topPriorities[i] || null);
 
     return (
-        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border-2 border-purple-200 mb-2 overflow-hidden">
+        <div className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 mb-2 overflow-hidden">
             {/* Header - Always Visible */}
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -113,7 +113,7 @@ export function Top3Section({
                                         <button
                                             key={`empty-${index}`}
                                             onClick={onSetPriorities}
-                                            className="w-full flex items-center gap-2 p-1.5 bg-white/30 rounded border-2 border-dashed border-purple-200 hover:border-purple-300 hover:bg-white/50 transition-all"
+                                            className="w-full flex items-center gap-2 p-1.5 bg-white/30 border-2 border-dashed border-purple-200 hover:border-purple-300 hover:bg-white/50 transition-all"
                                         >
                                             <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 bg-purple-200 text-purple-400">
                                                 {index + 1}
@@ -131,7 +131,7 @@ export function Top3Section({
                                 return (
                                     <div
                                         key={task.id}
-                                        className={`flex items-center gap-2 p-1.5 bg-white rounded border transition-all ${
+                                        className={`flex items-center gap-2 p-1.5 bg-white border transition-all ${
                                             isCompleted
                                                 ? 'border-green-200 bg-green-50/50'
                                                 : 'border-purple-200 hover:border-purple-300 hover:shadow-sm'
