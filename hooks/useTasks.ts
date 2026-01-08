@@ -583,7 +583,7 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
         // Filter successful creations
         const successfulSubtasks = createdSubtasks
             .filter(result => result.data)
-            .map(result => result.data!);
+            .map(result => result.data!) as Subtask[];
 
         if (successfulSubtasks.length > 0) {
             // Update local state with created subtasks
