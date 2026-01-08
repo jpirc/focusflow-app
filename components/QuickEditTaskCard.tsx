@@ -675,11 +675,6 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     const hasSubtasks = totalSubtasks > 0;
     const [subtasksExpanded, setSubtasksExpanded] = useState(false);
 
-    // Update local state when global state changes
-    useEffect(() => {
-        setSubtasksExpanded(subtasksExpandedAll);
-    }, [subtasksExpandedAll]);
-
     // Timer for in-progress tasks
     useEffect(() => {
         if (task.status === 'in-progress' && task.startedAt) {
