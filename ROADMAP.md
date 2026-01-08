@@ -4,6 +4,50 @@ This document tracks future features and enhancements for FocusFlow, organized b
 
 ---
 
+## 🚧 CURRENT WORK - Visual Intelligence Layer (Phase 2A)
+
+**Goal**: Make AI suggestions and learned patterns visible and actionable with ADHD-friendly, compact visuals.
+
+### Design Principles
+- **Compact over spacious**: Dense but scannable, minimal white space
+- **Inline over modal**: Show suggestions in context, not separate screens
+- **Glanceable**: Information visible at a glance without clicking
+- **Non-intrusive**: Suggestions don't block workflow
+- **Dopamine hits**: Visual rewards for following suggestions
+
+### Components to Build
+- [ ] **Suggestion Toast/Banner**: Floating inline suggestions (not modals)
+  - "💡 You usually do Marketing tasks in the morning" → Move button
+  - Dismiss or accept inline
+  - Stacks multiple suggestions vertically (compact)
+  - Auto-collapse after 10s, expand on hover
+  
+- [ ] **Insights Sidebar Panel**: Collapsible panel showing learned patterns
+  - Compact badge format: "⚡ Morning person (85% confident)"
+  - "📊 Client Work → Afternoon (12 tasks)"
+  - Clicking badge shows detailed chart/explanation
+  - Slides in from right, doesn't cover tasks
+  
+- [ ] **Smart Task Hints**: Inline contextual badges on tasks
+  - "⏰ Usually takes 45m" (learned timing)
+  - "☀️ Try morning" (learned time preference)
+  - "🔥 High energy needed" (pattern match)
+  - Tiny pills, don't clutter card
+  
+- [ ] **Mini Analytics Strip**: Thin header bar showing key metrics
+  - "🎯 3/8 done today • 🔥 2-day streak • ⚡ Peak focus: afternoons"
+  - Always visible, doesn't scroll away
+  - Click to expand detailed view
+
+### Technical Implementation
+- Fetch suggestions on page load (`/api/intelligence`)
+- Store in React state, update on task actions
+- Use Zustand or Context for global suggestion state
+- Auto-dismiss/expire stale suggestions
+- Track suggestion acceptance rate (new events)
+
+---
+
 ## ✅ Completed Features
 
 ### Core App (Phase 0)
@@ -31,7 +75,8 @@ This document tracks future features and enhancements for FocusFlow, organized b
 - [x] Rollover count badge on tasks
 - [x] Priority dots (high/urgent)
 - [x] Energy level badges
-- [x] AI task breakdown (simulated)
+- [x] AI task breakdown with interactive editing
+- [x] Natural language task parsing
 
 ### Analytics Foundation
 - [x] TaskEvent model for tracking (created, completed, moved, etc.)
