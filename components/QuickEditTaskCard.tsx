@@ -674,6 +674,15 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     const totalSubtasks = (task.subtasks || []).length;
     const hasSubtasks = totalSubtasks > 0;
     const [subtasksExpanded, setSubtasksExpanded] = useState(false);
+    const prevGlobalState = useRef<boolean | null>(null);
+
+    // Only sync with global state when it actually changes (button clicked), not on mount
+    useEffect(() => {
+        if (prevGlobalState.current !== null && prevGlobalState.current !== subtasksExpandedAll) {
+            setSubtasksExpanded(subtasksExpandedAll);
+        }
+        prevGlobalState.current = subtasksExpandedAll;
+    }, [subtasksExpandedAll]);
 
     // Timer for in-progress tasks
     useEffect(() => {
