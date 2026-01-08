@@ -576,7 +576,6 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
                     parentTaskId: taskId,
                     timeBlock: 'anytime',
                     estimatedMinutes: subtask.estimatedMinutes,
-                    completed: false,
                 })
             )
         );
