@@ -664,6 +664,8 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editedTitle, setEditedTitle] = useState(task.title);
     const titleInputRef = useRef<HTMLInputElement>(null);
+    const [showTimePrompt, setShowTimePrompt] = useState(false);
+    const [loggedMinutes, setLoggedMinutes] = useState('');
 
     // Dependency blocking logic
     const dependencyTasks = (task.dependencies || []).map(dep => dep.dependsOn).filter(Boolean);
@@ -882,42 +884,67 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
             )}
 
             <div className={compact ? 'p-1.5 space-y-1' : 'p-2.5 space-y-1.5'}>
-                {/* Header row - Status + Title + Quick Actions */}
-                <div className={`flex items-start ${compact ? 'gap-1' : 'gap-1.5'}`}>
-                    {/* Status toggle */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (isBlocked) return; // Can't interact with blocked tasks
-                            if (task.status === 'completed') {
-                                onStatusChange(task.id, 'pending');
-                            } else if (task.status === 'in-progress') {
-                                onPause(task.id);
-                            } else {
-                                onStatusChange(task.id, 'in-progress');
-                            }
-                        }}
-                        disabled={isBlocked}
-                        className={`flex-shrink-0 ${compact ? 'mt-0' : 'mt-0.5'} ${isBlocked ? 'opacity-40 cursor-not-allowed' : ''}`}
-                        title={isBlocked ? `Blocked by ${blockingDependencies.length} task(s)` : undefined}
-                    >
+                {/* Header row - Action Buttons + Title + Menu */}
+                <div className={`flex items-start ${compact ? 'gap-1.5' : 'gap-2'}`}>
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
                         {isBlocked ? (
-                            <div className="relative">
-                                <Circle size={compact ? 16 : 18} className="text-red-400" />
+                            <div className="relative w-8 h-8 flex items-center justify-center">
+                                <Circle size={18} className="text-red-400" />
                                 <div className="absolute inset-0 flex items-center justify-center">
                                     <span className="text-[10px]">🔒</span>
                                 </div>
                             </div>
+                        ) : task.status === 'completed' ? (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onStatusChange(task.id, 'pending');
+                                }}
+                                className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 transition-colors"
+                                title="Mark incomplete"
+                            >
+                                <CheckCircle2 size={20} className="fill-current" />
+                            </button>
                         ) : (
                             <>
-                                {task.status === 'completed' && <CheckCircle2 size={compact ? 16 : 18} className="text-green-500" />}
-                                {task.status === 'in-progress' && <Pause size={compact ? 16 : 18} className="text-blue-500" />}
-                                {task.status !== 'completed' && task.status !== 'in-progress' && (
-                                    <Circle size={compact ? 16 : 18} className="text-gray-400 hover:text-blue-500 transition-colors" />
-                                )}
+                                {/* Start/Pause button */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (task.status === 'in-progress') {
+                                            onPause(task.id);
+                                        } else {
+                                            onStatusChange(task.id, 'in-progress');
+                                        }
+                                    }}
+                                    className={`w-8 h-8 flex items-center justify-center transition-colors ${
+                                        task.status === 'in-progress'
+                                            ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+                                            : 'text-gray-500 hover:bg-gray-100 hover:text-blue-600'
+                                    }`}
+                                    title={task.status === 'in-progress' ? 'Pause' : 'Start task'}
+                                >
+                                    {task.status === 'in-progress' ? <Pause size={18} /> : <Play size={18} />}
+                                </button>
+                                
+                                {/* Complete button */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!task.estimatedMinutes && !task.actualMinutes) {
+                                            setShowTimePrompt(true);
+                                        }
+                                        onStatusChange(task.id, 'completed');
+                                    }}
+                                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
+                                    title="Mark complete"
+                                >
+                                    <CheckCircle2 size={20} />
+                                </button>
                             </>
                         )}
-                    </button>
+                    </div>
 
                     {/* Title - double-click to edit */}
                     <div className="flex-1 min-w-0">
@@ -969,32 +996,8 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                     </div>
 
                     {/* Quick actions - show on hover */}
-                    {!compact && (
+                    {!compact && !isCompleted && (
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                        {!isCompleted && task.status !== 'in-progress' && !isBlocked && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onStatusChange(task.id, 'in-progress');
-                                }}
-                                className="p-1 rounded hover:bg-blue-100 text-gray-400 hover:text-blue-600 transition-colors"
-                                title="Start task (track time)"
-                            >
-                                <Play size={14} />
-                            </button>
-                        )}
-                        {!isCompleted && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onStatusChange(task.id, 'completed');
-                                }}
-                                className="p-1 rounded hover:bg-green-100 text-gray-400 hover:text-green-600 transition-colors"
-                                title="Mark complete"
-                            >
-                                <CheckCircle2 size={14} />
-                            </button>
-                        )}
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -1002,7 +1005,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                                     onDelete(task.id);
                                 }
                             }}
-                            className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors"
+                            className="p-1 hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors"
                             title="Delete task"
                         >
                             <Trash2 size={14} />
@@ -1010,7 +1013,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                         <button
                             ref={menuButtonRef}
                             onClick={onMenuToggle}
-                            className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+                            className="p-1 hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
                             title="More actions"
                         >
                             <MoreHorizontal size={14} />
@@ -1018,6 +1021,54 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                     </div>
                     )}
                 </div>
+
+                {/* Time logging prompt - shown after completing without estimate */}
+                {showTimePrompt && task.status === 'completed' && (
+                    <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200">
+                        <span className="text-xs text-blue-900 flex-shrink-0">How long did it take?</span>
+                        <input
+                            type="number"
+                            value={loggedMinutes}
+                            onChange={(e) => setLoggedMinutes(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && loggedMinutes) {
+                                    onUpdate(task.id, { actualMinutes: parseInt(loggedMinutes) });
+                                    setShowTimePrompt(false);
+                                    setLoggedMinutes('');
+                                } else if (e.key === 'Escape') {
+                                    setShowTimePrompt(false);
+                                    setLoggedMinutes('');
+                                }
+                            }}
+                            placeholder="mins"
+                            className="w-16 px-2 py-1 text-xs border border-blue-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            autoFocus
+                        />
+                        <button
+                            onClick={() => {
+                                if (loggedMinutes) {
+                                    onUpdate(task.id, { actualMinutes: parseInt(loggedMinutes) });
+                                }
+                                setShowTimePrompt(false);
+                                setLoggedMinutes('');
+                            }}
+                            className="p-1 text-blue-600 hover:text-blue-700"
+                            title="Save"
+                        >
+                            <Check size={14} />
+                        </button>
+                        <button
+                            onClick={() => {
+                                setShowTimePrompt(false);
+                                setLoggedMinutes('');
+                            }}
+                            className="p-1 text-gray-400 hover:text-gray-600"
+                            title="Skip"
+                        >
+                            <X size={14} />
+                        </button>
+                    </div>
+                )}
 
                 {/* Metadata row - Editable badges */}
                 <div className={`flex items-center ${compact ? 'gap-0.5' : 'gap-1'} flex-wrap ${compact ? 'text-[9px]' : 'text-[10px]'} text-gray-600`}>
