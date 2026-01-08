@@ -504,7 +504,7 @@ export default function FocusFlowApp() {
             />
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {/* Header */}
                 <Header
                     currentDate={currentDate}
@@ -547,7 +547,7 @@ export default function FocusFlowApp() {
                         onEdit={handleEditTask}
                     />
                 ) : (
-                    <div className="flex gap-2 sm:gap-3 lg:gap-4 h-full">
+                    <div className="flex gap-2 sm:gap-3 lg:gap-4 flex-1 overflow-hidden p-2 sm:p-3 lg:p-4">
                         {/* Main Day Columns */}
                         <div className={`flex-1 flex h-full min-w-0 ${
                             viewDays === 7 
@@ -559,7 +559,7 @@ export default function FocusFlowApp() {
                             {displayDays.map(day => (
                                 <div 
                                     key={day.dateStr} 
-                                    className={`flex flex-col h-full min-w-0 ${
+                                    className={`flex flex-col flex-1 min-w-0 overflow-hidden ${
                                         viewDays === 7 
                                             ? 'flex-1' 
                                             : 'flex-1'
@@ -724,7 +724,7 @@ export default function FocusFlowApp() {
 
                         {/* Upcoming Days Sidebar (1 and 3 day views) */}
                         {upcomingDays.length > 0 && (
-                            <div className="w-20 sm:w-24 flex-shrink-0 flex flex-col gap-2">
+                            <div className="w-20 sm:w-24 flex-shrink-0 flex flex-col gap-2 overflow-y-auto">
                                 <h4 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
                                     Quick Nav
                                 </h4>
