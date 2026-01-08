@@ -1,0 +1,177 @@
+/**
+ * useIntelligence Hook
+ * Manages AI suggestions, insights, and pattern data
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import { Task } from '@/types';
+
+export interface SmartSuggestion {
+    id: string;
+    type: 'time_block' | 'priority' | 'breakdown' | 'overload_warning' | 'stale_task' | 'dependency_ready';
+    taskId: string | null;
+    title: string;
+    description: string | null;
+    action: {
+        type: string;
+        targetTimeBlock?: string;
+        targetPriority?: string;
+        taskIds?: string[];
+    };
+    reasoning: string | null;
+    confidence: number;
+    source: 'rule' | 'pattern' | 'ai';
+    status: 'pending' | 'accepted' | 'dismissed' | 'expired';
+    createdAt: string;
+    expiresAt: string | null;
+}
+
+export interface UserInsight {
+    id: string;
+    insightType: string;
+    category: string | null;
+    pattern: any;
+    confidence: number;
+    sampleSize: number;
+    lastUpdated: string;
+}
+
+interface UseIntelligenceProps {
+    isAuthenticated: boolean;
+    tasks?: Task[];
+}
+
+export function useIntelligence({ isAuthenticated, tasks = [] }: UseIntelligenceProps) {
+    const [suggestions, setSuggestions] = useState<SmartSuggestion[]>([]);
+    const [insights, setInsights] = useState<UserInsight[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [lastFetch, setLastFetch] = useState<number>(0);
+
+    // Fetch suggestions from API
+    const fetchSuggestions = useCallback(async () => {
+        if (!isAuthenticated) return;
+
+        try {
+            setLoading(true);
+            const res = await fetch('/api/intelligence');
+            if (!res.ok) throw new Error('Failed to fetch suggestions');
+            
+            const data = await res.json();
+            
+            // Filter to only pending suggestions
+            const pending = (data.suggestions || []).filter(
+                (s: SmartSuggestion) => s.status === 'pending'
+            );
+            
+            setSuggestions(pending);
+            setInsights(data.insights || []);
+            setLastFetch(Date.now());
+        } catch (err) {
+            console.error('Failed to fetch intelligence:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [isAuthenticated]);
+
+    // Accept a suggestion
+    const acceptSuggestion = useCallback(async (suggestionId: string) => {
+        try {
+            const res = await fetch(`/api/intelligence/suggestions/${suggestionId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'accepted' }),
+            });
+
+            if (res.ok) {
+                // Remove from local state
+                setSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+            }
+        } catch (err) {
+            console.error('Failed to accept suggestion:', err);
+        }
+    }, []);
+
+    // Dismiss a suggestion
+    const dismissSuggestion = useCallback(async (suggestionId: string) => {
+        try {
+            const res = await fetch(`/api/intelligence/suggestions/${suggestionId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'dismissed' }),
+            });
+
+            if (res.ok) {
+                // Remove from local state
+                setSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+            }
+        } catch (err) {
+            console.error('Failed to dismiss suggestion:', err);
+        }
+    }, []);
+
+    // Generate new suggestions based on current tasks
+    const generateSuggestions = useCallback(async () => {
+        if (!isAuthenticated || tasks.length === 0) return;
+
+        try {
+            const res = await fetch('/api/intelligence', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tasks }),
+            });
+
+            if (res.ok) {
+                await fetchSuggestions();
+            }
+        } catch (err) {
+            console.error('Failed to generate suggestions:', err);
+        }
+    }, [isAuthenticated, tasks, fetchSuggestions]);
+
+    // Get suggestions for a specific task
+    const getSuggestionsForTask = useCallback((taskId: string) => {
+        return suggestions.filter(s => s.taskId === taskId);
+    }, [suggestions]);
+
+    // Get suggestions for a specific time block
+    const getSuggestionsForTimeBlock = useCallback((timeBlock: string, date: string) => {
+        return suggestions.filter(s => {
+            if (!s.taskId || !tasks) return false;
+            const task = tasks.find(t => t.id === s.taskId);
+            return task && task.timeBlock === timeBlock && task.date === date;
+        });
+    }, [suggestions, tasks]);
+
+    // Auto-fetch on mount and when tasks change significantly
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchSuggestions();
+        }
+    }, [isAuthenticated, fetchSuggestions]);
+
+    // Auto-refresh every 5 minutes
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const interval = setInterval(() => {
+            const timeSinceLastFetch = Date.now() - lastFetch;
+            if (timeSinceLastFetch > 5 * 60 * 1000) { // 5 minutes
+                fetchSuggestions();
+            }
+        }, 60 * 1000); // Check every minute
+
+        return () => clearInterval(interval);
+    }, [isAuthenticated, lastFetch, fetchSuggestions]);
+
+    return {
+        suggestions,
+        insights,
+        loading,
+        fetchSuggestions,
+        acceptSuggestion,
+        dismissSuggestion,
+        generateSuggestions,
+        getSuggestionsForTask,
+        getSuggestionsForTimeBlock,
+    };
+}
