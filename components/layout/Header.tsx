@@ -5,7 +5,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Plus, Flame, Pause, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Plus, Flame, Pause, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { addDays, getWeekStart } from '@/lib/utils/date';
 import { VIEW_DAY_OPTIONS } from '@/lib/constants';
 
@@ -27,11 +27,15 @@ interface HeaderProps {
     /** Today's completed task streak count */
     todayStreak?: number;
     /** Currently active task (in-progress) */
-    activeTask?: { id: string; title: string; projectColor: string; elapsedMinutes: number } | null;
+    activeTask?: { id: string; title: string; projectColor: string; elapsedMinutes: number; currentSubtask?: string } | null;
     /** Called when user pauses the active task */
     onPauseActiveTask?: () => void;
     /** Called when user completes the active task */
     onCompleteActiveTask?: () => void;
+    /** Whether subtasks are expanded for all tasks */
+    subtasksExpandedAll?: boolean;
+    /** Called when user toggles expand/collapse all subtasks */
+    onToggleSubtasksExpandedAll?: () => void;
 }
 
 export function Header({
@@ -44,6 +48,8 @@ export function Header({
     activeTask,
     onPauseActiveTask,
     onCompleteActiveTask,
+    subtasksExpandedAll = true,
+    onToggleSubtasksExpandedAll,
 }: HeaderProps) {
     return (
         <>
@@ -58,6 +64,12 @@ export function Header({
                     <div>
                         <div className="text-[10px] font-semibold uppercase tracking-wider opacity-90">Currently Working On</div>
                         <div className="text-sm font-bold">{activeTask.title}</div>
+                        {activeTask.currentSubtask && (
+                            <div className="text-xs opacity-80 flex items-center gap-1">
+                                <span>→</span>
+                                <span>{activeTask.currentSubtask}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -166,6 +178,18 @@ export function Header({
                         </button>
                     ))}
                 </div>
+
+                {/* Expand/Collapse All Subtasks */}
+                {onToggleSubtasksExpandedAll && (
+                    <button
+                        onClick={onToggleSubtasksExpandedAll}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all"
+                        title={subtasksExpandedAll ? 'Collapse all subtasks' : 'Expand all subtasks'}
+                    >
+                        {subtasksExpandedAll ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        {subtasksExpandedAll ? 'Collapse' : 'Expand'}
+                    </button>
+                )}
 
                 {/* Add Task Button */}
                 <button

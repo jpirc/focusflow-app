@@ -636,6 +636,7 @@ interface QuickEditTaskCardProps {
     onUpdateSubtasks: (taskId: string, subtasks: Subtask[]) => void;
     onEdit: (task: Task) => void; // Opens full modal for advanced editing
     compact?: boolean;
+    subtasksExpandedAll?: boolean;
 }
 
 // Helper to lighten a hex color for backgrounds
@@ -649,7 +650,7 @@ function lightenColor(hex: string, amount: number = 0.85): string {
 
 export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     const { task, project, allTasks, allProjects, isSelected, onSelect, onUpdate, onStatusChange, onPause,
-        onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, compact = false } = props;
+        onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, compact = false, subtasksExpandedAll = true } = props;
 
     const [expanded, setExpanded] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
@@ -672,6 +673,12 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     const completedSubtasks = (task.subtasks || []).filter(s => s.completed).length;
     const totalSubtasks = (task.subtasks || []).length;
     const hasSubtasks = totalSubtasks > 0;
+    const [subtasksExpanded, setSubtasksExpanded] = useState(subtasksExpandedAll);
+
+    // Update local state when global state changes
+    useEffect(() => {
+        setSubtasksExpanded(subtasksExpandedAll);
+    }, [subtasksExpandedAll]);
 
     // Timer for in-progress tasks
     useEffect(() => {
@@ -1096,15 +1103,104 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                     </div>
                 )}
 
-                {/* Subtasks progress (if any) */}
+                {/* Subtasks - Visual & ADHD-Friendly - Collapsible with next action always visible */}
                 {hasSubtasks && !compact && (
-                    <div className="flex items-center gap-1 text-[10px] text-gray-500">
-                        <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden" title={`${completedSubtasks} of ${totalSubtasks} subtasks completed`}>
-                            <div
-                                className="h-full bg-green-500 transition-all duration-300"
-                                style={{ width: `${(completedSubtasks / totalSubtasks) * 100}%` }}
-                            />
-                        </div>
+                    <div className="mt-2 space-y-1">
+                        {/* Progress header - clickable */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSubtasksExpanded(!subtasksExpanded);
+                            }}
+                            className="w-full flex items-center justify-between text-[10px] hover:bg-gray-50 rounded px-1 py-0.5 transition-colors"
+                        >
+                            <span className="text-gray-500 font-medium flex items-center gap-1">
+                                <CheckCircle2 size={10} />
+                                {completedSubtasks}/{totalSubtasks} steps
+                            </span>
+                            <div className="flex items-center gap-2 flex-1 ml-2">
+                                <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all duration-500"
+                                        style={{ width: `${(completedSubtasks / totalSubtasks) * 100}%` }}
+                                    />
+                                </div>
+                                <span className="text-gray-400 text-[9px]">
+                                    {subtasksExpanded ? '▼' : '▶'}
+                                </span>
+                            </div>
+                        </button>
+
+                        {/* Next action - Always visible */}
+                        {(() => {
+                            const nextSubtask = task.subtasks?.find(s => !s.completed);
+                            const nextIndex = task.subtasks?.findIndex(s => s.id === nextSubtask?.id);
+                            if (!nextSubtask) return null;
+                            
+                            return (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onToggleSubtask(task.id, nextSubtask.id);
+                                    }}
+                                    className="w-full flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-all text-left bg-gradient-to-r from-purple-50 to-blue-50 border-l-2 border-purple-400 text-gray-800 font-medium hover:from-purple-100 hover:to-blue-100"
+                                >
+                                    <span className="flex-shrink-0 w-4 h-4 rounded-full bg-purple-500 text-white text-[9px] font-bold flex items-center justify-center">
+                                        {(nextIndex ?? 0) + 1}
+                                    </span>
+                                    <span className="flex-1 leading-tight">
+                                        {nextSubtask.title}
+                                    </span>
+                                    {nextSubtask.estimatedMinutes && (
+                                        <span className="text-[10px] flex-shrink-0 px-1 rounded text-purple-600 bg-purple-100 font-medium">
+                                            {nextSubtask.estimatedMinutes}m
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })()}
+
+                        {/* Remaining subtasks - Only when expanded */}
+                        {subtasksExpanded && task.subtasks && task.subtasks.length > 1 && (
+                            <div className="space-y-0.5">
+                            {task.subtasks?.map((subtask, idx) => {
+                                const isNext = !subtask.completed && task.subtasks?.slice(0, idx).every(s => s.completed);
+                                // Skip next action (already shown above)
+                                if (isNext) return null;
+                                
+                                return (
+                                    <button
+                                        key={subtask.id}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onToggleSubtask(task.id, subtask.id);
+                                        }}
+                                        className={`w-full flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-all text-left ${
+                                            subtask.completed
+                                                ? 'bg-green-50/50 text-green-700 opacity-60'
+                                                : 'bg-gray-50/50 text-gray-600 hover:bg-gray-100'
+                                        }`}
+                                    >
+                                        <span className={`flex-shrink-0 w-4 h-4 rounded-full text-[9px] font-semibold flex items-center justify-center ${
+                                            subtask.completed 
+                                                ? 'bg-green-500 text-white' 
+                                                : 'bg-gray-300 text-gray-600'
+                                        }`}>
+                                            {subtask.completed ? '✓' : idx + 1}
+                                        </span>
+                                        <span className={`flex-1 leading-tight ${subtask.completed ? 'line-through' : ''}`}>
+                                            {subtask.title}
+                                        </span>
+                                        {subtask.estimatedMinutes && (
+                                            <span className="text-[10px] flex-shrink-0 px-1 text-gray-500">
+                                                {subtask.estimatedMinutes}m
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -1126,7 +1222,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                             setShowMenu(false);
                             onEdit(task);
                         }}
-                        className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center gap-2"
+                        className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center gap-2 text-gray-900"
                     >
                         <Edit3 size={14} />
                         Full Edit
@@ -1136,7 +1232,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                             setShowMenu(false);
                             onAIBreakdown(task);
                         }}
-                        className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center gap-2"
+                        className="w-full text-left px-3 py-2 hover:bg-purple-50 flex items-center gap-2 text-purple-600"
                     >
                         <Wand2 size={14} />
                         AI Breakdown
@@ -1146,7 +1242,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                             setShowMenu(false);
                             navigator.clipboard.writeText(task.title);
                         }}
-                        className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center gap-2"
+                        className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center gap-2 text-gray-900"
                     >
                         <Copy size={14} />
                         Copy Title

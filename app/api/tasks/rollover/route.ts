@@ -28,8 +28,13 @@ export async function POST(req: NextRequest) {
     
     // Use timezone-aware date calculations
     const today = getTodayInTimezone(userTimezone);
-    const yesterdayDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000);
+    
+    // Calculate yesterday properly in the user's timezone
+    const todayDate = new Date();
+    const yesterdayDate = new Date(todayDate);
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
     const yesterdayStr = formatDateInTimezone(yesterdayDate, userTimezone);
+    
     const currentHour = getCurrentHourInTimezone(userTimezone);
 
     const rolledOverTasks: Array<{ id: string; title: string; originalDate: string | null }> = [];

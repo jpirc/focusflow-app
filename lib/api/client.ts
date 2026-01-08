@@ -130,6 +130,16 @@ export const taskApi = {
             method: 'POST',
         });
     },
+
+    /**
+     * Parse natural language text into task objects
+     */
+    async parse(text: string): Promise<ApiResult<{ tasks: CreateTaskInput[] }>> {
+        return apiFetch<{ tasks: CreateTaskInput[] }>('/api/tasks/parse', {
+            method: 'POST',
+            body: JSON.stringify({ text }),
+        });
+    },
 };
 
 // ============================================
@@ -209,6 +219,66 @@ export const dependencyApi = {
     async remove(taskId: string, dependencyId: string): Promise<ApiResult<{ success: boolean }>> {
         return apiFetch<{ success: boolean }>(`/api/tasks/${taskId}/dependencies/${dependencyId}`, {
             method: 'DELETE',
+        });
+    },
+};
+
+// ============================================
+// Intelligence API
+// ============================================
+
+export interface AIBreakdownInput {
+    taskId: string;
+    taskTitle: string;
+    taskDescription?: string;
+    estimatedMinutes?: number;
+    energyLevel?: EnergyLevel;
+    priority?: Priority;
+    projectId?: string;
+    timeBlock?: TimeBlock;
+}
+
+export interface AIBreakdownResponse {
+    subtasks: Array<{ title: string; estimatedMinutes: number }>;
+    totalEstimate: number;
+    tips: string[];
+    reasoning?: string;
+    fallback?: boolean;
+    error?: string;
+}
+
+export const intelligenceApi = {
+    /**
+     * Generate AI-powered task breakdown
+     */
+    async breakdown(input: AIBreakdownInput): Promise<ApiResult<AIBreakdownResponse>> {
+        return apiFetch<AIBreakdownResponse>('/api/intelligence/breakdown', {
+            method: 'POST',
+            body: JSON.stringify(input),
+        });
+    },
+
+    /**
+     * Get AI suggestions for the user
+     */
+    async getSuggestions(status?: 'pending' | 'accepted' | 'dismissed'): Promise<ApiResult<any[]>> {
+        const params = status ? `?status=${status}` : '';
+        return apiFetch<any[]>(`/api/intelligence${params}`);
+    },
+
+    /**
+     * Get user insights
+     */
+    async getInsights(): Promise<ApiResult<any[]>> {
+        return apiFetch<any[]>('/api/intelligence?type=insights');
+    },
+
+    /**
+     * Generate new suggestions
+     */
+    async generateSuggestions(): Promise<ApiResult<any[]>> {
+        return apiFetch<any[]>('/api/intelligence', {
+            method: 'POST',
         });
     },
 };

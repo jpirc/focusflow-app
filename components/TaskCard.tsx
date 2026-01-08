@@ -422,14 +422,14 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
             {/* Context menu portal */}
             {showMenu && menuStyle && createPortal(
                 <div style={{ position: 'fixed', top: menuStyle.top, left: menuStyle.left, zIndex: 9999 }}>
-                    <div className="bg-white text-gray-900 rounded-lg shadow-2xl border border-gray-200 py-1 min-w-[160px]">
-                        <button onClick={(e) => { e.stopPropagation(); onEdit(task); setShowMenu(false); }} className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2">
+                    <div className="bg-white rounded-lg shadow-2xl border border-gray-200 py-1 min-w-[160px]">
+                        <button onClick={(e) => { e.stopPropagation(); onEdit(task); setShowMenu(false); }} className="w-full px-3 py-1.5 text-left text-sm text-gray-900 hover:bg-gray-50 flex items-center gap-2">
                             <Edit3 size={14} /> Edit
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); onAIBreakdown(task); setShowMenu(false); }} className="w-full px-3 py-1.5 text-left text-sm hover:bg-purple-50 text-purple-600 flex items-center gap-2">
-                            <Wand2 size={14} /> AI breakdown
+                            <Wand2 size={14} /> AI Breakdown
                         </button>
-                        <button className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2">
+                        <button className="w-full px-3 py-1.5 text-left text-sm text-gray-500 hover:bg-gray-50 flex items-center gap-2 opacity-50 cursor-not-allowed">
                             <Copy size={14} /> Duplicate
                         </button>
                         <hr className="my-1" />

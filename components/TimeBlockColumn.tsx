@@ -21,12 +21,13 @@ interface TimeBlockColumnProps {
     onUpdateSubtasks: (taskId: string, subtasks: Subtask[]) => void;
     onEdit: (task: Task) => void;
     compact?: boolean;
+    subtasksExpandedAll?: boolean;
 }
 
 export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
     block, tasks, allTasks, projects, date, selectedTaskId,
     onSelectTask, onUpdate, onStatusChange, onPause, onToggleSubtask, onStartDrag, onDrop, onDelete,
-    onAIBreakdown, onUpdateSubtasks, onEdit, compact = false
+    onAIBreakdown, onUpdateSubtasks, onEdit, compact = false, subtasksExpandedAll = true
 }) => {
     const [isDragOver, setIsDragOver] = useState(false);
 
@@ -140,6 +141,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
                                 onUpdateSubtasks={onUpdateSubtasks}
                                 onEdit={onEdit}
                                 compact={compact}
+                                subtasksExpandedAll={subtasksExpandedAll}
                             />
                         </div>
                     );

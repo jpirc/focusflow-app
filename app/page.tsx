@@ -48,6 +48,20 @@ export default function FocusFlowApp() {
     // ============================================
     // Custom Hooks for State Management
     // ============================================
+    // Hooks
+    // ============================================
+
+    // Celebration system for task completion (must be before useTasks)
+    const {
+        celebrate,
+        message: celebrationMessage,
+        todayStreak,
+        incrementStreak,
+    } = useCelebration({
+        enabled: true,
+        soundEnabled: false, // Can be made configurable via settings
+        intensity: 'normal',
+    });
 
     const {
         tasks,
@@ -72,7 +86,13 @@ export default function FocusFlowApp() {
         setTopPriorities,
         applyAIBreakdown,
         refreshTasks,
-    } = useTasks({ isAuthenticated });
+    } = useTasks({ 
+        isAuthenticated,
+        onTaskComplete: () => {
+            celebrate();
+            incrementStreak();
+        }
+    });
 
     const {
         projects,
@@ -83,18 +103,6 @@ export default function FocusFlowApp() {
         deleteProject,
         getProjectById,
     } = useProjects({ isAuthenticated });
-
-    // Celebration system for task completion
-    const {
-        celebrate,
-        message: celebrationMessage,
-        todayStreak,
-        incrementStreak,
-    } = useCelebration({
-        enabled: true,
-        soundEnabled: false, // Can be made configurable via settings
-        intensity: 'normal',
-    });
 
     // ============================================
     // Local UI State
@@ -125,6 +133,7 @@ export default function FocusFlowApp() {
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [smartCaptureModalOpen, setSmartCaptureModalOpen] = useState(false);
     const [dailyPrioritiesModalOpen, setDailyPrioritiesModalOpen] = useState(false);
+    const [subtasksExpandedAll, setSubtasksExpandedAll] = useState(true);
 
     // Derive the current task to edit from the tasks array (stays in sync with subtask updates)
     const taskToEdit = useMemo(() => 
@@ -163,12 +172,14 @@ export default function FocusFlowApp() {
         const task = tasks.find(t => t.status === 'in-progress');
         if (!task || !task.startedAt) return null;
         const project = projects.find(p => p.id === task.projectId);
+        const currentSubtask = task.subtasks?.find(s => !s.completed);
         return {
             id: task.id,
             title: task.title,
             projectColor: project?.color || '#6b7280',
             elapsedMinutes: elapsedTime,
             startedAt: task.startedAt,
+            currentSubtask: currentSubtask?.title,
         };
     }, [tasks, projects, elapsedTime]);
 
@@ -505,6 +516,8 @@ export default function FocusFlowApp() {
                     activeTask={activeTask}
                     onPauseActiveTask={activeTask ? () => pauseTask(activeTask.id) : undefined}
                     onCompleteActiveTask={activeTask ? () => updateStatus(activeTask.id, 'completed') : undefined}
+                    subtasksExpandedAll={subtasksExpandedAll}
+                    onToggleSubtasksExpandedAll={() => setSubtasksExpandedAll(!subtasksExpandedAll)}
                 />
 
                 {/* Rollover Notification */}
@@ -624,6 +637,7 @@ export default function FocusFlowApp() {
                                                 onUpdateSubtasks={handleUpdateSubtasks}
                                                 onEdit={handleEditTask}
                                                 compact={viewDays === 7}
+                                                subtasksExpandedAll={subtasksExpandedAll}
                                             />
                                         ))}
 

@@ -15,6 +15,8 @@ interface UseTasksOptions {
     isAuthenticated: boolean;
     /** Callback when data finishes loading */
     onLoadComplete?: () => void;
+    /** Callback when task is completed for celebration */
+    onTaskComplete?: () => void;
 }
 
 interface UseTasksReturn {
@@ -56,7 +58,7 @@ interface UseTasksReturn {
     refreshTasks: () => Promise<void>;
 }
 
-export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): UseTasksReturn {
+export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: UseTasksOptions): UseTasksReturn {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [rolledOverTasks, setRolledOverTasks] = useState<Array<{ id: string; title: string; originalDate: string | null }>>([]);
@@ -372,11 +374,23 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
 
         const newCompleted = !subtask.completed;
 
+        // Auto-start parent task if not already in progress
+        const shouldAutoStart = task && task.status === 'pending';
+
+        // Check if completing the last subtask
+        const incompleteSibling = task?.subtasks?.filter(s => 
+            s.id !== subtaskId && !s.completed
+        );
+        const shouldAutoComplete = newCompleted && incompleteSibling?.length === 0;
+
         // Optimistic update
         setTasks(prev => prev.map(t =>
             t.id === taskId
                 ? {
                     ...t,
+                    status: shouldAutoComplete ? 'completed' : (shouldAutoStart ? 'in-progress' : t.status),
+                    startedAt: shouldAutoStart && !shouldAutoComplete ? new Date().toISOString() : t.startedAt,
+                    completedAt: shouldAutoComplete ? new Date().toISOString() : t.completedAt,
                     subtasks: t.subtasks?.map(s =>
                         s.id === subtaskId ? { ...s, completed: newCompleted } : s
                     ),
@@ -386,9 +400,34 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
 
         if (!isAuthenticated) return;
 
+        // Update subtask completion
         const result = await taskApi.update(subtaskId, { completed: newCompleted });
         if (result.error) {
             await refreshTasks(); // Rollback
+            return;
+        }
+
+        // Auto-complete parent task if this was the last subtask
+        if (shouldAutoComplete) {
+            const completeResult = await taskApi.update(taskId, { 
+                status: 'completed',
+                completedAt: new Date().toISOString()
+            });
+            if (completeResult.error) {
+                await refreshTasks(); // Rollback
+            } else {
+                onTaskComplete?.(); // Trigger celebration
+            }
+        }
+        // Otherwise auto-start if needed
+        else if (shouldAutoStart) {
+            const startResult = await taskApi.update(taskId, { 
+                status: 'in-progress',
+                startedAt: new Date().toISOString()
+            });
+            if (startResult.error) {
+                await refreshTasks(); // Rollback
+            }
         }
     }, [isAuthenticated, tasks, refreshTasks]);
 
@@ -518,13 +557,50 @@ export function useTasks({ isAuthenticated, onLoadComplete }: UseTasksOptions): 
     // Bulk Operations
     // ============================================
 
-    const applyAIBreakdown = useCallback((taskId: string, subtasks: Subtask[]) => {
-        setTasks(prev => prev.map(t =>
-            t.id === taskId
-                ? { ...t, subtasks: [...(t.subtasks || []), ...subtasks], aiGenerated: true }
-                : t
-        ));
-    }, []);
+    const applyAIBreakdown = useCallback(async (taskId: string, subtasks: Subtask[]) => {
+        if (!isAuthenticated) {
+            // Just update local state if not authenticated
+            setTasks(prev => prev.map(t =>
+                t.id === taskId
+                    ? { ...t, subtasks: [...(t.subtasks || []), ...subtasks], aiGenerated: true }
+                    : t
+            ));
+            return;
+        }
+
+        // Create each subtask via API (they're stored as tasks with parentTaskId)
+        const createdSubtasks = await Promise.all(
+            subtasks.map(subtask => 
+                taskApi.create({
+                    title: subtask.title,
+                    parentTaskId: taskId,
+                    timeBlock: 'anytime',
+                    estimatedMinutes: subtask.estimatedMinutes,
+                    completed: false,
+                })
+            )
+        );
+
+        // Filter successful creations
+        const successfulSubtasks = createdSubtasks
+            .filter(result => result.data)
+            .map(result => result.data!);
+
+        if (successfulSubtasks.length > 0) {
+            // Update local state with created subtasks
+            setTasks(prev => prev.map(t =>
+                t.id === taskId
+                    ? { ...t, subtasks: [...(t.subtasks || []), ...successfulSubtasks], aiGenerated: true }
+                    : t
+            ));
+        }
+
+        // Log any failures
+        const failures = createdSubtasks.filter(result => result.error);
+        if (failures.length > 0) {
+            console.error('Some subtasks failed to save:', failures);
+        }
+    }, [isAuthenticated]);
 
     const clearFinishedTasks = useCallback(async (taskIds: string[]) => {
         if (taskIds.length === 0) return;

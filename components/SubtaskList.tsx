@@ -24,21 +24,33 @@ export function SubtaskList({
     const [isAdding, setIsAdding] = useState(false);
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingTitle, setEditingTitle] = useState<string>('');
     const [editingMinutes, setEditingMinutes] = useState<number | undefined>(undefined);
 
     const completedCount = subtasks.filter(s => s.completed).length;
     const totalCount = subtasks.length;
 
-    const handleStartEdit = (subtaskId: string, minutes?: number) => {
+    const handleStartEdit = (subtaskId: string, title: string, minutes?: number) => {
         setEditingId(subtaskId);
+        setEditingTitle(title);
         setEditingMinutes(minutes);
     };
 
-    const handleSaveMinutes = (subtaskId: string) => {
-        if (onUpdateSubtask && editingMinutes !== undefined) {
-            onUpdateSubtask(subtaskId, { estimatedMinutes: editingMinutes });
+    const handleSaveEdit = (subtaskId: string) => {
+        if (onUpdateSubtask) {
+            const updates: { estimatedMinutes?: number; title?: string } = {};
+            if (editingTitle.trim() && editingTitle !== subtasks.find(s => s.id === subtaskId)?.title) {
+                updates.title = editingTitle.trim();
+            }
+            if (editingMinutes !== undefined) {
+                updates.estimatedMinutes = editingMinutes;
+            }
+            if (Object.keys(updates).length > 0) {
+                onUpdateSubtask(subtaskId, updates);
+            }
         }
         setEditingId(null);
+        setEditingTitle('');
         setEditingMinutes(undefined);
     };
 
@@ -77,54 +89,89 @@ export function SubtaskList({
                             )}
                         </button>
 
-                        <span
-                            className={`flex-1 text-xs ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'
-                                }`}
-                        >
-                            {subtask.title}
-                        </span>
-
                         {editingId === subtask.id ? (
-                            <div className="flex items-center gap-1">
+                            /* Editing mode - title and time */
+                            <div className="flex items-center gap-1.5 flex-1">
+                                <input
+                                    type="text"
+                                    value={editingTitle}
+                                    onChange={(e) => setEditingTitle(e.target.value)}
+                                    className="flex-1 px-2 py-1 text-xs border border-purple-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="Subtask name..."
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleSaveEdit(subtask.id);
+                                        } else if (e.key === 'Escape') {
+                                            setEditingId(null);
+                                        }
+                                    }}
+                                />
                                 <input
                                     type="number"
                                     min="1"
                                     max="480"
                                     value={editingMinutes || ''}
                                     onChange={(e) => setEditingMinutes(e.target.value ? parseInt(e.target.value) : undefined)}
-                                    className="w-12 px-2 py-1 text-xs border border-purple-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                    autoFocus
+                                    className="w-14 px-2 py-1 text-xs border border-purple-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="min"
                                 />
-                                <span className="text-xs text-gray-400">min</span>
                                 <button
-                                    onClick={() => handleSaveMinutes(subtask.id)}
+                                    onClick={() => handleSaveEdit(subtask.id)}
                                     className="p-1 hover:bg-green-50 rounded transition-colors"
+                                    title="Save changes"
                                 >
                                     <Check size={14} className="text-green-500" />
                                 </button>
+                                <button
+                                    onClick={() => setEditingId(null)}
+                                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                                    title="Cancel"
+                                >
+                                    <X size={14} className="text-gray-400" />
+                                </button>
                             </div>
                         ) : (
+                            /* Display mode */
                             <>
-                                {subtask.estimatedMinutes && (
-                                    <button
-                                        onClick={() => handleStartEdit(subtask.id, subtask.estimatedMinutes)}
-                                        className="text-xs text-gray-400 hover:text-purple-600 hover:bg-purple-50 px-2 py-1 rounded transition-colors cursor-pointer flex items-center gap-1"
-                                        title="Click to edit duration"
-                                    >
-                                        {subtask.estimatedMinutes}m
-                                        {editable && <Edit2 size={12} />}
-                                    </button>
-                                )}
-                            </>
-                        )}
+                                <span
+                                    className={`flex-1 text-xs ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'
+                                        }`}
+                                    onDoubleClick={editable ? () => handleStartEdit(subtask.id, subtask.title, subtask.estimatedMinutes) : undefined}
+                                    title={editable ? "Double-click to edit" : undefined}
+                                >
+                                    {subtask.title}
+                                </span>
 
-                        {editable && (
-                            <button
-                                onClick={() => onDeleteSubtask(subtask.id)}
-                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded transition-opacity"
-                            >
-                                <X size={14} className="text-red-500" />
-                            </button>
+                                <div className="flex items-center gap-1">
+                                    {subtask.estimatedMinutes && (
+                                        <span className="text-xs text-gray-400 px-2 py-1">
+                                            {subtask.estimatedMinutes}m
+                                        </span>
+                                    )}
+                                    
+                                    {editable && (
+                                        <button
+                                            onClick={() => handleStartEdit(subtask.id, subtask.title, subtask.estimatedMinutes)}
+                                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-purple-50 rounded transition-all"
+                                            title="Edit subtask"
+                                        >
+                                            <Edit2 size={12} className="text-purple-500" />
+                                        </button>
+                                    )}
+
+                                    {editable && (
+                                        <button
+                                            onClick={() => onDeleteSubtask(subtask.id)}
+                                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded transition-opacity"
+                                            title="Delete subtask"
+                                        >
+                                            <X size={14} className="text-red-500" />
+                                        </button>
+                                    )}
+                                </div>
+                            </>
                         )}
                     </div>
                 ))}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, X, Loader2, AlertTriangle, Sparkles, Lightbulb, RefreshCw, Check } from 'lucide-react';
+import { Brain, X, Loader2, AlertTriangle, Sparkles, Lightbulb, RefreshCw, Check, Edit2, Save } from 'lucide-react';
 import { Task, Subtask, AIBreakdownSuggestion } from '../types';
 
 interface AIBreakdownModalProps {
@@ -9,131 +9,148 @@ interface AIBreakdownModalProps {
     onApply: (subtasks: Subtask[]) => void;
 }
 
+interface EditableSubtask {
+    title: string;
+    estimatedMinutes: number;
+    selected: boolean;
+    isEditing: boolean;
+}
+
 export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen, onClose, onApply }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [suggestion, setSuggestion] = useState<AIBreakdownSuggestion | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [isFallback, setIsFallback] = useState(false);
+    const [editableSubtasks, setEditableSubtasks] = useState<EditableSubtask[]>([]);
+    
+    // Guided questions state
+    const [showQuestions, setShowQuestions] = useState(true);
+    const [firstStep, setFirstStep] = useState('');
+    const [whatYouNeed, setWhatYouNeed] = useState('');
+    const [whereDoingIt, setWhereDoingIt] = useState('');
+    const [whatsHard, setWhatsHard] = useState('');
 
     const generateBreakdown = async () => {
         setIsLoading(true);
         setError(null);
+        setIsFallback(false);
 
-        // Simulated AI response - in production this would call Claude API
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Build context from guided questions
+        const userContext = [
+            firstStep && `First step I'm thinking: ${firstStep}`,
+            whatYouNeed && `What I need: ${whatYouNeed}`,
+            whereDoingIt && `Where: ${whereDoingIt}`,
+            whatsHard && `What's hard/blocking: ${whatsHard}`,
+        ].filter(Boolean).join('\n');
 
-        // Generate contextual breakdown based on task title
-        const breakdowns: Record<string, AIBreakdownSuggestion> = {
-            default: {
-                subtasks: [
-                    { title: 'Gather materials and context needed', estimatedMinutes: 10 },
-                    { title: 'Create initial outline or draft', estimatedMinutes: 15 },
-                    { title: 'Work on main content/task', estimatedMinutes: Math.max(15, task.estimatedMinutes - 40) },
-                    { title: 'Review and refine', estimatedMinutes: 10 },
-                    { title: 'Final check and wrap up', estimatedMinutes: 5 },
-                ],
-                totalEstimate: task.estimatedMinutes,
-                tips: [
-                    'Start with the easiest subtask to build momentum',
-                    'Take a 5-minute break between subtasks if needed',
-                    'Check off each subtask as you complete it for dopamine boost'
-                ]
+        try {
+            // Call the AI breakdown API
+            const response = await fetch('/api/intelligence/breakdown', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    taskId: task.id,
+                    taskTitle: task.title,
+                    taskDescription: task.description,
+                    estimatedMinutes: task.estimatedMinutes,
+                    energyLevel: task.energyLevel,
+                    priority: task.priority,
+                    projectId: task.projectId,
+                    timeBlock: task.timeBlock,
+                    userContext: userContext || undefined,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate breakdown');
             }
-        };
 
-        // Customize based on task keywords
-        if (task.title.toLowerCase().includes('document') || task.title.toLowerCase().includes('report')) {
+            const data = await response.json();
+            
             setSuggestion({
-                subtasks: [
-                    { title: 'Review requirements and gather source materials', estimatedMinutes: 15 },
-                    { title: 'Create document outline with main sections', estimatedMinutes: 10 },
-                    { title: 'Write first draft of key sections', estimatedMinutes: Math.floor(task.estimatedMinutes * 0.4) },
-                    { title: 'Add supporting details and examples', estimatedMinutes: Math.floor(task.estimatedMinutes * 0.2) },
-                    { title: 'Review, edit, and format', estimatedMinutes: 15 },
-                    { title: 'Get feedback or final approval', estimatedMinutes: 10 },
-                ],
-                totalEstimate: task.estimatedMinutes,
-                tips: [
-                    'Don\'t aim for perfection on the first draft',
-                    'Use bullet points first, then convert to prose',
-                    'Set a timer for each section to maintain momentum'
-                ]
+                subtasks: data.subtasks || [],
+                totalEstimate: data.totalEstimate || task.estimatedMinutes,
+                tips: data.tips || [],
             });
-        } else if (task.title.toLowerCase().includes('meeting') || task.title.toLowerCase().includes('present')) {
-            setSuggestion({
-                subtasks: [
-                    { title: 'Review meeting agenda and objectives', estimatedMinutes: 5 },
-                    { title: 'Prepare talking points or slides', estimatedMinutes: Math.floor(task.estimatedMinutes * 0.3) },
-                    { title: 'Anticipate questions and prepare answers', estimatedMinutes: 10 },
-                    { title: 'Do a quick practice run-through', estimatedMinutes: 10 },
-                    { title: 'Attend meeting and present', estimatedMinutes: Math.floor(task.estimatedMinutes * 0.4) },
-                    { title: 'Document action items and follow-ups', estimatedMinutes: 5 },
-                ],
-                totalEstimate: task.estimatedMinutes,
-                tips: [
-                    'Arrive 5 minutes early to settle in',
-                    'Have your materials open and ready beforehand',
-                    'It\'s okay to say "I\'ll follow up on that"'
-                ]
-            });
-        } else if (task.title.toLowerCase().includes('email') || task.title.toLowerCase().includes('write')) {
-            setSuggestion({
-                subtasks: [
-                    { title: 'Identify the main purpose and recipient needs', estimatedMinutes: 3 },
-                    { title: 'Draft the key message in bullet points', estimatedMinutes: 5 },
-                    { title: 'Expand bullets into full sentences', estimatedMinutes: Math.floor(task.estimatedMinutes * 0.4) },
-                    { title: 'Add opening and closing', estimatedMinutes: 5 },
-                    { title: 'Proofread and send', estimatedMinutes: 5 },
-                ],
-                totalEstimate: task.estimatedMinutes,
-                tips: [
-                    'Start with the action you want the reader to take',
-                    'Keep paragraphs short (2-3 sentences max)',
-                    'Read it aloud before sending'
-                ]
-            });
-        } else if (task.title.toLowerCase().includes('research') || task.title.toLowerCase().includes('learn')) {
-            setSuggestion({
-                subtasks: [
-                    { title: 'Define what you want to learn/find out', estimatedMinutes: 5 },
-                    { title: 'Identify 3-5 good sources', estimatedMinutes: 10 },
-                    { title: 'Read/review sources and take notes', estimatedMinutes: Math.floor(task.estimatedMinutes * 0.5) },
-                    { title: 'Synthesize key findings', estimatedMinutes: 10 },
-                    { title: 'Document conclusions or next steps', estimatedMinutes: 5 },
-                ],
-                totalEstimate: task.estimatedMinutes,
-                tips: [
-                    'Set a time limit to avoid rabbit holes',
-                    'Use the Pomodoro technique (25 min focus, 5 min break)',
-                    'Write summaries in your own words to retain information'
-                ]
-            });
-        } else {
-            setSuggestion(breakdowns.default);
+            
+            // Initialize editable subtasks with all selected by default
+            setEditableSubtasks((data.subtasks || []).map((st: any) => ({
+                title: st.title,
+                estimatedMinutes: st.estimatedMinutes,
+                selected: true,
+                isEditing: false,
+            })));
+            
+            setIsFallback(data.fallback || false);
+            setIsLoading(false);
+            setShowQuestions(false); // Hide questions after generation
+            
+        } catch (err: any) {
+            console.error('Breakdown generation error:', err);
+            setError(err.message || 'Failed to generate breakdown. Please try again.');
+            setIsLoading(false);
         }
-
-        setIsLoading(false);
     };
 
     useEffect(() => {
-        if (isOpen && !suggestion) {
-            generateBreakdown();
+        if (!isOpen) {
+            // Reset state when modal closes
+            setSuggestion(null);
+            setEditableSubtasks([]);
+            setFirstStep('');
+            setWhatYouNeed('');
+            setWhereDoingIt('');
+            setWhatsHard('');
+            setError(null);
+            setShowQuestions(true);
         }
     }, [isOpen]);
 
-    if (!isOpen) return null;
-
     const handleApply = () => {
-        if (suggestion) {
-            const newSubtasks: Subtask[] = suggestion.subtasks.map((st, i) => ({
-                id: `ai-${Date.now()}-${i}`,
-                title: st.title,
-                completed: false,
-                estimatedMinutes: st.estimatedMinutes
-            }));
-            onApply(newSubtasks);
+        if (editableSubtasks.length > 0) {
+            const selectedSubtasks: Subtask[] = editableSubtasks
+                .filter(st => st.selected)
+                .map((st, i) => ({
+                    id: `ai-${Date.now()}-${i}`,
+                    title: st.title,
+                    completed: false,
+                    estimatedMinutes: st.estimatedMinutes
+                }));
+            
+            if (selectedSubtasks.length === 0) {
+                alert('Please select at least one subtask to apply.');
+                return;
+            }
+            
+            onApply(selectedSubtasks);
             onClose();
         }
     };
+
+    const toggleSubtask = (index: number) => {
+        setEditableSubtasks(prev => prev.map((st, i) => 
+            i === index ? { ...st, selected: !st.selected } : st
+        ));
+    };
+
+    const toggleEdit = (index: number) => {
+        setEditableSubtasks(prev => prev.map((st, i) => 
+            i === index ? { ...st, isEditing: !st.isEditing } : st
+        ));
+    };
+
+    const updateSubtask = (index: number, field: 'title' | 'estimatedMinutes', value: string | number) => {
+        setEditableSubtasks(prev => prev.map((st, i) => 
+            i === index ? { ...st, [field]: value } : st
+        ));
+    };
+
+    const selectedCount = editableSubtasks.filter(st => st.selected).length;
+    const totalSelectedTime = editableSubtasks
+        .filter(st => st.selected)
+        .reduce((sum, st) => sum + st.estimatedMinutes, 0);
+
+    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
@@ -157,10 +174,16 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                             <X size={16} />
                         </button>
                     </div>
+                    {isFallback && (
+                        <div className="mt-2 text-xs bg-white/10 rounded px-2 py-1 flex items-center gap-1">
+                            <AlertTriangle size={10} />
+                            Using smart fallback (AI temporarily unavailable)
+                        </div>
+                    )}
                 </div>
 
                 {/* Content */}
-                <div className="p-3 max-h-[50vh] overflow-y-auto">
+                <div className="p-3 max-h-[60vh] overflow-y-auto">
                     {isLoading ? (
                         <div className="text-center py-8">
                             <Loader2 size={32} className="mx-auto text-purple-500 animate-spin mb-3" />
@@ -178,72 +201,203 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                                 Try Again
                             </button>
                         </div>
-                    ) : suggestion ? (
+                    ) : !suggestion && showQuestions ? (
+                        /* Guided questions */
                         <div className="space-y-3">
-                            {/* Suggested subtasks */}
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                <p className="text-xs text-purple-800 font-medium mb-2 flex items-center gap-1">
+                                    <Lightbulb size={12} /> Let's think through this together (optional)
+                                </p>
+                                {!task.projectId && (
+                                    <p className="text-[10px] text-amber-600 mb-2 italic">
+                                        💡 Tip: Assigning this task to a project helps me give better suggestions based on your past work!
+                                    </p>
+                                )}
+                                <div className="space-y-2">
+                                    <input
+                                        type="text"
+                                        value={firstStep}
+                                        onChange={(e) => setFirstStep(e.target.value)}
+                                        placeholder="What's the very first step?"
+                                        className="w-full px-2 py-1.5 text-xs border border-purple-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={whatYouNeed}
+                                        onChange={(e) => setWhatYouNeed(e.target.value)}
+                                        placeholder="What do you need before you start?"
+                                        className="w-full px-2 py-1.5 text-xs border border-purple-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={whereDoingIt}
+                                        onChange={(e) => setWhereDoingIt(e.target.value)}
+                                        placeholder="Where will you do this?"
+                                        className="w-full px-2 py-1.5 text-xs border border-purple-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={whatsHard}
+                                        onChange={(e) => setWhatsHard(e.target.value)}
+                                        placeholder="What's making this hard or what are you stuck on?"
+                                        className="w-full px-2 py-1.5 text-xs border border-purple-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        setFirstStep('');
+                                        setWhatYouNeed('');
+                                        setWhereDoingIt('');
+                                        setWhatsHard('');
+                                        generateBreakdown();
+                                    }}
+                                    className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-xs font-medium"
+                                >
+                                    Skip
+                                </button>
+                                <button
+                                    onClick={generateBreakdown}
+                                    className="flex-1 px-3 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:opacity-90 flex items-center justify-center gap-2 text-sm font-medium"
+                                >
+                                    <Brain size={14} />
+                                    Generate Breakdown
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {/* Suggested subtasks with editing */}
                             <div>
                                 <h3 className="text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
                                     <Sparkles size={12} className="text-purple-500" />
-                                    Suggested Subtasks
+                                    Suggested Subtasks ({selectedCount} selected)
                                 </h3>
-                                <div className="space-y-1">
-                                    {suggestion.subtasks.map((subtask, i) => (
+                                <div className="space-y-1.5">
+                                    {editableSubtasks.map((subtask, i) => (
                                         <div
                                             key={i}
-                                            className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-100"
+                                            className={`p-2 rounded-lg border transition-colors ${
+                                                subtask.selected 
+                                                    ? 'bg-purple-50 border-purple-200' 
+                                                    : 'bg-gray-50 border-gray-200 opacity-60'
+                                            }`}
                                         >
-                                            <div className="w-5 h-5 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-[10px] font-medium flex-shrink-0">
-                                                {i + 1}
+                                            <div className="flex items-start gap-2">
+                                                {/* Checkbox */}
+                                                <input
+                                                    type="checkbox"
+                                                    checked={subtask.selected}
+                                                    onChange={() => toggleSubtask(i)}
+                                                    className="mt-0.5 w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                                                />
+                                                
+                                                {/* Number badge */}
+                                                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium flex-shrink-0 ${
+                                                    subtask.selected 
+                                                        ? 'bg-purple-100 text-purple-600' 
+                                                        : 'bg-gray-100 text-gray-400'
+                                                }`}>
+                                                    {i + 1}
+                                                </div>
+
+                                                {/* Content */}
+                                                <div className="flex-1 min-w-0">
+                                                    {subtask.isEditing ? (
+                                                        <div className="space-y-1.5">
+                                                            <input
+                                                                type="text"
+                                                                value={subtask.title}
+                                                                onChange={(e) => updateSubtask(i, 'title', e.target.value)}
+                                                                className="w-full px-2 py-1 text-xs border border-purple-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                                                autoFocus
+                                                            />
+                                                            <div className="flex items-center gap-1">
+                                                                <input
+                                                                    type="number"
+                                                                    value={subtask.estimatedMinutes}
+                                                                    onChange={(e) => updateSubtask(i, 'estimatedMinutes', parseInt(e.target.value) || 0)}
+                                                                    className="w-16 px-2 py-1 text-xs border border-purple-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                                                    min="1"
+                                                                />
+                                                                <span className="text-[10px] text-gray-500">minutes</span>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div>
+                                                            <p className="text-xs text-gray-800">{subtask.title}</p>
+                                                            <span className="text-[10px] text-gray-500">{subtask.estimatedMinutes} min</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Edit/Save button */}
+                                                <button
+                                                    onClick={() => toggleEdit(i)}
+                                                    className="p-1 hover:bg-white/50 rounded transition-colors flex-shrink-0"
+                                                    title={subtask.isEditing ? "Save" : "Edit"}
+                                                >
+                                                    {subtask.isEditing ? (
+                                                        <Save size={12} className="text-green-600" />
+                                                    ) : (
+                                                        <Edit2 size={12} className="text-gray-400" />
+                                                    )}
+                                                </button>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-xs text-gray-800 truncate">{subtask.title}</p>
-                                            </div>
-                                            <span className="text-[10px] text-gray-500 bg-white px-1.5 py-0.5 rounded flex-shrink-0">
-                                                {subtask.estimatedMinutes}m
-                                            </span>
                                         </div>
                                     ))}
                                 </div>
                                 <div className="mt-1.5 text-right text-[10px] text-gray-500">
-                                    Total: ~{suggestion.subtasks.reduce((sum, st) => sum + st.estimatedMinutes, 0)} min
+                                    Total selected: ~{totalSelectedTime} min
                                 </div>
                             </div>
 
                             {/* Tips */}
-                            <div className="bg-amber-50 rounded-lg p-2 border border-amber-100">
-                                <h4 className="text-[10px] font-medium text-amber-800 flex items-center gap-1 mb-1">
-                                    <Lightbulb size={10} />
-                                    Tips
-                                </h4>
-                                <ul className="space-y-0.5">
-                                    {suggestion.tips.map((tip, i) => (
-                                        <li key={i} className="text-[10px] text-amber-700 flex items-start gap-1">
-                                            <span className="text-amber-400">•</span>
-                                            {tip}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            {suggestion.tips && suggestion.tips.length > 0 && (
+                                <div className="bg-amber-50 rounded-lg p-2 border border-amber-100">
+                                    <h4 className="text-[10px] font-medium text-amber-800 flex items-center gap-1 mb-1">
+                                        <Lightbulb size={10} />
+                                        Tips
+                                    </h4>
+                                    <ul className="space-y-0.5">
+                                        {suggestion.tips.map((tip, i) => (
+                                            <li key={i} className="text-[10px] text-amber-700 flex items-start gap-1">
+                                                <span className="text-amber-400">•</span>
+                                                {tip}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
-                    ) : null}
+                    )}
                 </div>
 
                 {/* Footer */}
                 {!isLoading && suggestion && (
                     <div className="px-3 py-2 border-t bg-gray-50 flex gap-2">
                         <button
-                            onClick={generateBreakdown}
+                            onClick={() => {
+                                setSuggestion(null);
+                                setEditableSubtasks([]);
+                            }}
                             className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-white flex items-center justify-center gap-1.5"
                         >
                             <RefreshCw size={12} />
-                            Regenerate
+                            Start Over
                         </button>
                         <button
                             onClick={handleApply}
-                            className="flex-1 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:opacity-90 flex items-center justify-center gap-1.5 text-xs font-medium"
+                            disabled={selectedCount === 0}
+                            className={`flex-1 px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-medium ${
+                                selectedCount === 0
+                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90'
+                            }`}
                         >
                             <Check size={12} />
-                            Apply
+                            Apply Selected ({selectedCount})
                         </button>
                     </div>
                 )}
