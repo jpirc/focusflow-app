@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Task, Project, Subtask, TaskStatus, TimeBlock, DragItem, TimeBlockConfig } from '../types';
 import { QuickEditTaskCard } from './QuickEditTaskCard';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface TimeBlockColumnProps {
     block: TimeBlockConfig;
@@ -30,6 +31,21 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
     onAIBreakdown, onUpdateSubtasks, onEdit, compact = false, subtasksExpandedAll = true
 }) => {
     const [isDragOver, setIsDragOver] = useState(false);
+    
+    // Collapse state for anytime block only
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        if (block.id !== 'anytime') return false;
+        if (typeof window === 'undefined') return false;
+        const saved = localStorage.getItem('focusflow_anytime_collapsed');
+        return saved === 'true';
+    });
+
+    // Save collapse preference for anytime block
+    useEffect(() => {
+        if (block.id === 'anytime') {
+            localStorage.setItem('focusflow_anytime_collapsed', String(isCollapsed));
+        }
+    }, [isCollapsed, block.id]);
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault(); // MUST always prevent default to allow drop
@@ -91,7 +107,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
     return (
         <div
             className={`flex-1 border bg-white transition-all duration-200
-                ${compact ? 'min-h-[48px]' : 'min-h-[72px]'}
+                ${compact ? 'min-h-[48px]' : (block.id === 'anytime' && isCollapsed) ? 'min-h-[32px]' : 'min-h-[72px]'}
                 ${isDragOver ? 'border-purple-400 bg-purple-50 scale-[1.02] border-2' : style.border}
             `}
             onDragOver={handleDragOver}
@@ -99,27 +115,61 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
             onDrop={handleDrop}
         >
             {/* Block header */}
-            <div className={`flex items-center justify-between ${style.headerBg} ${compact ? 'px-1 py-0.5' : 'px-2 py-1'}`}>
-                <div className="flex items-center gap-1">
-                    <span className={style.icon}>
-                        {block.icon}
-                    </span>
-                    <span className={`font-medium text-gray-700 ${compact ? 'text-[10px]' : 'text-xs'}`}>{compact ? block.label.slice(0, 4) : block.label}</span>
-                    {!compact && <span className="text-[10px] text-gray-400">({block.hours})</span>}
-                </div>
-                <div className={`flex items-center gap-1 text-gray-400 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
-                    {tasks.length > 0 && (
-                        <>
-                            <span>{completedCount}/{tasks.length}</span>
-                            {!compact && <span>•</span>}
-                            {!compact && <span>{totalMinutes}min</span>}
-                        </>
-                    )}
-                </div>
+            <div className={`flex items-center justify-between ${style.headerBg} ${compact ? 'px-1 py-0.5' : (block.id === 'anytime' && isCollapsed) ? 'px-2 py-0.5' : 'px-2 py-1'}`}>
+                {block.id === 'anytime' ? (
+                    <button
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        className={`flex items-center gap-1 flex-1 hover:bg-white/30 transition-colors ${isCollapsed ? '-mx-2 -my-0.5 px-2 py-0.5' : '-mx-2 -my-1 px-2 py-1'}`}
+                    >
+                        <div className="flex items-center gap-1">
+                            <span className={`${style.icon} ${isCollapsed ? 'text-sm' : ''}`}>
+                                {block.icon}
+                            </span>
+                            <span className={`font-medium text-gray-700 ${compact ? 'text-[10px]' : isCollapsed ? 'text-[11px]' : 'text-xs'}`}>{compact ? block.label.slice(0, 4) : block.label}</span>
+                            {!compact && !isCollapsed && <span className="text-[10px] text-gray-400">({block.hours})</span>}
+                        </div>
+                        <div className="flex items-center gap-1 ml-auto text-gray-400">
+                            <div className={`flex items-center gap-1 ${compact ? 'text-[9px]' : isCollapsed ? 'text-[9px]' : 'text-[10px]'}`}>
+                                {tasks.length > 0 && (
+                                    <>
+                                        <span>{completedCount}/{tasks.length}</span>
+                                        {!compact && <span>•</span>}
+                                        {!compact && <span>{totalMinutes}min</span>}
+                                    </>
+                                )}
+                            </div>
+                            {isCollapsed ? (
+                                <ChevronDown size={12} className="text-gray-500" />
+                            ) : (
+                                <ChevronUp size={12} className="text-gray-500" />
+                            )}
+                        </div>
+                    </button>
+                ) : (
+                    <>
+                        <div className="flex items-center gap-1">
+                            <span className={style.icon}>
+                                {block.icon}
+                            </span>
+                            <span className={`font-medium text-gray-700 ${compact ? 'text-[10px]' : 'text-xs'}`}>{compact ? block.label.slice(0, 4) : block.label}</span>
+                            {!compact && <span className="text-[10px] text-gray-400">({block.hours})</span>}
+                        </div>
+                        <div className={`flex items-center gap-1 text-gray-400 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
+                            {tasks.length > 0 && (
+                                <>
+                                    <span>{completedCount}/{tasks.length}</span>
+                                    {!compact && <span>•</span>}
+                                    {!compact && <span>{totalMinutes}min</span>}
+                                </>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Tasks list */}
-            <div className={`${compact ? 'p-0.5 space-y-0.5' : 'p-1 space-y-1'}`}>
+            {!(block.id === 'anytime' && isCollapsed) && (
+                <div className={`${compact ? 'p-0.5 space-y-0.5' : 'p-1 space-y-1'}`}>
                 {tasks.map(task => {
                     const project = projects.find(p => p.id === task.projectId) || { id: 'default', name: 'No Project', color: '#6b7280', bgColor: '#f3f4f6', icon: 'folder' };
                     return (
@@ -152,7 +202,8 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
                         {compact ? '+' : 'Drop here'}
                     </div>
                 )}
-            </div>
+                </div>
+            )}
         </div>
     );
 };

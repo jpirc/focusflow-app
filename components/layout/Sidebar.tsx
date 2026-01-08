@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { Settings, LogOut, MoreVertical, ChevronDown, ChevronRight, Inbox, FolderKanban, PanelLeftClose, PanelLeft, BarChart3 } from 'lucide-react';
 import { Task, Project } from '@/types';
-import { QuickEditTaskCard } from '@/components/QuickEditTaskCard';
+import { CompactInboxTask } from '@/components/CompactInboxTask';
 import { TimingInsightsCard } from '@/components/TimingInsightsCard';
 
 const projectIconMap: Record<string, string> = {
@@ -168,24 +168,15 @@ export function Sidebar({
                             )
                         )}
                         {isOpen && !inboxCollapsed && (
-                            <div className="space-y-2 mt-2">
+                            <div className="space-y-1 mt-2">
                                 {inboxTasks.map(task => (
-                                    <QuickEditTaskCard
+                                    <CompactInboxTask
                                         key={task.id}
                                         task={task}
                                         project={getProjectById(task.projectId)}
-                                        allTasks={tasks}
-                                        allProjects={projects}
                                         isSelected={selectedTaskId === task.id}
                                         onSelect={onSelectTask}
-                                        onUpdate={onUpdate}
-                                        onStatusChange={onStatusChange}
-                                        onPause={onPause}
-                                        onToggleSubtask={onToggleSubtask}
                                         onStartDrag={onStartDrag}
-                                        onDelete={onDelete}
-                                        onAIBreakdown={onAIBreakdown}
-                                        onUpdateSubtasks={onUpdateSubtasks}
                                         onEdit={onEdit}
                                     />
                                 ))}

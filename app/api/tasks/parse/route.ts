@@ -46,11 +46,19 @@ function parseTasksFallback(text: string): any {
     let timeBlock: 'morning' | 'afternoon' | 'evening' | 'anytime' = 'anytime';
     let date: string | null = null;
     
-    if (/morning|am|breakfast|early/i.test(trimmed)) {
+    // Check for time-specific keywords first (must come before date extraction)
+    const hasThisEvening = /this evening|tonight/i.test(trimmed);
+    const hasThisAfternoon = /this afternoon/i.test(trimmed);
+    const hasThisMorning = /this morning/i.test(trimmed);
+    const hasTomorrowEvening = /tomorrow evening/i.test(trimmed);
+    const hasTomorrowAfternoon = /tomorrow afternoon/i.test(trimmed);
+    const hasTomorrowMorning = /tomorrow morning/i.test(trimmed);
+    
+    if (hasThisMorning || hasTomorrowMorning || /\b(in the )?morning\b/i.test(trimmed)) {
       timeBlock = 'morning';
-    } else if (/afternoon|lunch|pm/i.test(trimmed) && !/evening|night/i.test(trimmed)) {
+    } else if (hasThisAfternoon || hasTomorrowAfternoon || /\b(in the )?afternoon\b|lunch|noon/i.test(trimmed)) {
       timeBlock = 'afternoon';
-    } else if (/evening|night|dinner|late/i.test(trimmed)) {
+    } else if (hasThisEvening || hasTomorrowEvening || /\b(in the )?evening\b|dinner/i.test(trimmed)) {
       timeBlock = 'evening';
     }
     
@@ -58,9 +66,9 @@ function parseTasksFallback(text: string): any {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    if (/today/i.test(trimmed)) {
+    if (/\btoday\b|this morning|this afternoon|this evening|tonight/i.test(trimmed)) {
       date = today.toISOString().split('T')[0];
-    } else if (/tomorrow/i.test(trimmed)) {
+    } else if (/\btomorrow\b/i.test(trimmed)) {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
       date = tomorrow.toISOString().split('T')[0];
@@ -81,12 +89,19 @@ function parseTasksFallback(text: string): any {
       estimatedMinutes = parseInt(minMatch[1]);
     }
     
-    // Clean up title (remove date/time/priority keywords)
+    // Clean up title (remove ONLY date/time scheduling keywords, keep the actual task description)
     let title = trimmed
-      .replace(/\b(urgent|asap|high priority|low priority|important|critical|!!!|!!)\b/gi, '')
-      .replace(/\b(today|tomorrow|next week|morning|afternoon|evening|night|early|late)\b/gi, '')
-      .replace(/\b(quick|easy|simple|small|complex|difficult|challenging|big)\b/gi, '')
-      .replace(/\d+\s*(?:hour|hr|minute|min)s?/gi, '')
+      // Remove priority keywords
+      .replace(/\b(urgent|asap|high priority|low priority|important|critical)\b/gi, '')
+      // Remove time/date scheduling phrases (be specific to avoid removing task content)
+      .replace(/\b(this evening|this afternoon|this morning|tonight)\b/gi, '')
+      .replace(/\b(tomorrow evening|tomorrow afternoon|tomorrow morning)\b/gi, '')
+      .replace(/\btomorrow\b/gi, '')
+      .replace(/\btoday\b/gi, '')
+      .replace(/\bnext week\b/gi, '')
+      // Remove time estimates
+      .replace(/\d+\s*(?:hour|hr|minute|min)s?\b/gi, '')
+      // Clean up extra whitespace
       .replace(/\s+/g, ' ')
       .trim();
     
@@ -105,7 +120,7 @@ function parseTasksFallback(text: string): any {
     return {
       title: title || 'New Task',
       date,
-      timeBlock: date ? timeBlock : null,
+      timeBlock: date ? timeBlock : 'anytime', // Always set timeBlock if we have a date
       estimatedMinutes,
       priority,
       energyLevel,
@@ -149,49 +164,55 @@ Your job is to take freeform notes, ideas, or thoughts and convert them into str
 
 ${dateContext}
 
-Rules:
-1. Break down complex thoughts into individual, concrete tasks
-2. Make tasks specific and actionable (start with a verb)
-3. Extract time estimates when mentioned (convert to minutes)
-4. Infer priority based on language cues (urgent, ASAP, important = high/urgent; later, sometime = low)
-5. Infer energy level based on task complexity (simple = low, moderate = medium, complex = high)
-6. If it's just one task, return it as one task
-7. If it's multiple tasks or a complex project, break it down
+CRITICAL RULES:
+1. PRESERVE THE FULL TASK DESCRIPTION - Do NOT shorten or summarize the user's input
+2. Only remove scheduling keywords (today, tomorrow, this evening, etc.) from the title
+3. Keep ALL context and details the user provided (e.g., "to talk about the dog", "about the meeting", etc.)
+4. Make tasks specific and actionable (start with a verb when possible)
+5. Extract time estimates when mentioned (convert to minutes)
+6. Infer priority based on language cues (urgent, ASAP, important = high/urgent; later, sometime = low)
+7. Infer energy level based on task complexity (quick/simple = low, moderate = medium, complex = high)
 8. Use appropriate icons: coffee (personal), briefcase (work), home (household), heart (health), dumbbell (fitness), book (learning), target (goals)
 
-DATE AND TIME EXTRACTION (IMPORTANT):
-- Extract dates when mentioned: "tomorrow", "Friday", "next week", "Dec 20", etc.
-- Return dates in YYYY-MM-DD format (e.g., "2025-12-20")
-- Extract time blocks based on time mentioned:
-  - Morning times (6am-12pm) → timeBlock: "morning"
-  - Afternoon times (12pm-5pm) → timeBlock: "afternoon"  
-  - Evening times (5pm-10pm) → timeBlock: "evening"
-  - No specific time or "anytime" → timeBlock: "anytime"
-- If no date is mentioned, set date to null (task goes to inbox)
-- "today at 2pm" → date: today's date, timeBlock: "afternoon"
-- "Friday morning" → date: that Friday, timeBlock: "morning"
-- "next week" → date: next Monday, timeBlock: "anytime"
+DATE AND TIME EXTRACTION (VERY IMPORTANT):
+- "this evening" or "tonight" → date: TODAY, timeBlock: "evening"
+- "this afternoon" → date: TODAY, timeBlock: "afternoon"  
+- "this morning" → date: TODAY, timeBlock: "morning"
+- "tomorrow evening" → date: TOMORROW, timeBlock: "evening"
+- "tomorrow afternoon" → date: TOMORROW, timeBlock: "afternoon"
+- "tomorrow morning" → date: TOMORROW, timeBlock: "morning"
+- "tomorrow" (no time) → date: TOMORROW, timeBlock: "anytime"
+- "today" (no time) → date: TODAY, timeBlock: "anytime"
+- "Friday", "next week", etc. → date: that date, timeBlock: "anytime"
+- NO date/time mentioned → date: null, timeBlock: null (goes to inbox)
 
-Return a JSON array of tasks with this structure:
+Return dates in YYYY-MM-DD format (e.g., "2026-01-08")
+
+EXAMPLES:
+Input: "call dad this evening to talk about the dog"
+Output: {"tasks": [{"title": "call dad to talk about the dog", "date": "2026-01-08", "timeBlock": "evening", "estimatedMinutes": 30, "priority": "medium", "energyLevel": "low", "icon": "coffee"}]}
+
+Input: "finish report tomorrow afternoon - urgent 2 hours"
+Output: {"tasks": [{"title": "finish report", "date": "2026-01-09", "timeBlock": "afternoon", "estimatedMinutes": 120, "priority": "urgent", "energyLevel": "high", "icon": "briefcase"}]}
+
+Input: "buy groceries"
+Output: {"tasks": [{"title": "buy groceries", "date": null, "timeBlock": null, "estimatedMinutes": 30, "priority": "medium", "energyLevel": "low", "icon": "home"}]}
+
+Return a JSON object with this structure:
 {
   "tasks": [
     {
-      "title": "Do the thing",
+      "title": "Do the thing with all the details preserved",
       "description": "Optional detailed description",
-      "date": "2025-12-20" or null,
+      "date": "2026-01-08" or null,
       "timeBlock": "morning" | "afternoon" | "evening" | "anytime" | null,
       "estimatedMinutes": 30,
-      "priority": "medium",
-      "energyLevel": "medium",
-      "icon": "target"
+      "priority": "low" | "medium" | "high" | "urgent",
+      "energyLevel": "low" | "medium" | "high",
+      "icon": "coffee" | "briefcase" | "home" | "heart" | "dumbbell" | "book" | "target"
     }
   ]
-}
-
-Priority options: low, medium, high, urgent
-Energy options: low, medium, high
-TimeBlock options: morning, afternoon, evening, anytime (or null if no date)
-Icon options: coffee, briefcase, home, heart, dumbbell, book, target`,
+}`,
         },
         {
           role: 'user',

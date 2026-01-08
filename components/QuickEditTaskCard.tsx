@@ -150,7 +150,7 @@ export const EditablePriorityBadge: React.FC<{
                 style={{ backgroundColor: current.color }}
                 title={disabled ? current.label : `${current.label} priority (click to change)`}
             >
-                {priority === 'urgent' && <Flag size={7} className="text-white" />}
+                {priority === 'urgent' && <Flag size={9} className="text-white" />}
             </button>
             
             {showDropdown && (
@@ -203,10 +203,10 @@ export const EditableTimeBlockBadge: React.FC<{
     }, [showDropdown]);
 
     const blocks = [
-        { value: 'anytime' as TimeBlock, label: 'Anytime', icon: <Clock size={11} />, color: 'text-gray-500' },
-        { value: 'morning' as TimeBlock, label: 'Morning', icon: <Coffee size={11} />, color: 'text-amber-500' },
-        { value: 'afternoon' as TimeBlock, label: 'Afternoon', icon: <Briefcase size={11} />, color: 'text-blue-500' },
-        { value: 'evening' as TimeBlock, label: 'Evening', icon: <Home size={11} />, color: 'text-indigo-500' },
+        { value: 'anytime' as TimeBlock, label: 'Anytime', icon: <Clock size={14} />, color: 'text-gray-500' },
+        { value: 'morning' as TimeBlock, label: 'Morning', icon: <Coffee size={14} />, color: 'text-amber-500' },
+        { value: 'afternoon' as TimeBlock, label: 'Afternoon', icon: <Briefcase size={14} />, color: 'text-blue-500' },
+        { value: 'evening' as TimeBlock, label: 'Evening', icon: <Home size={14} />, color: 'text-indigo-500' },
     ];
 
     const current = blocks.find(b => b.value === timeBlock) || blocks[0];
@@ -270,9 +270,9 @@ export const EditableEnergyBadge: React.FC<{
     }, [showDropdown]);
 
     const levels = [
-        { value: 'low' as EnergyLevel, icon: <BatteryLow size={12} />, color: 'text-slate-500', label: 'Low' },
-        { value: 'medium' as EnergyLevel, icon: <BatteryMedium size={12} />, color: 'text-amber-500', label: 'Medium' },
-        { value: 'high' as EnergyLevel, icon: <BatteryFull size={12} />, color: 'text-green-500', label: 'High' },
+        { value: 'low' as EnergyLevel, icon: <BatteryLow size={15} />, color: 'text-slate-500', label: 'Low' },
+        { value: 'medium' as EnergyLevel, icon: <BatteryMedium size={15} />, color: 'text-amber-500', label: 'Medium' },
+        { value: 'high' as EnergyLevel, icon: <BatteryFull size={15} />, color: 'text-green-500', label: 'High' },
     ];
 
     const current = levels.find(l => l.value === level) || levels[1];
@@ -328,7 +328,7 @@ export const RolloverBadge: React.FC<{ count: number }> = ({ count }) => {
     
     return (
         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${style.bg} ${style.text} ${style.border} flex items-center gap-0.5`} title={`Rolled over ${count} time${count > 1 ? 's' : ''}`}>
-            <RotateCcw size={10} />
+            <RotateCcw size={12} />
             {count}
         </span>
     );
@@ -377,10 +377,10 @@ export const EditableTimeBadge: React.FC<{
                     }
                 }}
                 disabled={disabled}
-                className={`flex items-center gap-0.5 text-gray-500 text-[9px] ${disabled ? 'cursor-default' : 'cursor-pointer hover:text-gray-700 hover:bg-gray-100'} px-1 py-0.5 rounded transition-colors`}
+                className={`flex items-center gap-0.5 text-gray-500 text-xs ${disabled ? 'cursor-default' : 'cursor-pointer hover:text-gray-700 hover:bg-gray-100'} px-1 py-0.5 rounded transition-colors`}
                 title={disabled ? `${estimatedMinutes || '?'} minutes` : "Click to set time estimate"}
             >
-                <Clock size={9} />
+                <Clock size={12} />
                 <span className="font-medium">{estimatedMinutes || '?'}</span>
             </button>
             
@@ -550,7 +550,7 @@ export const TaskAgeBadge: React.FC<{ createdAt: string }> = ({ createdAt }) => 
     
     return (
         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${style.bg} ${style.text} ${style.border} flex items-center gap-0.5`} title={`Created ${daysOld} days ago`}>
-            <Clock size={10} />
+            <Clock size={12} />
             {daysOld}d
         </span>
     );
@@ -883,14 +883,14 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                 </div>
             )}
 
-            <div className={compact ? 'p-1.5 space-y-1' : 'p-2.5 space-y-1.5'}>
+            <div className={compact ? 'p-1 space-y-0.5' : 'p-2 space-y-1'}>
                 {/* Header row - Action Buttons + Title + Menu */}
-                <div className={`flex items-start ${compact ? 'gap-1.5' : 'gap-2'}`}>
+                <div className={`flex items-start ${compact ? 'gap-1' : 'gap-2'}`}>
                     {/* Action buttons */}
                     <div className="flex items-center gap-1 flex-shrink-0">
                         {isBlocked ? (
-                            <div className="relative w-8 h-8 flex items-center justify-center">
-                                <Circle size={18} className="text-red-400" />
+                            <div className={`relative ${compact ? 'w-6 h-6' : 'w-8 h-8'} flex items-center justify-center`}>
+                                <Circle size={compact ? 14 : 18} className="text-red-400" />
                                 <div className="absolute inset-0 flex items-center justify-center">
                                     <span className="text-[10px]">🔒</span>
                                 </div>
@@ -901,10 +901,10 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                                     e.stopPropagation();
                                     onStatusChange(task.id, 'pending');
                                 }}
-                                className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 transition-colors"
+                                className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} flex items-center justify-center text-green-600 hover:bg-green-50 transition-colors`}
                                 title="Mark incomplete"
                             >
-                                <CheckCircle2 size={20} className="fill-current" />
+                                <CheckCircle2 size={compact ? 16 : 20} className="fill-current" />
                             </button>
                         ) : (
                             <>
@@ -918,14 +918,14 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                                             onStatusChange(task.id, 'in-progress');
                                         }
                                     }}
-                                    className={`w-8 h-8 flex items-center justify-center transition-colors ${
+                                    className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} flex items-center justify-center transition-colors ${
                                         task.status === 'in-progress'
                                             ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
                                             : 'text-gray-500 hover:bg-gray-100 hover:text-blue-600'
                                     }`}
                                     title={task.status === 'in-progress' ? 'Pause' : 'Start task'}
                                 >
-                                    {task.status === 'in-progress' ? <Pause size={18} /> : <Play size={18} />}
+                                    {task.status === 'in-progress' ? <Pause size={compact ? 14 : 18} /> : <Play size={compact ? 14 : 18} />}
                                 </button>
                                 
                                 {/* Complete button */}
@@ -937,10 +937,10 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                                         }
                                         onStatusChange(task.id, 'completed');
                                     }}
-                                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
+                                    className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} flex items-center justify-center text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors`}
                                     title="Mark complete"
                                 >
-                                    <CheckCircle2 size={20} />
+                                    <CheckCircle2 size={compact ? 16 : 20} />
                                 </button>
                             </>
                         )}
@@ -985,9 +985,8 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                                 onDoubleClick={handleTitleDoubleClick}
                                 className="relative"
                             >
-                                <p className={`${compact ? 'text-xs' : 'text-sm'} font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'} ${isCompleted ? '' : 'cursor-text'}`}>
+                                <p className={`${compact ? 'text-[11px]' : 'text-sm'} font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'} ${isCompleted ? '' : 'cursor-text'}`}>
                                     {showPriorityDot && <span className={`inline-block w-1.5 h-1.5 rounded-full ${priorityColor} mr-1.5 align-middle`}></span>}
-                                    {task.icon && iconMap[task.icon] && <span className="inline-block mr-1.5 align-middle">{iconMap[task.icon]}</span>}
                                     {task.isTopPriority && <Star size={14} className="inline mr-1 text-amber-500 fill-amber-500" />}
                                     {task.title}
                                 </p>
@@ -1071,7 +1070,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                 )}
 
                 {/* Metadata row - Editable badges */}
-                <div className={`flex items-center ${compact ? 'gap-0.5' : 'gap-1'} flex-wrap ${compact ? 'text-[9px]' : 'text-[10px]'} text-gray-600`}>
+                <div className={`flex items-center ${compact ? 'gap-0.5' : 'gap-1.5'} flex-wrap ${compact ? 'text-[9px]' : 'text-xs'} text-gray-600`}>
                     <EditableProjectBadge
                         project={project}
                         allProjects={allProjects}
