@@ -423,11 +423,14 @@ Add to `lib/intelligence/types.ts`:
 - [x] Test timer accuracy (uses 100ms intervals for precision)
 
 ### Phase 3: Timer UI (Day 3)
-- [ ] Build `PomodoroTimer.tsx` widget
-- [ ] Implement circular progress ring (SVG)
-- [ ] Add drag-and-drop positioning
-- [ ] Implement minimize/expand
-- [ ] Add keyboard shortcuts
+- [x] Build `PomodoroTimer.tsx` widget
+- [x] Implement circular progress ring (SVG)
+- [x] Add drag-and-drop positioning
+- [x] Implement minimize/expand
+- [x] Add keyboard shortcuts (Space, Esc)
+- [ ] **INTEGRATION**: Wire up to main app page
+- [ ] **INTEGRATION**: Add "Start Pomodoro" button to TaskCard
+- [ ] **INTEGRATION**: Test end-to-end flow
 
 ### Phase 4: Integration (Day 4)
 - [ ] Update `TaskCard.tsx` with "Start Pomodoro" button
@@ -496,7 +499,99 @@ Use existing theme system from `lib/themes.ts`:
 
 ---
 
-## 📝 Notes
+## � Integration Guide - How to Test
+
+**You CANNOT test yet** because we haven't wired the component into the app. Here's what's needed:
+
+### Step 1: Add usePomodoro to page.tsx
+
+In `app/page.tsx`, add the hook:
+
+```typescript
+import { useTasks, useProjects, useCelebration, useTheme, usePomodoro } from '@/hooks';
+
+// In the component:
+const pomodoro = usePomodoro({
+    isAuthenticated,
+    onPomodoroComplete: () => {
+        celebrate(); // Celebrate completed pomodoros!
+    },
+});
+```
+
+### Step 2: Add PomodoroTimer component to page.tsx
+
+```typescript
+import { PomodoroTimer } from '@/components/PomodoroTimer';
+
+// In the JSX (near the end, before closing tags):
+<PomodoroTimer
+    timerState={pomodoro.timerState}
+    isActive={pomodoro.isActive}
+    isPaused={pomodoro.isPaused}
+    timeRemaining={pomodoro.timeRemaining}
+    currentTask={pomodoro.currentTask}
+    sessionNumber={pomodoro.sessionNumber}
+    onPause={pomodoro.pausePomodoro}
+    onResume={pomodoro.resumePomodoro}
+    onStop={() => pomodoro.stopPomodoro(true)}
+    theme={theme}
+/>
+```
+
+### Step 3: Add "Start Pomodoro" button to TaskCard
+
+In `components/TaskCard.tsx`, add a button to start pomodoro for a task:
+
+```typescript
+// In the props interface:
+interface TaskCardProps {
+    // ... existing props
+    onStartPomodoro?: (task: Task) => void;
+}
+
+// In the button area (near Play/Edit icons):
+<button
+    onClick={(e) => {
+        e.stopPropagation();
+        onStartPomodoro?.(task);
+    }}
+    className="p-1.5 hover:bg-gray-100 rounded"
+    title="Start Pomodoro"
+>
+    <Timer size={14} className="text-gray-600" />
+</button>
+```
+
+### Step 4: Wire it up in page.tsx
+
+When rendering TaskCards:
+
+```typescript
+<TaskCard
+    // ... existing props
+    onStartPomodoro={(task) => pomodoro.startPomodoro(task)}
+/>
+```
+
+### Step 5: Run the app
+
+```bash
+npm run dev
+```
+
+Then:
+1. Click the Timer icon on any task
+2. Timer widget appears bottom-right
+3. Countdown begins (25:00 → 0:00)
+4. Click minimize/maximize
+5. Drag it around
+6. Use keyboard: Space = pause, Esc = stop
+7. Wait for completion → celebration!
+
+---
+
+## �📝 Notes
 
 - Keep UI minimal and non-intrusive (ADHD-friendly)
 - Timer must be accurate (no drift from setInterval)
