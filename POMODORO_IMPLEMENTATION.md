@@ -408,7 +408,10 @@ Add to `lib/intelligence/types.ts`:
 ### Phase 1: Database & Settings (Day 1)
 - [x] Update `prisma/schema.prisma`
 - [x] Run migration: `npx prisma db push` (added UserPomodoroSettings & PomodoroSession)
-- [ ] Create `/api/pomodoro/settings` route
+- [x] Create `/api/pomodoro/settings` route
+- [x] Create `/api/pomodoro/start` route
+- [x] Create `/api/pomodoro/complete` route
+- [x] Create `/api/pomodoro/stats` route
 - [ ] Build `PomodoroSettings.tsx` component
 - [ ] Add settings to `/settings` page
 
