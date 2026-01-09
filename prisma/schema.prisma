@@ -24,6 +24,10 @@ model User {
   timezone      String    @default("America/Chicago")
   preferences   Json?     @default("{}")
   
+  // Pomodoro
+  pomodoroSettings  UserPomodoroSettings?
+  pomodoroSessions  PomodoroSession[]
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -125,6 +129,9 @@ model Task {
   // Dependencies
   dependencies     TaskDependency[] @relation("DependentTasks")
   blocking         TaskDependency[] @relation("BlockingTasks")
+  
+  // Pomodoro
+  pomodoroSessions PomodoroSession[]
   
   // Metadata
   aiGenerated      Boolean   @default(false)
@@ -264,5 +271,72 @@ model Suggestion {
   
   @@index([userId])
   @@index([userId, status])
+}
+
+// ============================================
+// POMODORO TIMER SYSTEM
+// ============================================
+
+// User Pomodoro Settings
+model UserPomodoroSettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  
+  // Timer durations (in minutes)
+  workDuration      Int      @default(25)
+  shortBreakDuration Int     @default(5)
+  longBreakDuration Int      @default(15)
+  pomodorosUntilLongBreak Int @default(4)
+  
+  // Preferences
+  autoStartBreaks   Boolean  @default(true)
+  autoStartPomodoros Boolean @default(false)
+  soundEnabled      Boolean  @default(true)
+  soundVolume       Float    @default(0.5)
+  desktopNotifications Boolean @default(true)
+  
+  // Ambient sounds
+  ambientSound      String?  // 'none' | 'rain' | 'cafe' | 'lofi' | 'whitenoise'
+  ambientVolume     Float    @default(0.3)
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Individual Pomodoro Session Tracking
+model PomodoroSession {
+  id                String   @id @default(cuid())
+  userId            String
+  taskId            String?  // Optional - can have pomodoros not tied to tasks
+  
+  // Session details
+  startedAt         DateTime
+  endedAt           DateTime?
+  plannedDuration   Int      // in minutes (usually 25)
+  actualDuration    Int?     // in minutes (if stopped early)
+  
+  // Session outcome
+  completed         Boolean  @default(false) // Did they finish the full duration?
+  abandoned         Boolean  @default(false) // Did they stop it early?
+  pausedDuration    Int      @default(0)     // Total time paused (in seconds)
+  
+  // Break tracking
+  breakTaken        Boolean  @default(false)
+  breakType         String?  // 'short' | 'long'
+  breakDuration     Int?     // actual break time in minutes
+  
+  // Context
+  sessionNumber     Int      @default(1) // Which pomodoro in the sequence (1-4)
+  timeOfDay         Int?     // Hour of day (0-23)
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task              Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([userId, startedAt])
+  @@index([taskId])
 }
 

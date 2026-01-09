@@ -4,7 +4,27 @@ This document tracks future features and enhancements for FocusFlow, organized b
 
 ---
 
-## 🚧 CURRENT WORK - Visual Intelligence Layer (Phase 2A)
+## 🚧 CURRENT WORK - Pomodoro Timer System
+
+**Branch**: `feature/pomodoro-timer`  
+**Status**: Phase 1 (Database) Complete ✅
+
+Full-featured Pomodoro timer with work/break cycles, session tracking, and ADHD-friendly features.
+See [POMODORO_IMPLEMENTATION.md](POMODORO_IMPLEMENTATION.md) for complete spec.
+
+**Completed**:
+- [x] Database schema (UserPomodoroSettings, PomodoroSession)
+- [x] Database migration applied
+
+**In Progress**:
+- [ ] API routes for settings and sessions
+- [ ] Core timer hook (usePomodoro)
+- [ ] Timer UI component
+- [ ] Task integration
+
+---
+
+## 🎨 PAUSED - Visual Intelligence Layer (Phase 2A)
 
 **Goal**: Make AI suggestions and learned patterns visible and actionable with ADHD-friendly, compact visuals.
 
