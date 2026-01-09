@@ -16,7 +16,7 @@ This document tracks future features and enhancements for FocusFlow, organized b
 - **Dopamine hits**: Visual rewards for following suggestions
 
 ### Components to Build
-- [ ] **Suggestion Toast/Banner**: Floating inline suggestions (not modals)
+- [x] **Smart Suggestion Toasts**: Floating inline suggestions (not modals)
   - "💡 You usually do Marketing tasks in the morning" → Move button
   - Dismiss or accept inline
   - Stacks multiple suggestions vertically (compact)
@@ -28,7 +28,7 @@ This document tracks future features and enhancements for FocusFlow, organized b
   - Clicking badge shows detailed chart/explanation
   - Slides in from right, doesn't cover tasks
   
-- [ ] **Smart Task Hints**: Inline contextual badges on tasks
+- [x] **Smart Task Hints**: Inline contextual badges on tasks
   - "⏰ Usually takes 45m" (learned timing)
   - "☀️ Try morning" (learned time preference)
   - "🔥 High energy needed" (pattern match)
@@ -40,11 +40,11 @@ This document tracks future features and enhancements for FocusFlow, organized b
   - Click to expand detailed view
 
 ### Technical Implementation
-- Fetch suggestions on page load (`/api/intelligence`)
-- Store in React state, update on task actions
-- Use Zustand or Context for global suggestion state
-- Auto-dismiss/expire stale suggestions
-- Track suggestion acceptance rate (new events)
+- [x] Fetch suggestions on page load (`/api/intelligence`)
+- [x] Store in React state, update on task actions
+- [x] Use custom hook (useSuggestions) for global suggestion state
+- [x] Auto-dismiss/expire stale suggestions
+- [x] Track suggestion acceptance rate (new events)
 
 ---
 

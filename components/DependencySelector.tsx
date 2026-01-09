@@ -117,9 +117,9 @@ export function DependencySelector({
                                         <button
                                             key={task.id}
                                             onClick={() => setSelectedTaskId(task.id)}
-                                            className={`w-full text-left px-3 py-2 text-xs hover:bg-purple-50 transition-colors border-l-2 ${
-                                                selectedTaskId === task.id
-                                                    ? 'bg-purple-50 border-purple-500'
+                                            className={`w-full text-left px-3 py-2 text-xs hover:bg-blue-50 transition-colors border-l-2 ${
+                                                dependency?.dependsOnId === task.id
+                                                    ? 'bg-blue-50 border-blue-500'
                                                     : 'border-transparent'
                                             }`}
                                         >
@@ -142,7 +142,7 @@ export function DependencySelector({
                         <button
                             onClick={handleAdd}
                             disabled={!selectedTaskId}
-                            className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50"
+                            className="flex-1 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50"
                         >
                             Add
                         </button>
@@ -161,7 +161,7 @@ export function DependencySelector({
                 <button
                     onClick={() => setIsAdding(true)}
                     disabled={selectableTasks.length === 0}
-                    className="text-xs text-purple-600 hover:text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-xs text-blue-600 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     + Add Dependency
                 </button>

@@ -8,6 +8,7 @@ import React from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Plus, Flame, Pause, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { addDays, getWeekStart } from '@/lib/utils/date';
 import { VIEW_DAY_OPTIONS } from '@/lib/constants';
+import { Theme } from '@/lib/themes';
 
 // Label mapping for view options
 const VIEW_LABELS: Record<number, string> = {
@@ -36,6 +37,8 @@ interface HeaderProps {
     subtasksExpandedAll?: boolean;
     /** Called when user toggles expand/collapse all subtasks */
     onToggleSubtasksExpandedAll?: () => void;
+    /** Theme configuration */
+    theme?: Theme;
 }
 
 export function Header({
@@ -50,12 +53,18 @@ export function Header({
     onCompleteActiveTask,
     subtasksExpandedAll = true,
     onToggleSubtasksExpandedAll,
+    theme,
 }: HeaderProps) {
     return (
         <>
         {/* Active Task Banner - PROMINENT NUDGE */}
         {activeTask && (
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 flex items-center justify-between border-b-2 border-blue-700 shadow-lg animate-pulse">
+            <div 
+                className="text-white px-4 py-2 flex items-center justify-between border-b-2 border-blue-700 shadow-lg animate-pulse"
+                style={{
+                    backgroundImage: `linear-gradient(to right, ${theme?.colors.primaryFrom || '#2563eb'}, ${theme?.colors.primaryTo || '#0891b2'})`
+                }}
+            >
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-white rounded-full animate-ping" />
@@ -145,7 +154,7 @@ export function Header({
 
                 {/* Current Month/Year */}
                 <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
-                    <Calendar size={16} className="text-purple-500" />
+                    <Calendar size={16} style={{ color: theme?.colors.primaryFrom || '#2563eb' }} />
                     {currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                 </h2>
             </div>
@@ -170,9 +179,10 @@ export function Header({
                             }}
                             className={`px-2 py-1 text-[10px] font-medium rounded transition-all ${
                                 viewDays === days
-                                    ? 'bg-white shadow text-purple-600'
+                                    ? 'bg-white shadow'
                                     : 'text-gray-500 hover:text-gray-700'
                             }`}
+                            style={viewDays === days ? { color: theme?.colors.primaryFrom || '#2563eb' } : undefined}
                         >
                             {VIEW_LABELS[days] || `${days}D`}
                         </button>
@@ -194,7 +204,10 @@ export function Header({
                 {/* Add Task Button */}
                 <button
                     onClick={onAddTask}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm hover:shadow"
+                    className="text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm hover:shadow hover:opacity-90"
+                    style={{
+                        backgroundImage: `linear-gradient(to right, ${theme?.colors.primaryFrom || '#2563eb'}, ${theme?.colors.primaryTo || '#0891b2'})`
+                    }}
                 >
                     <Plus size={14} />
                     Add Task

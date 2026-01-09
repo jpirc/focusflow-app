@@ -9,6 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Edit2, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { Task, Project } from '@/types';
+import { Theme } from '@/lib/themes';
 
 interface Top3SectionProps {
     topPriorities: Task[];
@@ -16,6 +17,7 @@ interface Top3SectionProps {
     onEdit: (task: Task) => void;
     onSetPriorities: () => void;
     onStatusChange: (taskId: string, status: 'completed' | 'in-progress') => void;
+    theme?: Theme;
 }
 
 export function Top3Section({
@@ -24,6 +26,7 @@ export function Top3Section({
     onEdit,
     onSetPriorities,
     onStatusChange,
+    theme,
 }: Top3SectionProps) {
     const [isExpanded, setIsExpanded] = useState(() => {
         // Load saved preference from localStorage
@@ -45,7 +48,13 @@ export function Top3Section({
     const prioritySlots = Array.from({ length: 3 }, (_, i) => topPriorities[i] || null);
 
     return (
-        <div className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 mb-2 overflow-hidden">
+        <div 
+            className="border-2 mb-2 overflow-hidden"
+            style={{
+                backgroundImage: `linear-gradient(to bottom right, ${theme?.colors.accentFrom || '#eff6ff'}, ${theme?.colors.accentTo || '#ecfeff'})`,
+                borderColor: theme?.colors.accentBorder || '#bfdbfe'
+            }}
+        >
             {/* Header - Always Visible */}
             <button
                 onClick={() => setIsExpanded(!isExpanded)}

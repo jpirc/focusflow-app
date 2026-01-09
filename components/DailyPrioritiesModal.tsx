@@ -8,6 +8,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Star, X, Check, Target } from 'lucide-react';
 import { Task, Project } from '@/types';
+import { Theme } from '@/lib/themes';
 
 interface DailyPrioritiesModalProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ interface DailyPrioritiesModalProps {
     projects: Project[];
     onSetTopPriorities: (taskIds: string[]) => void;
     existingTopPriorities: string[];
+    theme?: Theme;
 }
 
 export function DailyPrioritiesModal({
@@ -25,6 +27,7 @@ export function DailyPrioritiesModal({
     projects,
     onSetTopPriorities,
     existingTopPriorities,
+    theme,
 }: DailyPrioritiesModalProps) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const wasOpen = useRef(false);
@@ -82,7 +85,12 @@ export function DailyPrioritiesModal({
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="bg-gradient-to-r from-purple-500 to-blue-500 px-6 py-4 text-white">
+                <div 
+                    className="px-6 py-4 text-white"
+                    style={{
+                        backgroundImage: `linear-gradient(to right, ${theme?.colors.primaryFrom || '#2563eb'}, ${theme?.colors.primaryTo || '#0891b2'})`
+                    }}
+                >
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Target size={24} />

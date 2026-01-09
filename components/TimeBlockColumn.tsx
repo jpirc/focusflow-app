@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Task, Project, Subtask, TaskStatus, TimeBlock, DragItem, TimeBlockConfig } from '../types';
 import { QuickEditTaskCard } from './QuickEditTaskCard';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Theme } from '@/lib/themes';
 
 interface TimeBlockColumnProps {
     block: TimeBlockConfig;
@@ -23,12 +24,13 @@ interface TimeBlockColumnProps {
     onEdit: (task: Task) => void;
     compact?: boolean;
     subtasksExpandedAll?: boolean;
+    theme?: Theme;
 }
 
 export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
     block, tasks, allTasks, projects, date, selectedTaskId,
     onSelectTask, onUpdate, onStatusChange, onPause, onToggleSubtask, onStartDrag, onDrop, onDelete,
-    onAIBreakdown, onUpdateSubtasks, onEdit, compact = false, subtasksExpandedAll = true
+    onAIBreakdown, onUpdateSubtasks, onEdit, compact = false, subtasksExpandedAll = true, theme
 }) => {
     const [isDragOver, setIsDragOver] = useState(false);
     
@@ -120,7 +122,11 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
 
     return (
         <div
-            className={`flex-1 border bg-white transition-all duration-200 ${minHeight} ${isDragOver ? 'border-purple-400 bg-purple-50 scale-[1.02] border-2' : style.border}`}
+            className={`flex-1 border transition-all duration-200 ${minHeight} ${isDragOver ? 'scale-[1.02] border-2' : style.border} ${!isDragOver ? 'bg-white' : ''}`}
+            style={isDragOver ? {
+                borderColor: theme?.colors.dragBorder || '#60a5fa',
+                backgroundColor: theme?.colors.dragBg || '#eff6ff'
+            } : undefined}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}

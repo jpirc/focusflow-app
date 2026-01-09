@@ -12,7 +12,7 @@ import { useSession } from 'next-auth/react';
 import { Brain, CheckCircle2, RotateCcw, Pencil, Trash2 } from 'lucide-react';
 
 // Hooks
-import { useTasks, useProjects, useCelebration, useIntelligence } from '@/hooks';
+import { useTasks, useProjects, useCelebration, useTheme } from '@/hooks';
 
 // Components
 import { Sidebar, Header } from '@/components/layout';
@@ -29,7 +29,6 @@ import { DailyPrioritiesModal } from '@/components/DailyPrioritiesModal';
 import { Top3Section } from '@/components/Top3Section';
 import { RolloverNotification } from '@/components/RolloverNotification';
 import { UnblockedTasksNotification } from '@/components/UnblockedTasksNotification';
-import { SmartSuggestionBanner } from '@/components/SmartSuggestionBanner';
 
 // Utilities & Constants
 import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeekend } from '@/lib/utils/date';
@@ -51,6 +50,9 @@ export default function FocusFlowApp() {
     // ============================================
     // Hooks
     // ============================================
+
+    // Theme system
+    const { theme, changeTheme } = useTheme();
 
     // Celebration system for task completion (must be before useTasks)
     const {
@@ -93,18 +95,6 @@ export default function FocusFlowApp() {
             celebrate();
             incrementStreak();
         }
-    });
-
-    // Intelligence system for AI suggestions
-    const {
-        suggestions,
-        acceptSuggestion,
-        dismissSuggestion,
-        getSuggestionsForTask,
-        getSuggestionsForTimeBlock,
-    } = useIntelligence({ 
-        isAuthenticated,
-        tasks 
     });
 
     const {
@@ -459,34 +449,6 @@ export default function FocusFlowApp() {
         console.log('Update subtasks called', taskId, subtasks.length);
     }, []);
 
-    // Handle suggestion acceptance
-    const handleSuggestionAccept = useCallback(async (suggestionId: string, action: any) => {
-        console.log('[SUGGESTION] Accepting:', suggestionId, action);
-        
-        try {
-            // Apply the suggested action
-            if (action.type === 'move_time_block' && action.taskId) {
-                // Move task to suggested time block
-                const task = tasks.find(t => t.id === action.taskId);
-                if (task) {
-                    await moveTask(action.taskId, task.date || formatDate(new Date()), action.targetTimeBlock);
-                }
-            } else if (action.type === 'focus' && action.taskIds?.length > 0) {
-                // Focus on suggested tasks (e.g., unblocked tasks)
-                const taskId = action.taskIds[0];
-                setSelectedTaskId(taskId);
-            }
-            
-            // Mark suggestion as accepted
-            await acceptSuggestion(suggestionId);
-            
-            // Celebrate acceptance
-            celebrate();
-        } catch (err) {
-            console.error('[SUGGESTION] Failed to apply:', err);
-        }
-    }, [tasks, moveTask, acceptSuggestion, celebrate, formatDate]);
-
     // ============================================
     // Loading State
     // ============================================
@@ -542,6 +504,7 @@ export default function FocusFlowApp() {
                 }}
                 onDeleteProject={deleteProject}
                 getProjectById={getProjectById}
+                theme={theme}
             />
 
             {/* Main Content */}
@@ -559,6 +522,7 @@ export default function FocusFlowApp() {
                     onCompleteActiveTask={activeTask ? () => updateStatus(activeTask.id, 'completed') : undefined}
                     subtasksExpandedAll={subtasksExpandedAll}
                     onToggleSubtasksExpandedAll={() => setSubtasksExpandedAll(!subtasksExpandedAll)}
+                    theme={theme}
                 />
 
                 {/* Rollover Notification */}
@@ -608,7 +572,7 @@ export default function FocusFlowApp() {
                                 >
                                     {/* Day Header */}
                                     <div className={`mb-1.5 sm:mb-2 flex items-center justify-between ${
-                                        day.isToday ? 'text-purple-600' : day.isWeekend ? 'text-amber-600' : 'text-gray-500'
+                                        day.isToday ? 'text-blue-600' : day.isWeekend ? 'text-amber-600' : 'text-gray-500'
                                     }`}>
                                         <div className="min-w-0">
                                             <h3 className={`font-bold truncate ${viewDays === 7 ? 'text-xs sm:text-sm' : viewDays === 1 ? 'text-lg sm:text-xl' : 'text-sm sm:text-lg'}`}>
@@ -619,7 +583,7 @@ export default function FocusFlowApp() {
                                             </p>
                                         </div>
                                         {day.isToday && (
-                                            <span className={`font-bold bg-purple-100 text-purple-600 rounded-full ${viewDays === 7 ? 'text-[8px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1'}`}>
+                                            <span className={`font-bold bg-blue-100 text-blue-600 rounded-full ${viewDays === 7 ? 'text-[8px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1'}`}>
                                                 TODAY
                                             </span>
                                         )}
@@ -634,26 +598,13 @@ export default function FocusFlowApp() {
                                                 onEdit={handleEditTask}
                                                 onSetPriorities={() => setDailyPrioritiesModalOpen(true)}
                                                 onStatusChange={handleStatusChange}
+                                                theme={theme}
                                             />
                                         </div>
                                     )}
 
                                     {/* Time Blocks */}
                                     <div className={`flex-1 overflow-y-auto pr-0.5 pb-2 ${viewDays === 7 ? 'space-y-0.5' : 'space-y-2'}`}>
-                                        {/* Smart Suggestions for this day */}
-                                        {day.isToday && viewDays !== 7 && (
-                                            <SmartSuggestionBanner
-                                                suggestions={suggestions.filter(s => {
-                                                    if (!s.taskId) return false;
-                                                    const task = tasks.find(t => t.id === s.taskId);
-                                                    return task && task.date === day.dateStr;
-                                                })}
-                                                onAccept={(suggestionId, action) => handleSuggestionAccept(suggestionId, { ...action, taskId: suggestions.find(s => s.id === suggestionId)?.taskId })}
-                                                onDismiss={dismissSuggestion}
-                                                compact={false}
-                                            />
-                                        )}
-
                                         {TIME_BLOCKS
                                             .filter(block => {
                                                 // For today, hide past time blocks
@@ -693,8 +644,9 @@ export default function FocusFlowApp() {
                                                 onEdit={handleEditTask}
                                                 compact={viewDays === 7}
                                                 subtasksExpandedAll={subtasksExpandedAll}
+                                                theme={theme}
                                             />
-                                        ))}
+                                            ))}
 
                                         {/* Completed Tasks for this day */}
                                         {day.completedTasks.length > 0 && (
@@ -801,6 +753,7 @@ export default function FocusFlowApp() {
                                                 setCurrentDate(cleanDate);
                                                 setViewDays(1);
                                             }}
+                                            theme={theme}
                                         />
                                     ))}
                                 </div>
@@ -817,6 +770,7 @@ export default function FocusFlowApp() {
                     isOpen={aiModalOpen}
                     onClose={() => setAiModalOpen(false)}
                     onApply={handleApplyAIBreakdown}
+                    theme={theme}
                 />
             )}
 
@@ -862,13 +816,13 @@ export default function FocusFlowApp() {
                 onClose={handleCloseDailyPriorities}
                 tasks={tasks}
                 projects={projects}
-
                 onSetTopPriorities={handleSetTopPriorities}
                 existingTopPriorities={todayTopPriorities}
+                theme={theme}
             />
 
             {/* Celebration message overlay */}
-            <CelebrationMessage message={celebrationMessage} />
+            <CelebrationMessage message={celebrationMessage} theme={theme} />
         </div>
     );
 }

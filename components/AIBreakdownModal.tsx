@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, X, Loader2, AlertTriangle, Sparkles, Lightbulb, RefreshCw, Check, Edit2, Save } from 'lucide-react';
 import { Task, Subtask, AIBreakdownSuggestion } from '../types';
+import { Theme } from '@/lib/themes';
 
 interface AIBreakdownModalProps {
     task: Task;
     isOpen: boolean;
     onClose: () => void;
     onApply: (subtasks: Subtask[]) => void;
+    theme?: Theme;
 }
 
 interface EditableSubtask {
@@ -16,7 +18,7 @@ interface EditableSubtask {
     isEditing: boolean;
 }
 
-export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen, onClose, onApply }) => {
+export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen, onClose, onApply, theme }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [suggestion, setSuggestion] = useState<AIBreakdownSuggestion | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -159,7 +161,9 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="bg-gradient-to-r from-purple-500 to-blue-500 px-4 py-3 text-white">
+                <div 
+                    className="px-4 py-3 text-white bg-gradient-to-r from-blue-500 to-cyan-500"
+                >
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <div className="p-1.5 bg-white/20">
@@ -186,7 +190,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                 <div className="p-3 max-h-[60vh] overflow-y-auto">
                     {isLoading ? (
                         <div className="text-center py-8">
-                            <Loader2 size={32} className="mx-auto text-purple-500 animate-spin mb-3" />
+                            <Loader2 size={32} className="mx-auto animate-spin mb-3" style={{ color: theme?.colors.primaryFrom || '#2563eb' }} />
                             <p className="text-sm text-gray-600 font-medium">Analyzing task...</p>
                             <p className="text-xs text-gray-400 mt-1">Breaking into bite-sized pieces</p>
                         </div>
@@ -204,8 +208,8 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                     ) : !suggestion && showQuestions ? (
                         /* Guided questions */
                         <div className="space-y-3">
-                            <div className="bg-purple-50 border border-purple-200 p-3">
-                                <p className="text-xs text-purple-800 font-medium mb-2 flex items-center gap-1">
+                            <div className="bg-blue-50 border border-blue-200 p-3">
+                                <p className="text-xs text-blue-800 font-medium mb-2 flex items-center gap-1">
                                     <Lightbulb size={12} /> Let's think through this together (optional)
                                 </p>
                                 {!task.projectId && (
@@ -259,7 +263,10 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                                 </button>
                                 <button
                                     onClick={generateBreakdown}
-                                    className="flex-1 px-3 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:opacity-90 flex items-center justify-center gap-2 text-sm font-medium"
+                                    className="flex-1 px-3 py-2 text-white rounded-lg hover:opacity-90 flex items-center justify-center gap-2 text-sm font-medium"
+                                    style={{
+                                        backgroundImage: `linear-gradient(to right, ${theme?.colors.primaryFrom || '#2563eb'}, ${theme?.colors.primaryTo || '#0891b2'})`
+                                    }}
                                 >
                                     <Brain size={14} />
                                     Generate Breakdown
@@ -271,7 +278,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                             {/* Suggested subtasks with editing */}
                             <div>
                                 <h3 className="text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
-                                    <Sparkles size={12} className="text-purple-500" />
+                                    <Sparkles size={12} style={{ color: theme?.colors.primaryFrom || '#2563eb' }} />
                                     Suggested Subtasks ({selectedCount} selected)
                                 </h3>
                                 <div className="space-y-1.5">
@@ -280,7 +287,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                                             key={i}
                                             className={`p-2 border transition-colors ${
                                                 subtask.selected 
-                                                    ? 'bg-purple-50 border-purple-200' 
+                                                    ? 'bg-blue-50 border-blue-200' 
                                                     : 'bg-gray-50 border-gray-200 opacity-60'
                                             }`}
                                         >
@@ -290,13 +297,13 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                                                     type="checkbox"
                                                     checked={subtask.selected}
                                                     onChange={() => toggleSubtask(i)}
-                                                    className="mt-0.5 w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                                                    className="mt-0.5 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                                                 />
                                                 
                                                 {/* Number badge */}
                                                 <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium flex-shrink-0 ${
                                                     subtask.selected 
-                                                        ? 'bg-purple-100 text-purple-600' 
+                                                        ? 'bg-blue-100 text-blue-600' 
                                                         : 'bg-gray-100 text-gray-400'
                                                 }`}>
                                                     {i + 1}
@@ -310,7 +317,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                                                                 type="text"
                                                                 value={subtask.title}
                                                                 onChange={(e) => updateSubtask(i, 'title', e.target.value)}
-                                                                className="w-full px-2 py-1 text-xs border border-purple-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                                                className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                                                 autoFocus
                                                             />
                                                             <div className="flex items-center gap-1">
@@ -318,7 +325,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                                                                     type="number"
                                                                     value={subtask.estimatedMinutes}
                                                                     onChange={(e) => updateSubtask(i, 'estimatedMinutes', parseInt(e.target.value) || 0)}
-                                                                    className="w-16 px-2 py-1 text-xs border border-purple-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                                                    className="w-16 px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                                                     min="1"
                                                                 />
                                                                 <span className="text-[10px] text-gray-500">minutes</span>
@@ -393,8 +400,11 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                             className={`flex-1 px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-medium ${
                                 selectedCount === 0
                                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90'
+                                    : 'text-white hover:opacity-90'
                             }`}
+                            style={selectedCount === 0 ? undefined : {
+                                backgroundImage: `linear-gradient(to right, ${theme?.colors.primaryFrom || '#2563eb'}, ${theme?.colors.primaryTo || '#0891b2'})`
+                            }}
                         >
                             <Check size={12} />
                             Apply Selected ({selectedCount})

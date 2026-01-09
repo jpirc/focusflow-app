@@ -11,6 +11,7 @@ import { Settings, LogOut, MoreVertical, ChevronDown, ChevronRight, Inbox, Folde
 import { Task, Project } from '@/types';
 import { CompactInboxTask } from '@/components/CompactInboxTask';
 import { TimingInsightsCard } from '@/components/TimingInsightsCard';
+import { Theme } from '@/lib/themes';
 
 const projectIconMap: Record<string, string> = {
     // Work & Business
@@ -66,6 +67,7 @@ interface SidebarProps {
     onUpdateProject: (id: string, updates: { name?: string; color?: string; icon?: string }) => Promise<boolean>;
     onDeleteProject: (id: string) => void;
     getProjectById: (id: string | undefined) => Project;
+    theme?: Theme;
 }
 
 export function Sidebar({
@@ -92,6 +94,7 @@ export function Sidebar({
     onUpdateProject,
     onDeleteProject,
     getProjectById,
+    theme,
 }: SidebarProps) {
     // Project menu state
     const [projectMenuOpenId, setProjectMenuOpenId] = useState<string | null>(null);
@@ -117,11 +120,21 @@ export function Sidebar({
                 {/* Header */}
                 <div className="p-4 flex items-center justify-between border-b border-gray-100">
                     {isOpen ? (
-                        <h1 className="font-bold text-xl bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        <h1 
+                            className="font-bold text-xl bg-clip-text text-transparent"
+                            style={{
+                                backgroundImage: `linear-gradient(to right, ${theme?.colors.primaryFrom || '#2563eb'}, ${theme?.colors.primaryTo || '#0891b2'})`
+                            }}
+                        >
                             FocusFlow
                         </h1>
                     ) : (
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold">
+                        <div 
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
+                            style={{
+                                backgroundImage: `linear-gradient(to bottom right, ${theme?.colors.primaryFrom || '#2563eb'}, ${theme?.colors.primaryTo || '#0891b2'})`
+                            }}
+                        >
                             F
                         </div>
                     )}
