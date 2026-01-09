@@ -118,7 +118,7 @@ export function DependencySelector({
                                             key={task.id}
                                             onClick={() => setSelectedTaskId(task.id)}
                                             className={`w-full text-left px-3 py-2 text-xs hover:bg-blue-50 transition-colors border-l-2 ${
-                                                dependency?.dependsOnId === task.id
+                                                selectedTaskId === task.id
                                                     ? 'bg-blue-50 border-blue-500'
                                                     : 'border-transparent'
                                             }`}
