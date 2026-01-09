@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await validateRequest(req, BreakdownRequestSchema);
     if (error || !data) {
-        return errorResponse('Invalid request data', 400);
+        // Return the detailed validation error
+        return error || errorResponse('Invalid request data', 400);
     }
 
     try {

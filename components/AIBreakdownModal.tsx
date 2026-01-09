@@ -46,25 +46,31 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
         ].filter(Boolean).join('\n');
 
         try {
+            const requestPayload = {
+                taskId: task.id,
+                taskTitle: task.title,
+                taskDescription: task.description || undefined,
+                estimatedMinutes: task.estimatedMinutes || 30,
+                energyLevel: task.energyLevel || 'medium',
+                priority: task.priority || 'medium',
+                projectId: task.projectId || undefined,
+                timeBlock: task.timeBlock || undefined,
+                userContext: userContext || undefined,
+            };
+            
+            console.log('[AIBreakdown] Request payload:', requestPayload);
+            
             // Call the AI breakdown API
             const response = await fetch('/api/intelligence/breakdown', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    taskId: task.id,
-                    taskTitle: task.title,
-                    taskDescription: task.description,
-                    estimatedMinutes: task.estimatedMinutes,
-                    energyLevel: task.energyLevel,
-                    priority: task.priority,
-                    projectId: task.projectId,
-                    timeBlock: task.timeBlock,
-                    userContext: userContext || undefined,
-                }),
+                body: JSON.stringify(requestPayload),
             });
 
             if (!response.ok) {
-                throw new Error('Failed to generate breakdown');
+                const errorData = await response.json().catch(() => ({}));
+                console.error('[AIBreakdown] API error:', errorData);
+                throw new Error(errorData.error || 'Failed to generate breakdown');
             }
 
             const data = await response.json();
