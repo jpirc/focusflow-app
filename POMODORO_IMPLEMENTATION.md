@@ -413,11 +413,11 @@ Add to `lib/intelligence/types.ts`:
 - [ ] Add settings to `/settings` page
 
 ### Phase 2: Core Timer Logic (Day 2)
-- [ ] Create `usePomodoro.ts` hook
-- [ ] Build timer state machine
-- [ ] Implement countdown logic
-- [ ] Add pause/resume functionality
-- [ ] Test timer accuracy
+- [x] Create `usePomodoro.ts` hook
+- [x] Build timer state machine
+- [x] Implement countdown logic (drift-free with endTime calculation)
+- [x] Add pause/resume functionality
+- [x] Test timer accuracy (uses 100ms intervals for precision)
 
 ### Phase 3: Timer UI (Day 3)
 - [ ] Build `PomodoroTimer.tsx` widget
