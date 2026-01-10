@@ -21,7 +21,7 @@ import {
     ChevronUp, ChevronDown, GripVertical, CheckCircle2, Circle,
     Sparkles, ArrowRight, Target, Flag, BatteryLow, BatteryMedium, BatteryFull,
     Coffee, Briefcase, Home, Heart, Dumbbell, BookOpen, RotateCcw, Clock, Star,
-    Check, X, Calendar, Plus
+    Check, X, Calendar, Plus, Timer
 } from 'lucide-react';
 import { Task, Project, Subtask, TaskStatus, Priority, EnergyLevel, DragItem, TimeBlock } from '../types';
 import { RolloverWarning } from './RolloverWarning';
@@ -635,6 +635,7 @@ interface QuickEditTaskCardProps {
     onAIBreakdown: (task: Task) => void;
     onUpdateSubtasks: (taskId: string, subtasks: Subtask[]) => void;
     onEdit: (task: Task) => void; // Opens full modal for advanced editing
+    onStartPomodoro?: (task: Task) => void; // Start Pomodoro timer
     compact?: boolean;
     subtasksExpandedAll?: boolean;
 }
@@ -650,7 +651,7 @@ function lightenColor(hex: string, amount: number = 0.85): string {
 
 export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     const { task, project, allTasks, allProjects, isSelected, onSelect, onUpdate, onStatusChange, onPause,
-        onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, compact = false, subtasksExpandedAll = true } = props;
+        onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, onStartPomodoro, compact = false, subtasksExpandedAll = true } = props;
 
     const [expanded, setExpanded] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
@@ -927,6 +928,20 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                                 >
                                     {task.status === 'in-progress' ? <Pause size={compact ? 14 : 18} /> : <Play size={compact ? 14 : 18} />}
                                 </button>
+                                
+                                {/* Pomodoro Timer button */}
+                                {onStartPomodoro && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onStartPomodoro(task);
+                                        }}
+                                        className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors`}
+                                        title="Start Pomodoro timer"
+                                    >
+                                        <Timer size={compact ? 14 : 18} />
+                                    </button>
+                                )}
                                 
                                 {/* Complete button */}
                                 <button

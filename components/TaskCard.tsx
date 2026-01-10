@@ -6,7 +6,7 @@ import {
     Play, Pause, Wand2, MoreHorizontal, Edit3, Link2, Copy, Trash2,
     ChevronUp, ChevronDown, GripVertical, CheckCircle2, Circle,
     Sparkles, ArrowRight, Target, Flag, BatteryLow, BatteryMedium, BatteryFull,
-    Coffee, Briefcase, Home, Heart, Dumbbell, BookOpen, RotateCcw, Clock, Star
+    Coffee, Briefcase, Home, Heart, Dumbbell, BookOpen, RotateCcw, Clock, Star, Timer
 } from 'lucide-react';
 import { Task, Project, Subtask, TaskStatus, Priority, EnergyLevel, DragItem } from '../types';
 import { RolloverWarning } from './RolloverWarning';
@@ -108,6 +108,7 @@ interface TaskCardProps {
     onAIBreakdown: (task: Task) => void;
     onUpdateSubtasks: (taskId: string, subtasks: Subtask[]) => void;
     onEdit: (task: Task) => void;
+    onStartPomodoro?: (task: Task) => void;
     compact?: boolean; // For 5-day view
 }
 
@@ -122,7 +123,7 @@ function lightenColor(hex: string, amount: number = 0.85): string {
 
 export const TaskCard: React.FC<TaskCardProps> = (props) => {
     const { task, project, allTasks, isSelected, onSelect, onStatusChange, onPause,
-        onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, compact = false } = props;
+        onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, onStartPomodoro, compact = false } = props;
 
     const [expanded, setExpanded] = useState(false);
     const [showMenu, setShowMenu] = useState(false);

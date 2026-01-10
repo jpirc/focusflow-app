@@ -12,10 +12,11 @@ import { useSession } from 'next-auth/react';
 import { Brain, CheckCircle2, RotateCcw, Pencil, Trash2 } from 'lucide-react';
 
 // Hooks
-import { useTasks, useProjects, useCelebration, useTheme } from '@/hooks';
+import { useTasks, useProjects, useCelebration, useTheme, usePomodoro } from '@/hooks';
 
 // Components
 import { Sidebar, Header } from '@/components/layout';
+import { PomodoroTimer } from '@/components/PomodoroTimer';
 import { QuickEditTaskCard } from '@/components/QuickEditTaskCard';
 import { TimeBlockColumn } from '@/components/TimeBlockColumn';
 import { UpcomingDayColumn } from '@/components/UpcomingDayColumn';
@@ -64,6 +65,15 @@ export default function FocusFlowApp() {
         enabled: true,
         soundEnabled: false, // Can be made configurable via settings
         intensity: 'normal',
+    });
+
+    // Pomodoro timer system
+    const pomodoro = usePomodoro({
+        isAuthenticated,
+        onPomodoroComplete: () => {
+            celebrate();
+            incrementStreak();
+        },
     });
 
     const {
@@ -642,6 +652,7 @@ export default function FocusFlowApp() {
                                                 onAIBreakdown={handleAIBreakdown}
                                                 onUpdateSubtasks={handleUpdateSubtasks}
                                                 onEdit={handleEditTask}
+                                                onStartPomodoro={(task) => pomodoro.startPomodoro(task)}
                                                 compact={viewDays === 7}
                                                 subtasksExpandedAll={subtasksExpandedAll}
                                                 theme={theme}
@@ -823,6 +834,20 @@ export default function FocusFlowApp() {
 
             {/* Celebration message overlay */}
             <CelebrationMessage message={celebrationMessage} theme={theme} />
+
+            {/* Pomodoro timer widget */}
+            <PomodoroTimer
+                timerState={pomodoro.timerState}
+                isActive={pomodoro.isActive}
+                isPaused={pomodoro.isPaused}
+                timeRemaining={pomodoro.timeRemaining}
+                currentTask={pomodoro.currentTask}
+                sessionNumber={pomodoro.sessionNumber}
+                onPause={pomodoro.pausePomodoro}
+                onResume={pomodoro.resumePomodoro}
+                onStop={() => pomodoro.stopPomodoro(true)}
+                theme={theme}
+            />
         </div>
     );
 }
