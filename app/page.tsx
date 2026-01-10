@@ -74,6 +74,14 @@ export default function FocusFlowApp() {
             celebrate();
             incrementStreak();
         },
+        onTaskStart: (taskId) => {
+            // Update task status to in-progress when Pomodoro starts
+            handleStatusChange(taskId, 'in-progress');
+        },
+        onSessionComplete: () => {
+            // Refresh tasks to get updated actualMinutes
+            refreshTasks();
+        },
     });
 
     const {

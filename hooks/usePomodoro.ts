@@ -62,6 +62,10 @@ interface UsePomodoroOptions {
     isAuthenticated: boolean;
     onPomodoroComplete?: (sessionData: PomodoroSessionData) => void;
     onBreakComplete?: () => void;
+    /** Called when starting a pomodoro on a task - receives taskId and should update task status to in-progress */
+    onTaskStart?: (taskId: string) => void;
+    /** Called when a session completes or is abandoned - to refresh task data (actualMinutes) */
+    onSessionComplete?: () => void;
 }
 
 interface UsePomodoroReturn {
@@ -119,7 +123,9 @@ const DEFAULT_SETTINGS: PomodoroSettings = {
 export function usePomodoro({ 
     isAuthenticated, 
     onPomodoroComplete,
-    onBreakComplete 
+    onBreakComplete,
+    onTaskStart,
+    onSessionComplete
 }: UsePomodoroOptions): UsePomodoroReturn {
     
     // ============================================
@@ -372,6 +378,11 @@ export function usePomodoro({
             
             if (!response.ok) {
                 console.error('Failed to save pomodoro session');
+            } else {
+                // Notify parent to refresh task data (get updated actualMinutes)
+                if (onSessionComplete) {
+                    onSessionComplete();
+                }
             }
         } catch (error) {
             console.error('Error saving pomodoro session:', error);
@@ -391,6 +402,11 @@ export function usePomodoro({
         workStartTimeRef.current = Date.now();
         setTotalPausedTime(0);
         setPauseStartedAt(null);
+        
+        // Notify parent to update task status to in-progress
+        if (task?.id && onTaskStart) {
+            onTaskStart(task.id);
+        }
         
         // Create session in database
         if (isAuthenticated) {
@@ -414,7 +430,7 @@ export function usePomodoro({
         }
         
         startTimer(duration);
-    }, [settings.workDuration, isAuthenticated, startTimer]);
+    }, [settings.workDuration, isAuthenticated, startTimer, onTaskStart]);
     
     const pausePomodoro = useCallback(() => {
         if (timerState !== 'work' && timerState !== 'short-break' && timerState !== 'long-break') {
