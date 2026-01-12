@@ -29,36 +29,117 @@ export async function POST(req: NextRequest) {
     // Use timezone-aware date calculations
     const today = getTodayInTimezone(userTimezone);
     
-    // Calculate yesterday properly in the user's timezone
+    // Calculate dates
     const todayDate = new Date();
-    const yesterdayDate = new Date(todayDate);
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const yesterdayStr = formatDateInTimezone(yesterdayDate, userTimezone);
+    const dayOfWeek = todayDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    
+    // Don't do any rollover on weekends
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return NextResponse.json({
+        message: 'No rollover on weekends',
+        count: 0,
+        tasks: [],
+      });
+    }
     
     const currentHour = getCurrentHourInTimezone(userTimezone);
 
     const rolledOverTasks: Array<{ id: string; title: string; originalDate: string | null }> = [];
 
-    // 1. Roll over tasks from yesterday to today (into anytime bucket for replanning)
-    const yesterdayTasks = await prisma.task.findMany({
-      where: {
-        userId,
-        date: yesterdayStr,
-        status: { notIn: ['completed'] },
-      },
-      select: { id: true, title: true, date: true, timeBlock: true },
-    });
-
-    for (const task of yesterdayTasks) {
-      await prisma.task.update({
-        where: { id: task.id },
-        data: {
+    // Special handling for Friday: roll incomplete tasks to Monday
+    if (dayOfWeek === 5) { // Friday
+      // Calculate Monday (3 days forward)
+      const mondayDate = new Date(todayDate);
+      mondayDate.setDate(mondayDate.getDate() + 3);
+      const mondayStr = formatDateInTimezone(mondayDate, userTimezone);
+      
+      // Roll Friday's incomplete tasks to Monday
+      const fridayTasks = await prisma.task.findMany({
+        where: {
+          userId,
           date: today,
-          timeBlock: 'anytime', // Reset to anytime for replanning
-          rolloverCount: { increment: 1 },
+          status: { notIn: ['completed'] },
         },
+        select: { id: true, title: true, date: true, timeBlock: true },
       });
-      rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
+
+      for (const task of fridayTasks) {
+        await prisma.task.update({
+          where: { id: task.id },
+          data: {
+            date: mondayStr,
+            timeBlock: 'anytime', // Reset to anytime for replanning
+            rolloverCount: { increment: 1 },
+          },
+        });
+        rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
+      }
+    } else {
+      // For Monday-Thursday: roll previous days' tasks to today
+      if (dayOfWeek === 1) { // Monday - roll Friday, Saturday, Sunday to today
+        // Get Friday's date
+        const fridayDate = new Date(todayDate);
+        fridayDate.setDate(fridayDate.getDate() - 3);
+        const fridayStr = formatDateInTimezone(fridayDate, userTimezone);
+        
+        // Get Saturday's date
+        const saturdayDate = new Date(todayDate);
+        saturdayDate.setDate(saturdayDate.getDate() - 2);
+        const saturdayStr = formatDateInTimezone(saturdayDate, userTimezone);
+        
+        // Get Sunday's date
+        const sundayDate = new Date(todayDate);
+        sundayDate.setDate(sundayDate.getDate() - 1);
+        const sundayStr = formatDateInTimezone(sundayDate, userTimezone);
+        
+        // Roll all weekend tasks to Monday
+        const weekendTasks = await prisma.task.findMany({
+          where: {
+            userId,
+            date: { in: [fridayStr, saturdayStr, sundayStr] },
+            status: { notIn: ['completed'] },
+          },
+          select: { id: true, title: true, date: true, timeBlock: true },
+        });
+
+        for (const task of weekendTasks) {
+          await prisma.task.update({
+            where: { id: task.id },
+            data: {
+              date: today,
+              timeBlock: 'anytime', // Reset to anytime for replanning
+              rolloverCount: { increment: 1 },
+            },
+          });
+          rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
+        }
+      } else {
+        // Tuesday-Thursday: roll yesterday's tasks to today
+        const yesterdayDate = new Date(todayDate);
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterdayStr = formatDateInTimezone(yesterdayDate, userTimezone);
+        
+        const yesterdayTasks = await prisma.task.findMany({
+          where: {
+            userId,
+            date: yesterdayStr,
+            status: { notIn: ['completed'] },
+          },
+          select: { id: true, title: true, date: true, timeBlock: true },
+        });
+
+        for (const task of yesterdayTasks) {
+          await prisma.task.update({
+            where: { id: task.id },
+            data: {
+              date: today,
+              timeBlock: 'anytime', // Reset to anytime for replanning
+              rolloverCount: { increment: 1 },
+            },
+          });
+          rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
+        }
+      }
     }
 
     // 2. Roll tasks forward through time blocks within today
