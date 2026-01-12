@@ -7,9 +7,11 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Square, Minimize2, Maximize2, Coffee, Zap } from 'lucide-react';
+import { Play, Pause, Square, Minimize2, Maximize2, Coffee, Zap, Settings } from 'lucide-react';
 import { Task } from '@/types';
 import { Theme } from '@/lib/themes';
+import { PomodoroSettingsModal } from './PomodoroSettingsModal';
+import { PomodoroSettings } from '@/hooks/usePomodoro';
 
 interface PomodoroTimerProps {
     // Timer state from usePomodoro hook
@@ -25,6 +27,10 @@ interface PomodoroTimerProps {
     onResume: () => void;
     onStop: () => void;
     
+    // Settings
+    settings: PomodoroSettings;
+    updateSettings: (updates: Partial<PomodoroSettings>) => Promise<void>;
+    
     // Theme
     theme?: Theme;
 }
@@ -39,12 +45,15 @@ export function PomodoroTimer({
     onPause,
     onResume,
     onStop,
+    settings,
+    updateSettings,
     theme,
 }: PomodoroTimerProps) {
     const [isMinimized, setIsMinimized] = useState(false);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    const [showSettings, setShowSettings] = useState(false);
     const timerRef = useRef<HTMLDivElement>(null);
 
     // Initialize position from localStorage or default to bottom-right
@@ -204,12 +213,21 @@ export function PomodoroTimer({
                                 {isPaused ? 'Paused' : isBreak ? 'Break Time' : 'Focus'}
                             </span>
                         </div>
-                        <button
-                            onClick={() => setIsMinimized(true)}
-                            className="p-1 hover:bg-white/50 rounded"
-                        >
-                            <Minimize2 size={12} className="text-gray-500" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setShowSettings(true)}
+                                className="p-1 hover:bg-white/50 rounded"
+                                title="Settings"
+                            >
+                                <Settings size={12} className="text-gray-500" />
+                            </button>
+                            <button
+                                onClick={() => setIsMinimized(true)}
+                                className="p-1 hover:bg-white/50 rounded"
+                            >
+                                <Minimize2 size={12} className="text-gray-500" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Timer Display */}
@@ -301,6 +319,14 @@ export function PomodoroTimer({
                     </div>
                 </div>
             )}
+
+            {/* Settings Modal */}
+            <PomodoroSettingsModal
+                isOpen={showSettings}
+                onClose={() => setShowSettings(false)}
+                settings={settings}
+                onSave={updateSettings}
+            />
         </div>
     );
 }

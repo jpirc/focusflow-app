@@ -854,6 +854,8 @@ export default function FocusFlowApp() {
                 onPause={pomodoro.pausePomodoro}
                 onResume={pomodoro.resumePomodoro}
                 onStop={() => pomodoro.stopPomodoro(true)}
+                settings={pomodoro.settings}
+                updateSettings={pomodoro.updateSettings}
                 theme={theme}
             />
         </div>
