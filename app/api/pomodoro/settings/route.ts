@@ -24,9 +24,11 @@ const settingsSchema = z.object({
     autoStartPomodoros: z.boolean().optional(),
     soundEnabled: z.boolean().optional(),
     soundVolume: z.number().min(0).max(1).optional(),
+    testMode: z.boolean().optional(),
     desktopNotifications: z.boolean().optional(),
     ambientSound: z.string().nullable().optional(),
     ambientVolume: z.number().min(0).max(1).optional(),
+    overlayMode: z.enum(['off', 'subtle', 'full']).optional(),
 });
 
 /**
@@ -58,6 +60,7 @@ export async function GET(req: NextRequest) {
                     desktopNotifications: true,
                     ambientSound: null,
                     ambientVolume: 0.3,
+                    overlayMode: 'subtle',
                 },
             });
         }

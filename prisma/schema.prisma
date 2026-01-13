@@ -294,6 +294,8 @@ model UserPomodoroSettings {
   soundEnabled      Boolean  @default(true)
   soundVolume       Float    @default(0.5)
   desktopNotifications Boolean @default(true)
+  overlayMode       String   @default("subtle") // 'off' | 'subtle' | 'full'
+  testMode          Boolean  @default(false)     // 15s work / 5s break for testing
   
   // Ambient sounds
   ambientSound      String?  // 'none' | 'rain' | 'cafe' | 'lofi' | 'whitenoise'

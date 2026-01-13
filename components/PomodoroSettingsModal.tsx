@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { PomodoroSettings } from '@/hooks/usePomodoro';
+import { PomodoroSettings, OverlayMode } from '@/hooks/usePomodoro';
 
 interface PomodoroSettingsModalProps {
     isOpen: boolean;
@@ -27,6 +27,8 @@ export const PomodoroSettingsModal: React.FC<PomodoroSettingsModalProps> = ({
     const [pomodorosUntilLongBreak, setPomodorosUntilLongBreak] = useState(settings.pomodorosUntilLongBreak);
     const [autoStartBreaks, setAutoStartBreaks] = useState(settings.autoStartBreaks);
     const [autoStartPomodoros, setAutoStartPomodoros] = useState(settings.autoStartPomodoros);
+    const [overlayMode, setOverlayMode] = useState<OverlayMode>(settings.overlayMode || 'subtle');
+    const [testMode, setTestMode] = useState(settings.testMode || false);
     const [saving, setSaving] = useState(false);
 
     // Update local state when settings prop changes
@@ -37,6 +39,8 @@ export const PomodoroSettingsModal: React.FC<PomodoroSettingsModalProps> = ({
         setPomodorosUntilLongBreak(settings.pomodorosUntilLongBreak);
         setAutoStartBreaks(settings.autoStartBreaks);
         setAutoStartPomodoros(settings.autoStartPomodoros);
+        setOverlayMode(settings.overlayMode || 'subtle');
+        setTestMode(settings.testMode || false);
     }, [settings]);
 
     const handleSave = async () => {
@@ -49,6 +53,8 @@ export const PomodoroSettingsModal: React.FC<PomodoroSettingsModalProps> = ({
                 pomodorosUntilLongBreak,
                 autoStartBreaks,
                 autoStartPomodoros,
+                overlayMode,
+                testMode,
             });
             onClose();
         } catch (error) {
@@ -190,8 +196,76 @@ export const PomodoroSettingsModal: React.FC<PomodoroSettingsModalProps> = ({
                             </label>
                         </div>
                     </div>
-                </div>
 
+                    {/* Visual Overlay */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3">Visual Indicator</h3>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="overlayMode"
+                                    value="off"
+                                    checked={overlayMode === 'off'}
+                                    onChange={(e) => setOverlayMode(e.target.value as OverlayMode)}
+                                    className="w-4 h-4 text-red-500 focus:ring-2 focus:ring-red-500"
+                                />
+                                <span className="text-sm text-gray-700">Off - No visual indicator</span>
+                            </label>
+
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="overlayMode"
+                                    value="subtle"
+                                    checked={overlayMode === 'subtle'}
+                                    onChange={(e) => setOverlayMode(e.target.value as OverlayMode)}
+                                    className="w-4 h-4 text-red-500 focus:ring-2 focus:ring-red-500"
+                                />
+                                <div className="flex flex-col">
+                                    <span className="text-sm text-gray-700">Subtle - Top bar + timer badge</span>
+                                    <span className="text-xs text-gray-500">Recommended for focus</span>
+                                </div>
+                            </label>
+
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="overlayMode"
+                                    value="full"
+                                    checked={overlayMode === 'full'}
+                                    onChange={(e) => setOverlayMode(e.target.value as OverlayMode)}
+                                    className="w-4 h-4 text-red-500 focus:ring-2 focus:ring-red-500"
+                                />
+                                <div className="flex flex-col">
+                                    <span className="text-sm text-gray-700">Full - Border + status bar + accents</span>
+                                    <span className="text-xs text-gray-500">Maximum visibility</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                {/* Test Mode */}
+                <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-gray-900">Development</h3>
+                    <label className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                                <span className="text-lg">🧪</span>
+                            </div>
+                            <div>
+                                <div className="text-sm font-medium text-gray-900">Test Mode</div>
+                                <div className="text-xs text-gray-600">15s work / 5s break for testing</div>
+                            </div>
+                        </div>
+                        <input
+                            type="checkbox"
+                            checked={testMode}
+                            onChange={(e) => setTestMode(e.target.checked)}
+                            className="w-5 h-5 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
+                        />
+                    </label>
+                </div>
                 {/* Footer */}
                 <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200">
                     <button
