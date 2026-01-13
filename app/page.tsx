@@ -31,6 +31,7 @@ import { DailyPrioritiesModal } from '@/components/DailyPrioritiesModal';
 import { Top3Section } from '@/components/Top3Section';
 import { RolloverNotification } from '@/components/RolloverNotification';
 import { UnblockedTasksNotification } from '@/components/UnblockedTasksNotification';
+import { QuickWinSuggestions } from '@/components/QuickWinSuggestions';
 
 // Utilities & Constants
 import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeekend } from '@/lib/utils/date';
@@ -155,6 +156,8 @@ export default function FocusFlowApp() {
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [smartCaptureModalOpen, setSmartCaptureModalOpen] = useState(false);
     const [dailyPrioritiesModalOpen, setDailyPrioritiesModalOpen] = useState(false);
+    const [quickWinModalOpen, setQuickWinModalOpen] = useState(false);
+    const [quickWinTrigger, setQuickWinTrigger] = useState<'completion' | 'manual' | 'low-energy'>('manual');
     const [subtasksExpandedAll, setSubtasksExpandedAll] = useState(true);
 
     // Derive the current task to edit from the tasks array (stays in sync with subtask updates)
@@ -290,6 +293,12 @@ export default function FocusFlowApp() {
                 e.preventDefault();
                 setSmartCaptureModalOpen(true);
             }
+            // Quick Win shortcut: Cmd+W
+            if ((e.metaKey || e.ctrlKey) && e.key === 'w') {
+                e.preventDefault();
+                setQuickWinTrigger('manual');
+                setQuickWinModalOpen(true);
+            }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
@@ -385,6 +394,14 @@ export default function FocusFlowApp() {
         if (status === 'completed') {
             const newStreak = incrementStreak();
             celebrate(newStreak);
+            
+            // Show quick win suggestions after completing a task (30% chance)
+            if (Math.random() < 0.3) {
+                setTimeout(() => {
+                    setQuickWinTrigger('completion');
+                    setQuickWinModalOpen(true);
+                }, 1500); // Show after celebration animation
+            }
         }
     }, [updateStatus, incrementStreak, celebrate]);
 
@@ -535,6 +552,10 @@ export default function FocusFlowApp() {
                     viewDays={viewDays}
                     onViewDaysChange={setViewDays}
                     onAddTask={() => setSmartCaptureModalOpen(true)}
+                    onQuickWin={() => {
+                        setQuickWinTrigger('manual');
+                        setQuickWinModalOpen(true);
+                    }}
                     todayStreak={todayStreak}
                     activeTask={activeTask}
                     onPauseActiveTask={activeTask ? () => pauseTask(activeTask.id) : undefined}
@@ -838,6 +859,19 @@ export default function FocusFlowApp() {
                 projects={projects}
                 onSetTopPriorities={handleSetTopPriorities}
                 existingTopPriorities={todayTopPriorities}
+                theme={theme}
+            />
+
+            <QuickWinSuggestions
+                isOpen={quickWinModalOpen}
+                onClose={() => setQuickWinModalOpen(false)}
+                tasks={tasks}
+                projects={projects}
+                onSelectTask={handleEditTask}
+                onStartTask={(taskId) => {
+                    handleStatusChange(taskId, 'in-progress');
+                }}
+                trigger={quickWinTrigger}
                 theme={theme}
             />
 

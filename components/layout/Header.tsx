@@ -5,7 +5,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Plus, Flame, Pause, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Plus, Flame, Pause, CheckCircle2, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { addDays, getWeekStart } from '@/lib/utils/date';
 import { VIEW_DAY_OPTIONS } from '@/lib/constants';
 import { Theme } from '@/lib/themes';
@@ -25,6 +25,7 @@ interface HeaderProps {
     viewDays: number;
     onViewDaysChange: (days: number) => void;
     onAddTask: () => void;
+    onQuickWin?: () => void;
     /** Today's completed task streak count */
     todayStreak?: number;
     /** Currently active task (in-progress) */
@@ -47,6 +48,7 @@ export function Header({
     viewDays,
     onViewDaysChange,
     onAddTask,
+    onQuickWin,
     todayStreak = 0,
     activeTask,
     onPauseActiveTask,
@@ -198,6 +200,18 @@ export function Header({
                     >
                         {subtasksExpandedAll ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         {subtasksExpandedAll ? 'Collapse' : 'Expand'}
+                    </button>
+                )}
+
+                {/* Quick Win Button */}
+                {onQuickWin && (
+                    <button
+                        onClick={onQuickWin}
+                        className="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all"
+                        title="Quick Win Suggestions (Cmd+W)"
+                    >
+                        <Zap size={14} />
+                        Quick Win
                     </button>
                 )}
 
