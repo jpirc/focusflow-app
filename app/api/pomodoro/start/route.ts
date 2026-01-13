@@ -16,7 +16,7 @@ import {
 
 const startSessionSchema = z.object({
     taskId: z.string().optional(),
-    duration: z.number().min(1).max(120), // minutes
+    duration: z.number().min(0.08).max(120), // minutes (min allows 5s test breaks)
 });
 
 /**

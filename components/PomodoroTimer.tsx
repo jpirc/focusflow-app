@@ -7,7 +7,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Square, Minimize2, Maximize2, Coffee, Zap, Settings } from 'lucide-react';
+import { Play, Pause, Square, Minimize2, Maximize2, Coffee, Zap, Settings, Clock } from 'lucide-react';
 import { Task } from '@/types';
 import { Theme } from '@/lib/themes';
 import { PomodoroSettingsModal } from './PomodoroSettingsModal';
@@ -185,136 +185,182 @@ export function PomodoroTimer({
                 // Minimized FAB
                 <button
                     onClick={() => setIsMinimized(false)}
-                    className={`w-16 h-16 rounded-full shadow-xl flex items-center justify-center ${colors.bg} ${colors.border} border-2 hover:scale-110 transition-transform`}
+                    className={`w-20 h-20 rounded-full shadow-2xl flex items-center justify-center ${colors.bg} ${colors.border} border-3 hover:scale-110 transition-transform relative`}
                     onMouseDown={handleMouseDown}
                 >
                     <div className="text-center">
-                        <div className={`text-sm font-bold ${colors.text}`}>{timeDisplay.split(':')[0]}</div>
-                        <div className="flex gap-0.5 justify-center mt-0.5">
+                        <div className={`text-lg font-bold ${colors.text} tabular-nums`}>{timeDisplay.split(':')[0]}</div>
+                        <div className="flex gap-1 justify-center mt-1">
                             {pomodoroDisplay}
                         </div>
                     </div>
+                    {/* Pulsing ring animation */}
+                    {!isPaused && (
+                        <div className={`absolute inset-0 rounded-full ${colors.border} border-2 animate-ping opacity-20`} />
+                    )}
                 </button>
             ) : (
-                // Full widget
+                // Full widget - enlarged and more informative
                 <div
-                    className={`w-44 rounded-2xl shadow-2xl ${colors.bg} ${colors.border} border-2 overflow-hidden`}
+                    className={`w-[420px] rounded-3xl shadow-2xl ${colors.bg} ${colors.border} border-3 overflow-hidden`}
                     onMouseDown={handleMouseDown}
                 >
                     {/* Header */}
-                    <div className="px-3 py-2 bg-white/50 border-b border-gray-200 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
+                    <div className={`px-5 py-3 bg-gradient-to-r ${isBreak ? 'from-green-100 to-blue-100' : 'from-red-100 to-orange-100'} border-b-2 ${colors.border} flex items-center justify-between`}>
+                        <div className="flex items-center gap-2">
                             {isBreak ? (
-                                <Coffee size={14} className={colors.text} />
+                                <Coffee size={20} className={colors.text} />
                             ) : (
-                                <Zap size={14} className={colors.text} />
+                                <Zap size={20} className={colors.text} />
                             )}
-                            <span className={`text-xs font-semibold ${colors.text}`}>
-                                {isPaused ? 'Paused' : isBreak ? 'Break Time' : 'Focus'}
+                            <span className={`text-sm font-bold ${colors.text} uppercase tracking-wide`}>
+                                {isPaused ? 'Paused' : isBreak ? (timerState === 'long-break' ? 'Long Break' : 'Short Break') : 'Focus Mode'}
                             </span>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                             <button
                                 onClick={() => setShowSettings(true)}
-                                className="p-1 hover:bg-white/50 rounded"
+                                className="p-1.5 hover:bg-white/60 rounded-lg transition-colors"
                                 title="Settings"
                             >
-                                <Settings size={12} className="text-gray-500" />
+                                <Settings size={16} className="text-gray-600" />
                             </button>
                             <button
                                 onClick={() => setIsMinimized(true)}
-                                className="p-1 hover:bg-white/50 rounded"
+                                className="p-1.5 hover:bg-white/60 rounded-lg transition-colors"
+                                title="Minimize"
                             >
-                                <Minimize2 size={12} className="text-gray-500" />
+                                <Minimize2 size={16} className="text-gray-600" />
                             </button>
                         </div>
                     </div>
 
-                    {/* Timer Display */}
-                    <div className="p-4 flex flex-col items-center">
-                        {/* Circular Progress Ring */}
-                        <div className="relative w-32 h-32">
-                            <svg className="w-full h-full -rotate-90">
-                                {/* Background circle */}
-                                <circle
-                                    cx="64"
-                                    cy="64"
-                                    r="58"
-                                    stroke="#e5e7eb"
-                                    strokeWidth="6"
-                                    fill="none"
-                                />
-                                {/* Progress circle */}
-                                <circle
-                                    cx="64"
-                                    cy="64"
-                                    r="58"
-                                    stroke={colors.ring}
-                                    strokeWidth="6"
-                                    fill="none"
-                                    strokeDasharray={circumference}
-                                    strokeDashoffset={strokeDashoffset}
-                                    strokeLinecap="round"
-                                    style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-                                />
-                            </svg>
-                            {/* Time in center */}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className={`text-3xl font-bold ${colors.text} tabular-nums`}>
-                                    {timeDisplay}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Task Name */}
+                    {/* Main Content */}
+                    <div className="p-6">
+                        {/* Task Info */}
                         {currentTask && !isBreak && (
-                            <div className="mt-3 text-center">
-                                <p className="text-xs text-gray-600 truncate max-w-[140px]" title={currentTask.title}>
-                                    {currentTask.title}
-                                </p>
+                            <div className="mb-4 bg-white/60 rounded-xl p-4 border border-gray-200">
+                                <div className="flex items-start gap-3">
+                                    <div className={`w-10 h-10 rounded-full ${colors.bg} flex items-center justify-center flex-shrink-0`}>
+                                        <Zap size={20} className={colors.text} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-gray-900 text-base mb-1 line-clamp-2" title={currentTask.title}>
+                                            {currentTask.title}
+                                        </h3>
+                                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                                            {currentTask.estimatedMinutes && (
+                                                <span className="flex items-center gap-1">
+                                                    <Clock size={12} />
+                                                    {currentTask.estimatedMinutes}m est.
+                                                </span>
+                                            )}
+                                            {currentTask.actualMinutes && currentTask.actualMinutes > 0 && (
+                                                <span>• {currentTask.actualMinutes}m logged</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
-                        {/* Pomodoro Count */}
-                        <div className="mt-3 flex gap-1.5">
-                            {pomodoroDisplay}
+                        {/* Timer Display with Progress Ring */}
+                        <div className="flex flex-col items-center mb-4">
+                            {/* Circular Progress Ring */}
+                            <div className="relative w-48 h-48 mb-4">
+                                <svg className="w-full h-full -rotate-90">
+                                    {/* Background circle */}
+                                    <circle
+                                        cx="96"
+                                        cy="96"
+                                        r="88"
+                                        stroke="#e5e7eb"
+                                        strokeWidth="8"
+                                        fill="none"
+                                    />
+                                    {/* Progress circle */}
+                                    <circle
+                                        cx="96"
+                                        cy="96"
+                                        r="88"
+                                        stroke={colors.ring}
+                                        strokeWidth="8"
+                                        fill="none"
+                                        strokeDasharray={circumference}
+                                        strokeDashoffset={strokeDashoffset}
+                                        strokeLinecap="round"
+                                        style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                                    />
+                                </svg>
+                                {/* Time in center */}
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className={`text-5xl font-bold ${colors.text} tabular-nums`}>
+                                        {timeDisplay}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Pomodoro Progress Indicator */}
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="text-xs text-gray-600 font-medium">Session</span>
+                                <div className="flex gap-2">
+                                    {Array.from({ length: settings.pomodorosUntilLongBreak }, (_, i) => (
+                                        <div
+                                            key={i}
+                                            className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-all ${
+                                                i < sessionNumber - 1
+                                                    ? 'bg-red-500 text-white scale-100' // Completed
+                                                    : i === sessionNumber - 1
+                                                    ? `${colors.bg} ${colors.text} ${colors.border} border-2 scale-110 ring-2 ring-offset-2 ring-red-300` // Current
+                                                    : 'bg-gray-200 text-gray-400 scale-90' // Upcoming
+                                            }`}
+                                        >
+                                            {i + 1}
+                                        </div>
+                                    ))}
+                                </div>
+                                <span className="text-xs text-gray-600">/ {settings.pomodorosUntilLongBreak}</span>
+                            </div>
+
+                            {/* Status text */}
+                            <p className="text-sm text-gray-600 text-center">
+                                {isPaused 
+                                    ? '⏸ Timer paused' 
+                                    : isBreak 
+                                    ? '☕ Take a break and recharge' 
+                                    : `🎯 Stay focused on your task`}
+                            </p>
                         </div>
 
                         {/* Controls */}
-                        <div className="mt-4 flex gap-2">
+                        <div className="flex gap-3 justify-center">
                             {isPaused ? (
                                 <button
                                     onClick={onResume}
-                                    className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+                                    className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors font-semibold flex items-center gap-2 shadow-lg"
                                     title="Resume (Space)"
                                 >
-                                    <Play size={18} fill="currentColor" />
+                                    <Play size={20} fill="currentColor" />
+                                    Resume
                                 </button>
                             ) : (
                                 <button
                                     onClick={onPause}
-                                    className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors"
+                                    className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl transition-colors font-semibold flex items-center gap-2 shadow-lg"
                                     title="Pause (Space)"
                                 >
-                                    <Pause size={18} />
+                                    <Pause size={20} />
+                                    Pause
                                 </button>
                             )}
                             <button
-                                onClick={() => {
-                                    if (confirm('Stop this pomodoro?')) {
-                                        onStop();
-                                    }
-                                }}
-                                className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                                onClick={onStop}
+                                className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl transition-colors font-semibold flex items-center gap-2 shadow-lg"
                                 title="Stop (Esc)"
                             >
                                 <Square size={18} />
+                                Stop
                             </button>
-                        </div>
-
-                        {/* Keyboard hints */}
-                        <div className="mt-3 text-[10px] text-gray-500 text-center">
-                            Space: Pause • Esc: Stop
                         </div>
                     </div>
                 </div>

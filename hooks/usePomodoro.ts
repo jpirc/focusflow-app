@@ -19,6 +19,7 @@ import { Task } from '@/types';
 // ============================================
 
 export type TimerState = 'idle' | 'work' | 'short-break' | 'long-break' | 'paused';
+export type OverlayMode = 'off' | 'subtle' | 'full';
 
 export interface PomodoroSettings {
     workDuration: number;          // minutes
@@ -32,6 +33,8 @@ export interface PomodoroSettings {
     desktopNotifications: boolean;
     ambientSound?: string | null;
     ambientVolume: number;         // 0-1
+    overlayMode: OverlayMode;      // visual overlay indicator
+    testMode: boolean;             // 15s work / 5s break for testing
 }
 
 export interface PomodoroSessionData {
@@ -114,6 +117,8 @@ const DEFAULT_SETTINGS: PomodoroSettings = {
     desktopNotifications: true,
     ambientSound: null,
     ambientVolume: 0.3,
+    overlayMode: 'subtle',
+    testMode: false,
 };
 
 // ============================================
@@ -133,6 +138,7 @@ export function usePomodoro({
     // ============================================
     
     const [timerState, setTimerState] = useState<TimerState>('idle');
+    const [previousTimerState, setPreviousTimerState] = useState<TimerState>('idle'); // Track state before pause
     const [timeRemaining, setTimeRemaining] = useState(0); // seconds
     const [currentTask, setCurrentTask] = useState<Task | null>(null);
     const [sessionNumber, setSessionNumber] = useState(1); // 1-4
@@ -154,6 +160,14 @@ export function usePomodoro({
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const endTimeRef = useRef<number | null>(null);
     const workStartTimeRef = useRef<number | null>(null);
+    
+    // Audio refs for sounds
+    const completionSoundRef = useRef<HTMLAudioElement | null>(null);
+    const breakEndSoundRef = useRef<HTMLAudioElement | null>(null);
+    const tickSoundRef = useRef<HTMLAudioElement | null>(null);
+    
+    // Ref to always have latest handleTimerComplete (prevents stale closure in timer)
+    const handleTimerCompleteRef = useRef<(() => Promise<void>) | null>(null);
     
     // ============================================
     // COMPUTED VALUES
@@ -210,7 +224,15 @@ export function usePomodoro({
         fetchStats();
     }, [isAuthenticated]);
     
-    // ============================================
+    // Initialize sounds
+    useEffect(() => {
+        // Simple beep sounds using Web Audio API
+        completionSoundRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+Dyvm');
+        breakEndSoundRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjuT1/LNejEGLoTO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+Dyvm');
+        tickSoundRef.current = new Audio('data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==');
+    }, []);
+    
+    //============================================
     // TIMER LOGIC
     // ============================================
     
@@ -238,7 +260,8 @@ export function usePomodoro({
                     clearInterval(intervalRef.current);
                     intervalRef.current = null;
                 }
-                handleTimerComplete();
+                // Use ref to call latest version of handleTimerComplete
+                handleTimerCompleteRef.current?.();
             }
         }, 100); // Check every 100ms for accuracy
     }, []);
@@ -257,6 +280,8 @@ export function usePomodoro({
     
     const handleTimerComplete = useCallback(async () => {
         const wasWorkSession = timerState === 'work';
+        
+        console.log('[Pomodoro] Timer complete:', { wasWorkSession, timerState, currentTask: currentTask?.title });
         
         if (wasWorkSession) {
             // Work session completed
@@ -303,12 +328,17 @@ export function usePomodoro({
             
             // Start break
             const isLongBreak = sessionNumber >= settings.pomodorosUntilLongBreak;
-            const breakDuration = isLongBreak ? settings.longBreakDuration : settings.shortBreakDuration;
+            // Use 0.083 min (5s) for breaks in test mode
+            const breakDuration = settings.testMode ? 0.083 : (isLongBreak ? settings.longBreakDuration : settings.shortBreakDuration);
             const breakType = isLongBreak ? 'long-break' : 'short-break';
             
+            console.log('[Pomodoro] Starting break:', { breakType, breakDuration, isLongBreak, autoStartBreaks: settings.autoStartBreaks });
+            
             if (settings.autoStartBreaks) {
+                console.log('[Pomodoro] Setting timer state to:', breakType);
                 setTimerState(breakType);
                 startTimer(breakDuration);
+                console.log('[Pomodoro] Break timer started');
                 
                 // Reset session number after long break
                 if (isLongBreak) {
@@ -362,6 +392,11 @@ export function usePomodoro({
         onBreakComplete
     ]);
     
+    // Keep ref updated with latest callback to avoid stale closures in timer
+    useEffect(() => {
+        handleTimerCompleteRef.current = handleTimerComplete;
+    }, [handleTimerComplete]);
+    
     // ============================================
     // API INTEGRATION
     // ============================================
@@ -394,7 +429,14 @@ export function usePomodoro({
     // ============================================
     
     const startPomodoro = useCallback(async (task?: Task, customDuration?: number) => {
-        const duration = customDuration || settings.workDuration;
+        // Don't restart if there's already an active pomodoro
+        if (timerState !== 'idle' && timerState !== 'paused') {
+            console.log('Pomodoro already active');
+            return;
+        }
+        
+        // Use 0.25 min (15s) for work in test mode, 0.083 min (5s) for breaks
+        const duration = customDuration || (settings.testMode ? 0.25 : settings.workDuration);
         
         setCurrentTask(task || null);
         setTimerState('work');
@@ -430,16 +472,18 @@ export function usePomodoro({
         }
         
         startTimer(duration);
-    }, [settings.workDuration, isAuthenticated, startTimer, onTaskStart]);
+    }, [settings.workDuration, isAuthenticated, startTimer, onTaskStart, timerState]);
     
     const pausePomodoro = useCallback(() => {
         if (timerState !== 'work' && timerState !== 'short-break' && timerState !== 'long-break') {
             return;
         }
         
+        setPreviousTimerState(timerState); // Save the state before pausing
         stopTimer();
         setTimerState('paused');
         setPauseStartedAt(new Date());
+        playTickSound(); // Sound feedback
     }, [timerState, stopTimer]);
     
     const resumePomodoro = useCallback(() => {
@@ -456,9 +500,9 @@ export function usePomodoro({
         const durationMs = timeRemaining * 1000;
         endTimeRef.current = Date.now() + durationMs;
         
-        // Determine which state to return to (was it work or break?)
-        // For simplicity, we'll track the previous state
-        setTimerState('work'); // TODO: Track previous state properly
+        // Restore previous state
+        setTimerState(previousTimerState);
+        playTickSound(); // Sound feedback
         
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
@@ -574,14 +618,24 @@ export function usePomodoro({
     // ============================================
     
     const playCompletionSound = () => {
-        // TODO: Implement sound playback
-        // Could use Web Audio API or <audio> element
-        console.log('🔔 Pomodoro complete sound');
+        if (settings.soundEnabled && completionSoundRef.current) {
+            completionSoundRef.current.volume = settings.soundVolume;
+            completionSoundRef.current.play().catch(e => console.error('Failed to play sound:', e));
+        }
     };
     
     const playBreakEndSound = () => {
-        // TODO: Implement sound playback
-        console.log('🔔 Break end sound');
+        if (settings.soundEnabled && breakEndSoundRef.current) {
+            breakEndSoundRef.current.volume = settings.soundVolume;
+            breakEndSoundRef.current.play().catch(e => console.error('Failed to play sound:', e));
+        }
+    };
+    
+    const playTickSound = () => {
+        if (settings.soundEnabled && tickSoundRef.current) {
+            tickSoundRef.current.volume = settings.soundVolume * 0.3; // Quieter
+            tickSoundRef.current.play().catch(e => console.error('Failed to play sound:', e));
+        }
     };
     
     const showNotification = (title: string, body: string) => {

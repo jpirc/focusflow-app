@@ -17,6 +17,7 @@ import { useTasks, useProjects, useCelebration, useTheme, usePomodoro } from '@/
 // Components
 import { Sidebar, Header } from '@/components/layout';
 import { PomodoroTimer } from '@/components/PomodoroTimer';
+import { PomodoroOverlay } from '@/components/PomodoroOverlay';
 import { QuickEditTaskCard } from '@/components/QuickEditTaskCard';
 import { TimeBlockColumn } from '@/components/TimeBlockColumn';
 import { UpcomingDayColumn } from '@/components/UpcomingDayColumn';
@@ -842,6 +843,15 @@ export default function FocusFlowApp() {
 
             {/* Celebration message overlay */}
             <CelebrationMessage message={celebrationMessage} theme={theme} />
+
+            {/* Pomodoro visual overlay */}
+            <PomodoroOverlay
+                timerState={pomodoro.timerState}
+                isActive={pomodoro.isActive}
+                isPaused={pomodoro.isPaused}
+                timeRemaining={pomodoro.timeRemaining}
+                mode={pomodoro.settings.overlayMode}
+            />
 
             {/* Pomodoro timer widget */}
             <PomodoroTimer
