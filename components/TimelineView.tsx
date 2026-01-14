@@ -35,6 +35,7 @@ interface TimelineViewProps {
     allTasks: Task[];
     projects: Project[];
     date: string;
+    inboxTasks?: Task[]; // Unscheduled tasks (date=null) to show in draggable section
     selectedTaskId: string | null;
     onSelectTask: (id: string) => void;
     onUpdate: (id: string, updates: Partial<Task>) => void;
@@ -101,6 +102,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     allTasks,
     projects,
     date,
+    inboxTasks = [],
     selectedTaskId,
     onSelectTask,
     onUpdate,
@@ -147,13 +149,17 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         const currentHour = getCurrentHourInTimezone();
         if (currentHour < hourStart || currentHour > hourEnd) return;
         
-        // Scroll to current time marker
+        // Scroll to current time marker with smooth behavior
         const hoursSinceStart = currentHour - hourStart;
-        const hourHeight = 120; // Approximate height per hour
-        const scrollPosition = hoursSinceStart * hourHeight - 100; // Offset to center
+        const scrollPosition = hoursSinceStart * HOUR_HEIGHT - 200; // Offset to show context above
         
-        timelineRef.current.scrollTop = Math.max(0, scrollPosition);
-        setHasScrolledToNow(true);
+        // Slight delay to ensure DOM is ready
+        setTimeout(() => {
+            if (timelineRef.current) {
+                timelineRef.current.scrollTop = Math.max(0, scrollPosition);
+                setHasScrolledToNow(true);
+            }
+        }, 100);
     }, [date, hourStart, hourEnd, hasScrolledToNow]);
 
     // Group tasks by hour
@@ -193,14 +199,27 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         return capacity;
     }, [tasks]);
 
-    // Generate hours array
+    // Generate hours array (filter past hours for today)
     const hours = useMemo(() => {
         const arr: number[] = [];
         for (let h = hourStart; h <= hourEnd; h++) {
             arr.push(h);
         }
+        
+        // For today, filter out past hours unless they have tasks
+        const today = getTodayInTimezone();
+        if (date === today) {
+            const currentHour = getCurrentHourInTimezone();
+            return arr.filter(hour => {
+                // Keep current hour and future hours
+                if (hour >= currentHour) return true;
+                // Keep past hours if they have tasks scheduled
+                return tasksByHour[hour] && tasksByHour[hour].length > 0;
+            });
+        }
+        
         return arr;
-    }, [hourStart, hourEnd]);
+    }, [hourStart, hourEnd, date, tasksByHour]);
 
     // Format hour for display
     const formatHour = (hour: number): string => {
@@ -475,13 +494,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                                         </div>
                                     );
                                 })}
-                                
-                                {/* Empty hour indicator */}
-                                {tasksAtHour.length === 0 && (
-                                    <div className="text-xs text-gray-400 dark:text-gray-600 italic py-2">
-                                        No tasks scheduled
-                                    </div>
-                                )}
                             </div>
                         </div>
                     );
@@ -501,6 +513,52 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                         
                         <div className="ml-20 space-y-2">
                             {tasksByHour[23].map((task) => {
+                                const project = task.projectId 
+                                    ? projects.find(p => p.id === task.projectId) || DEFAULT_PROJECT
+                                    : DEFAULT_PROJECT;
+                                
+                                return (
+                                    <QuickEditTaskCard
+                                        key={task.id}
+                                        task={task}
+                                        project={project}
+                                        onUpdate={onUpdate}
+                                        onStatusChange={onStatusChange}
+                                        onPause={onPause}
+                                        onDelete={onDelete}
+                                        onToggleSubtask={onToggleSubtask}
+                                        onUpdateSubtasks={onUpdateSubtasks}
+                                        onAIBreakdown={onAIBreakdown}
+                                        onEdit={onEdit}
+                                        onStartPomodoro={onStartPomodoro}
+                                        isSelected={selectedTaskId === task.id}
+                                        onSelect={onSelectTask}
+                                        onStartDrag={onStartDrag}
+                                        allTasks={allTasks}
+                                        allProjects={projects}
+                                        compact={compact}
+                                        subtasksExpandedAll={subtasksExpandedAll}
+                                    />
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+                
+                {/* Inbox tasks (unscheduled - drag to timeline) */}
+                {inboxTasks && inboxTasks.length > 0 && (
+                    <div className="mt-8 border-t-2 border-dashed border-purple-300 dark:border-purple-600 pt-4">
+                        <div className="mb-3">
+                            <h4 className="text-sm font-semibold text-purple-600 dark:text-purple-400">
+                                📥 Inbox ({inboxTasks.length})
+                            </h4>
+                            <p className="text-xs text-gray-500 dark:text-gray-500">
+                                Drag these tasks onto the timeline to schedule them
+                            </p>
+                        </div>
+                        
+                        <div className="ml-20 space-y-2">
+                            {inboxTasks.map((task) => {
                                 const project = task.projectId 
                                     ? projects.find(p => p.id === task.projectId) || DEFAULT_PROJECT
                                     : DEFAULT_PROJECT;

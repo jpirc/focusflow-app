@@ -694,6 +694,7 @@ export default function FocusFlowApp() {
                                 tasks={day.tasks}
                                 allTasks={tasks}
                                 projects={projects}
+                                inboxTasks={inboxTasks}
                                 selectedTaskId={selectedTaskId}
                                 onSelectTask={setSelectedTaskId}
                                 onUpdate={updateTask}
