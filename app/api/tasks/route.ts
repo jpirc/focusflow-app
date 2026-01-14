@@ -17,6 +17,7 @@ const createTaskSchema = z.object({
     parentTaskId: z.string().optional(),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
     timeBlock: z.enum(['anytime', 'morning', 'afternoon', 'evening']).nullable().optional(),
+    scheduledHour: z.number().min(0).max(23).nullable().optional(),
     estimatedMinutes: z.number().optional(),
     priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
     energyLevel: z.enum(['low', 'medium', 'high']).optional(),
@@ -142,6 +143,7 @@ export async function POST(req: NextRequest) {
         
         if (data!.date !== undefined && data!.date !== null) taskData.date = data!.date;
         if (data!.timeBlock !== undefined && data!.timeBlock !== null) taskData.timeBlock = data!.timeBlock;
+        if (data!.scheduledHour !== undefined) taskData.scheduledHour = data!.scheduledHour;
         if (data!.estimatedMinutes !== undefined) taskData.estimatedMinutes = data!.estimatedMinutes;
         if (data!.priority !== undefined) taskData.priority = data!.priority;
         if (data!.energyLevel !== undefined) taskData.energyLevel = data!.energyLevel;

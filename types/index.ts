@@ -45,6 +45,7 @@ export interface Task {
     projectId?: string;
     date: string | null;
     timeBlock: TimeBlock;
+    scheduledHour?: number; // Specific hour (0-23) for timeline view
     order?: number;
     estimatedMinutes: number;
     actualMinutes?: number;

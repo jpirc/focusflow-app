@@ -4,23 +4,103 @@ This document tracks future features and enhancements for FocusFlow, organized b
 
 ---
 
-## 🚧 CURRENT WORK - Pomodoro Timer System
+## 🎨 CURRENT WORK - ADHD-Friendly Visual Redesign
 
-**Branch**: `feature/pomodoro-timer`  
-**Status**: Phase 1 (Database) Complete ✅
+**Branch**: TBD  
+**Status**: Design & Planning Phase
 
-Full-featured Pomodoro timer with work/break cycles, session tracking, and ADHD-friendly features.
-See [POMODORO_IMPLEMENTATION.md](POMODORO_IMPLEMENTATION.md) for complete spec.
+Transform FocusFlow from abstract time blocks into a concrete, visual timeline that helps ADHD brains understand time, capacity, and progress at a glance.
 
-**Completed**:
-- [x] Database schema (UserPomodoroSettings, PomodoroSession)
-- [x] Database migration applied
+### Design Goals
+- **Concrete over abstract**: Actual hours instead of "morning/afternoon/evening"
+- **Dense but scannable**: Maximize information, minimize white space
+- **Visual capacity planning**: Show "how much time is left" to prevent overload
+- **Temporal grounding**: "Now" indicator shows current time in timeline
+- **Dopamine-friendly**: Progress bars, energy matching, visual rewards
 
-**In Progress**:
-- [ ] API routes for settings and sessions
-- [ ] Core timer hook (usePomodoro)
-- [ ] Timer UI component
-- [ ] Task integration
+### Phase 1: Timeline View (HIGH PRIORITY)
+- [ ] **Vertical Timeline Layout**: Replace time block columns with hour-based timeline (6am-10pm)
+- [ ] **Visual Time Blocks**: Colored regions showing morning/afternoon/evening zones
+- [ ] **Task Positioning**: Place tasks at scheduled times within timeline
+- [ ] **Current Time Marker**: Live "NOW" indicator showing where you are in the day
+- [ ] **Capacity Visualization**: Progress bars showing time used vs available per block
+- [ ] **Hour Grid**: Hour markers (6am, 9am, 12pm, etc.) for temporal reference
+
+### Phase 2: Density & Information Architecture (HIGH PRIORITY)
+- [ ] **Compact Card Design**: Reduce padding (4-6 → 2-3), tighter spacing between tasks
+- [ ] **Inline Metadata**: Time estimate, energy level on same line as title
+- [ ] **Color-Coded Borders**: Left border shows priority (not just badge)
+- [ ] **Subtle Project Tints**: Light project color background on cards
+- [ ] **Better Hierarchy**: Important info (time, blocking status) more prominent
+- [ ] **Quick Scan Layout**: See 3+ tasks without scrolling per time block
+
+### Phase 3: Visual Time Budget (MEDIUM PRIORITY)
+- [ ] **Daily Capacity Bar**: "6h used / 10h available" at top of each day
+- [ ] **Per-Block Capacity**: Show used/available time for each time block
+- [ ] **Overload Warning**: Highlight when scheduled time exceeds realistic capacity
+- [ ] **Smart Suggestions**: "You've scheduled 14 hours—try moving some tasks to tomorrow"
+- [ ] **Available Time Indicator**: Green/yellow/red coding based on remaining capacity
+
+### Phase 4: Energy & Time Matching (MEDIUM PRIORITY)
+- [ ] **Energy-Coded Backgrounds**: Subtle tint on cards (blue=low, green=medium, red=high)
+- [ ] **Time Block Energy Profiles**: Morning=high, afternoon=medium, evening=low
+- [ ] **Matching Glow Effect**: When task energy matches block energy, add subtle highlight
+- [ ] **Energy Mismatch Warning**: Flag high-energy tasks in low-energy blocks
+- [ ] **Smart Reordering**: Suggest moving tasks to energy-matching time slots
+
+### Phase 5: Progress Visualization (LOW PRIORITY)
+- [ ] **Subtask Progress Bars**: Visual "2/5 subtasks done" instead of just text
+- [ ] **Completion Percentage**: Show % complete on parent tasks
+- [ ] **Mini Charts**: Tiny inline graphs for multi-day tasks
+- [ ] **Streak Indicators**: Flame icon with day count for task streaks
+- [ ] **Time vs Estimate**: Visual bar comparing estimated vs actual time
+
+### Phase 6: Contextual Slide Panels (LOW PRIORITY)
+- [ ] **Replace Edit Modals**: Use slide-in panels from right instead of center modals
+- [ ] **Quick Edit Panel**: 400px panel with inline form, main view stays visible
+- [ ] **Context Preservation**: See other tasks while editing current one
+- [ ] **Multi-Edit Support**: Edit multiple tasks without closing panel
+- [ ] **Keyboard Navigation**: Arrow keys to move between tasks in panel
+
+### Phase 7: Advanced Timeline Features (FUTURE)
+- [ ] **Drag-and-Drop Timeline**: Drag tasks vertically to reorder within block
+- [ ] **Horizontal Day Scrolling**: Swipe between days with momentum
+- [ ] **Visual Task Duration**: Card height = time estimate (30m task = taller card)
+- [ ] **Overlap Detection**: Show warnings when tasks overlap in timeline
+- [ ] **Break Slots**: Visual gaps for lunch, breaks between tasks
+
+### Phase 8: Smart Color System (FUTURE)
+- [ ] **Semantic Status Colors**: Overdue=red glow, due today=yellow, blocked=gray
+- [ ] **In-Progress Pulse**: Subtle pulsing border for active tasks
+- [ ] **Top 3 Gold Tint**: Golden star + subtle gold background for priorities
+- [ ] **Project Color Harmony**: Generate complementary colors for multiple projects
+- [ ] **Dark Mode Awareness**: Adjust colors for dark theme without losing information
+
+---
+
+## ✅ Recently Completed
+
+### Pomodoro Timer System (Jan 13, 2026)
+- [x] Full Pomodoro implementation (work/break cycles, sounds, overlays)
+- [x] Test mode (15s/5s) for rapid development
+- [x] Pause/resume with state preservation
+- [x] Visual overlay (3 modes: off/subtle/full)
+- [x] Database schema + API routes
+- [x] Weekend rollover fix (Friday → Monday)
+
+### Quick Win Suggestions (Jan 13, 2026)
+- [x] Smart task filtering (≤15 min, incomplete, today/overdue)
+- [x] Intelligent ranking (blocking → shortest → oldest)
+- [x] Prominent "Start Now" button with Play icon
+- [x] Header integration (Cmd+W shortcut)
+- [x] Auto-trigger after completion (30% chance)
+
+### AI Task Breakdown (Previously)
+- [x] Guided questions before generation ("What's stuck?")
+- [x] Interactive editing (edit names, time estimates)
+- [x] Select/deselect individual subtasks
+- [x] "Start Over" regeneration
+- [x] Context learning (saves user input as events)
 
 ---
 

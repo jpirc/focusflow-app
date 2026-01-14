@@ -25,6 +25,7 @@ const updateTaskSchema = z.object({
     energyLevel: z.enum(['low', 'medium', 'high']).optional(),
     date: z.string().nullable().optional(),
     timeBlock: z.enum(['anytime', 'morning', 'afternoon', 'evening']).optional(),
+    scheduledHour: z.number().min(0).max(23).nullable().optional(),
     estimatedMinutes: z.number().optional(),
     actualMinutes: z.number().nullable().optional(),
     startedAt: z.string().nullable().optional(),

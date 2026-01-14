@@ -20,6 +20,7 @@ import { PomodoroTimer } from '@/components/PomodoroTimer';
 import { PomodoroOverlay } from '@/components/PomodoroOverlay';
 import { QuickEditTaskCard } from '@/components/QuickEditTaskCard';
 import { TimeBlockColumn } from '@/components/TimeBlockColumn';
+import { TimelineView } from '@/components/TimelineView';
 import { UpcomingDayColumn } from '@/components/UpcomingDayColumn';
 import { CalendarView } from '@/components/CalendarView';
 import { AIBreakdownModal } from '@/components/AIBreakdownModal';
@@ -143,6 +144,13 @@ export default function FocusFlowApp() {
             return saved ? parseInt(saved, 10) : 2;
         }
         return 2;
+    });
+    const [viewMode, setViewMode] = useState<'blocks' | 'timeline'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('focusflow_view_mode');
+            return (saved as 'blocks' | 'timeline') || 'timeline'; // Default to timeline
+        }
+        return 'timeline';
     });
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -622,30 +630,90 @@ export default function FocusFlowApp() {
                                                 {day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                             </p>
                                         </div>
-                                        {day.isToday && (
-                                            <span className={`font-bold bg-blue-100 text-blue-600 rounded-full ${viewDays === 7 ? 'text-[8px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1'}`}>
-                                                TODAY
-                                            </span>
-                                        )}
-                                    </div>
+                        <div className="flex items-center gap-2">
+                            {/* View Toggle (only show in 1-day view) */}
+                            {viewDays === 1 && (
+                                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+                                    <button
+                                        onClick={() => {
+                                            setViewMode('blocks');
+                                            localStorage.setItem('focusflow_view_mode', 'blocks');
+                                        }}
+                                        className={`px-2 py-1 text-xs font-medium rounded transition-all ${
+                                            viewMode === 'blocks'
+                                                ? 'bg-white text-gray-900 shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                        title="Block view"
+                                    >
+                                        Blocks
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setViewMode('timeline');
+                                            localStorage.setItem('focusflow_view_mode', 'timeline');
+                                        }}
+                                        className={`px-2 py-1 text-xs font-medium rounded transition-all ${
+                                            viewMode === 'timeline'
+                                                ? 'bg-white text-gray-900 shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                        title="Timeline view"
+                                    >
+                                        Timeline
+                                    </button>
+                                </div>
+                            )}
+                            {day.isToday && (
+                                <span className={`font-bold bg-blue-100 text-blue-600 rounded-full ${viewDays === 7 ? 'text-[8px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1'}`}>
+                                    TODAY
+                                </span>
+                            )}
+                        </div>
+                    </div>
 
-                                    {/* Top 3 Priorities (only show on today in non-week view) */}
-                                    {day.isToday && viewDays !== 7 && (
-                                        <div className="mb-2">
-                                            <Top3Section
-                                                topPriorities={tasks.filter(t => t.isTopPriority && t.topPriorityDate === todayDateStr)}
-                                                projects={projects}
-                                                onEdit={handleEditTask}
-                                                onSetPriorities={() => setDailyPrioritiesModalOpen(true)}
-                                                onStatusChange={handleStatusChange}
-                                                theme={theme}
-                                            />
-                                        </div>
-                                    )}
+                    {/* Top 3 Priorities (only show on today in non-week view) */}
+                    {day.isToday && viewDays !== 7 && (
+                        <div className="mb-2">
+                            <Top3Section
+                                topPriorities={tasks.filter(t => t.isTopPriority && t.topPriorityDate === todayDateStr)}
+                                projects={projects}
+                                onEdit={handleEditTask}
+                                onSetPriorities={() => setDailyPrioritiesModalOpen(true)}
+                                onStatusChange={handleStatusChange}
+                                theme={theme}
+                            />
+                        </div>
+                    )}
 
-                                    {/* Time Blocks */}
-                                    <div className={`flex-1 overflow-y-auto pr-0.5 pb-2 ${viewDays === 7 ? 'space-y-0.5' : 'space-y-2'}`}>
-                                        {TIME_BLOCKS
+                    {/* Time Blocks or Timeline View */}
+                    <div className="flex-1 overflow-hidden">
+                        {viewDays === 1 && viewMode === 'timeline' ? (
+                            <TimelineView
+                                date={day.dateStr}
+                                tasks={day.tasks}
+                                allTasks={tasks}
+                                projects={projects}
+                                selectedTaskId={selectedTaskId}
+                                onSelectTask={setSelectedTaskId}
+                                onUpdate={updateTask}
+                                onStatusChange={handleStatusChange}
+                                onPause={pauseTask}
+                                onToggleSubtask={toggleSubtask}
+                                onStartDrag={handleStartDrag}
+                                onDrop={handleDrop}
+                                onDelete={deleteTask}
+                                onAIBreakdown={handleAIBreakdown}
+                                onUpdateSubtasks={handleUpdateSubtasks}
+                                onEdit={handleEditTask}
+                                onStartPomodoro={(task) => pomodoro.startPomodoro(task)}
+                                compact={false}
+                                subtasksExpandedAll={subtasksExpandedAll}
+                                theme={theme}
+                            />
+                        ) : (
+                            <div className={`h-full overflow-y-auto pr-0.5 pb-2 ${viewDays === 7 ? 'space-y-0.5' : 'space-y-2'}`}>
+                                {TIME_BLOCKS
                                             .filter(block => {
                                                 // For today, hide past time blocks
                                                 if (!day.isToday) return true;
@@ -766,7 +834,9 @@ export default function FocusFlowApp() {
                                             </div>
                                         )}
                                     </div>
-                                </div>
+                                )}
+                            </div>
+                        </div>
                             ))}
                         </div>
 

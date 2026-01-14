@@ -99,6 +99,7 @@ model Task {
   // Scheduling
   date             String?   // ISO date string YYYY-MM-DD
   timeBlock        String    @default("anytime") // morning, afternoon, evening, anytime
+  scheduledHour    Int?      // Specific hour (0-23) for timeline view, null = use timeBlock default
   order            Int       @default(0) // Order within the same date/timeBlock
   
   // Time tracking
