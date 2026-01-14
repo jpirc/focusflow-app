@@ -15,6 +15,7 @@ import { Task, Project, Subtask, TaskStatus, TimeBlock, DragItem } from '@/types
 import { QuickEditTaskCard } from './QuickEditTaskCard';
 import { Theme } from '@/lib/themes';
 import { getTodayInTimezone, getCurrentHourInTimezone } from '@/lib/utils/timezone';
+import { Clock } from 'lucide-react';
 
 // Default project for tasks without a project assigned
 const DEFAULT_PROJECT: Project = {
@@ -24,6 +25,10 @@ const DEFAULT_PROJECT: Project = {
     bgColor: '#f3f4f6',
     icon: 'circle',
 };
+
+// Constants for precise time calculations
+const HOUR_HEIGHT = 60; // pixels per hour (60px = 1 minute per pixel)
+const MIN_TASK_HEIGHT = 20; // minimum height in pixels
 
 interface TimelineViewProps {
     tasks: Task[];
@@ -118,7 +123,10 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     const timelineRef = useRef<HTMLDivElement>(null);
     const [currentTime, setCurrentTime] = useState<Date>(new Date());
     const [isDragOver, setIsDragOver] = useState(false);
+    const [dragOverHour, setDragOverHour] = useState<number | null>(null);
+    const [dragOverMinute, setDragOverMinute] = useState<number>(0);
     const [hasScrolledToNow, setHasScrolledToNow] = useState(false);
+    const hourRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
     // Update current time every minute
     useEffect(() => {
@@ -225,38 +233,69 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         return currentHour === hour;
     };
 
-    // Handle drag & drop
-    const handleDragOver = (e: React.DragEvent) => {
+    // Calculate precise drop position from mouse coordinates
+    const calculateDropPosition = (e: React.DragEvent, hourElement: HTMLDivElement, hour: number): { hour: number; minute: number } => {
+        const rect = hourElement.getBoundingClientRect();
+        const offsetY = e.clientY - rect.top;
+        const pixelsPerMinute = HOUR_HEIGHT / 60;
+        const minute = Math.floor(Math.max(0, Math.min(59, offsetY / pixelsPerMinute)));
+        
+        return { hour, minute };
+    };
+
+    // Handle drag & drop with precise time calculation
+    const handleDragOver = (e: React.DragEvent, hour?: number, hourElement?: HTMLDivElement) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
         setIsDragOver(true);
+        
+        if (hour !== undefined && hourElement) {
+            const { minute } = calculateDropPosition(e, hourElement, hour);
+            setDragOverHour(hour);
+            setDragOverMinute(minute);
+        }
     };
 
     const handleDragLeave = () => {
         setIsDragOver(false);
+        setDragOverHour(null);
+        setDragOverMinute(0);
     };
 
-    const handleDrop = (e: React.DragEvent, targetHour?: number) => {
+    const handleDrop = (e: React.DragEvent, targetHour?: number, hourElement?: HTMLDivElement) => {
         e.preventDefault();
         setIsDragOver(false);
+        setDragOverHour(null);
+        setDragOverMinute(0);
         
         const taskId = e.dataTransfer.getData('text/plain');
         if (!taskId) return;
         
+        let finalHour = targetHour;
+        let finalMinute = 0;
+        
+        // Calculate exact time from drop position
+        if (targetHour !== undefined && hourElement) {
+            const position = calculateDropPosition(e, hourElement, targetHour);
+            finalHour = position.hour;
+            finalMinute = position.minute;
+        }
+        
         // Determine time block from hour
         let targetBlock: TimeBlock = 'anytime';
-        if (targetHour !== undefined) {
-            if (targetHour >= 6 && targetHour < 12) targetBlock = 'morning';
-            else if (targetHour >= 12 && targetHour < 18) targetBlock = 'afternoon';
-            else if (targetHour >= 18 && targetHour < 22) targetBlock = 'evening';
+        if (finalHour !== undefined) {
+            if (finalHour >= 6 && finalHour < 12) targetBlock = 'morning';
+            else if (finalHour >= 12 && finalHour < 18) targetBlock = 'afternoon';
+            else if (finalHour >= 18 && finalHour < 22) targetBlock = 'evening';
         }
         
         // Update task with new time block and scheduled hour
         const task = tasks.find(t => t.id === taskId);
         if (task) {
+            console.log(`Dropping task at ${finalHour}:${finalMinute.toString().padStart(2, '0')}`);
             onUpdate(taskId, { 
                 timeBlock: targetBlock,
-                scheduledHour: targetHour,
+                scheduledHour: finalHour,
             });
         }
     };
@@ -314,17 +353,32 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     const isFirstInRegion = region && TIME_BLOCK_REGIONS[region].start === hour;
                     const tasksAtHour = tasksByHour[hour] || [];
                     const showNow = shouldShowNowMarker(hour);
+                    const isDraggingOverThisHour = isDragOver && dragOverHour === hour;
                     
                     return (
                         <div
                             key={hour}
-                            className="relative"
+                            ref={(el) => {
+                                if (el) hourRefs.current.set(hour, el);
+                                else hourRefs.current.delete(hour);
+                            }}
+                            className={`relative transition-all ${
+                                isDraggingOverThisHour ? 'bg-purple-50 dark:bg-purple-900/10 ring-2 ring-purple-400' : ''
+                            }`}
                             style={{
-                                minHeight: '120px',
-                                backgroundColor: region ? TIME_BLOCK_REGIONS[region].color : 'transparent',
+                                height: `${HOUR_HEIGHT}px`,
+                                minHeight: `${HOUR_HEIGHT}px`,
+                                backgroundColor: !isDraggingOverThisHour && region ? TIME_BLOCK_REGIONS[region].color : undefined,
                                 borderTop: isFirstInRegion ? `2px solid ${TIME_BLOCK_REGIONS[region].borderColor}` : undefined,
                             }}
-                            onDrop={(e) => handleDrop(e, hour)}
+                            onDragOver={(e) => {
+                                const hourEl = hourRefs.current.get(hour);
+                                if (hourEl) handleDragOver(e, hour, hourEl);
+                            }}
+                            onDrop={(e) => {
+                                const hourEl = hourRefs.current.get(hour);
+                                if (hourEl) handleDrop(e, hour, hourEl);
+                            }}
                         >
                             {/* Hour marker */}
                             <div className="absolute left-0 top-0 flex items-start gap-3">
@@ -358,35 +412,69 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                                 </div>
                             )}
                             
+                            {/* Drop position indicator */}
+                            {isDraggingOverThisHour && (
+                                <div 
+                                    className="absolute left-20 right-4 flex items-center gap-2 z-30 pointer-events-none"
+                                    style={{ top: `${dragOverMinute}px` }}
+                                >
+                                    <div className="flex-1 h-px bg-purple-500" />
+                                    <span className="text-xs font-medium text-purple-600 dark:text-purple-400 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 rounded flex items-center gap-1">
+                                        <Clock size={12} />
+                                        {formatHour(hour)}:{dragOverMinute.toString().padStart(2, '0')}
+                                    </span>
+                                    <div className="w-2 h-2 rounded-full bg-purple-500" />
+                                </div>
+                            )}
+                            
                             {/* Tasks at this hour */}
-                            <div className="ml-20 pt-12 space-y-2">
+                            <div className="ml-20 pt-0 space-y-1 relative">
                                 {tasksAtHour.map((task) => {
                                     const project = task.projectId 
                                         ? projects.find(p => p.id === task.projectId) || DEFAULT_PROJECT
                                         : DEFAULT_PROJECT;
                                     
+                                    // Calculate task height based on estimated minutes
+                                    const taskHeight = task.estimatedMinutes 
+                                        ? Math.max(MIN_TASK_HEIGHT, task.estimatedMinutes) // 1 pixel = 1 minute
+                                        : MIN_TASK_HEIGHT;
+                                    
                                     return (
-                                        <QuickEditTaskCard
+                                        <div 
                                             key={task.id}
-                                            task={task}
-                                            project={project}
-                                            onUpdate={onUpdate}
-                                            onStatusChange={onStatusChange}
-                                            onPause={onPause}
-                                            onDelete={onDelete}
-                                            onToggleSubtask={onToggleSubtask}
-                                            onUpdateSubtasks={onUpdateSubtasks}
-                                            onAIBreakdown={onAIBreakdown}
-                                            onEdit={onEdit}
-                                            onStartPomodoro={onStartPomodoro}
-                                            isSelected={selectedTaskId === task.id}
-                                            onSelect={onSelectTask}
-                                            onStartDrag={onStartDrag}
-                                            allTasks={allTasks}
-                                            allProjects={projects}
-                                            compact={compact}
-                                            subtasksExpandedAll={subtasksExpandedAll}
-                                        />
+                                            className="relative"
+                                            style={{ 
+                                                minHeight: `${taskHeight}px`,
+                                                marginBottom: '4px'
+                                            }}
+                                        >
+                                            {/* Time duration indicator */}
+                                            {task.estimatedMinutes && task.estimatedMinutes >= 30 && (
+                                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-400 via-blue-500 to-blue-600 opacity-30 rounded-l" />
+                                            )}
+                                            
+                                            <QuickEditTaskCard
+                                                key={task.id}
+                                                task={task}
+                                                project={project}
+                                                onUpdate={onUpdate}
+                                                onStatusChange={onStatusChange}
+                                                onPause={onPause}
+                                                onDelete={onDelete}
+                                                onToggleSubtask={onToggleSubtask}
+                                                onUpdateSubtasks={onUpdateSubtasks}
+                                                onAIBreakdown={onAIBreakdown}
+                                                onEdit={onEdit}
+                                                onStartPomodoro={onStartPomodoro}
+                                                isSelected={selectedTaskId === task.id}
+                                                onSelect={onSelectTask}
+                                                onStartDrag={onStartDrag}
+                                                allTasks={allTasks}
+                                                allProjects={projects}
+                                                compact={compact}
+                                                subtasksExpandedAll={subtasksExpandedAll}
+                                            />
+                                        </div>
                                     );
                                 })}
                                 
