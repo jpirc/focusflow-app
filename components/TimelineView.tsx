@@ -264,6 +264,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
     const handleDrop = (e: React.DragEvent, targetHour?: number, hourElement?: HTMLDivElement) => {
         e.preventDefault();
+        e.stopPropagation(); // Prevent bubbling to parent container
         setIsDragOver(false);
         setDragOverHour(null);
         setDragOverMinute(0);
@@ -304,9 +305,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         <div 
             ref={timelineRef}
             className="h-full overflow-y-auto overflow-x-hidden"
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e)}
         >
             {/* Daily capacity header */}
             <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 mb-4">
