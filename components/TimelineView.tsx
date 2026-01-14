@@ -16,6 +16,15 @@ import { QuickEditTaskCard } from './QuickEditTaskCard';
 import { Theme } from '@/lib/themes';
 import { getTodayInTimezone, getCurrentHourInTimezone } from '@/lib/utils/timezone';
 
+// Default project for tasks without a project assigned
+const DEFAULT_PROJECT: Project = {
+    id: 'none',
+    name: 'No Project',
+    color: '#9ca3af',
+    bgColor: '#f3f4f6',
+    icon: 'circle',
+};
+
 interface TimelineViewProps {
     tasks: Task[];
     allTasks: Task[];
@@ -352,14 +361,15 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                             {/* Tasks at this hour */}
                             <div className="ml-20 pt-12 space-y-2">
                                 {tasksAtHour.map((task) => {
-                                    const project = projects.find(p => p.id === task.projectId);
-                                    if (!project && task.projectId) return null; // Skip if project required but not found
+                                    const project = task.projectId 
+                                        ? projects.find(p => p.id === task.projectId) || DEFAULT_PROJECT
+                                        : DEFAULT_PROJECT;
                                     
                                     return (
                                         <QuickEditTaskCard
                                             key={task.id}
                                             task={task}
-                                            project={project!}
+                                            project={project}
                                             onUpdate={onUpdate}
                                             onStatusChange={onStatusChange}
                                             onPause={onPause}
@@ -405,14 +415,15 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                         
                         <div className="ml-20 space-y-2">
                             {tasksByHour[23].map((task) => {
-                                const project = projects.find(p => p.id === task.projectId);
-                                if (!project && task.projectId) return null; // Skip if project required but not found
+                                const project = task.projectId 
+                                    ? projects.find(p => p.id === task.projectId) || DEFAULT_PROJECT
+                                    : DEFAULT_PROJECT;
                                 
                                 return (
                                     <QuickEditTaskCard
                                         key={task.id}
                                         task={task}
-                                        project={project!}
+                                        project={project}
                                         onUpdate={onUpdate}
                                         onStatusChange={onStatusChange}
                                         onPause={onPause}
