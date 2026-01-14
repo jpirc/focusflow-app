@@ -544,52 +544,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                         </div>
                     </div>
                 )}
-                
-                {/* Inbox tasks (unscheduled - drag to timeline) */}
-                {inboxTasks && inboxTasks.length > 0 && (
-                    <div className="mt-8 border-t-2 border-dashed border-purple-300 dark:border-purple-600 pt-4">
-                        <div className="mb-3">
-                            <h4 className="text-sm font-semibold text-purple-600 dark:text-purple-400">
-                                📥 Inbox ({inboxTasks.length})
-                            </h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-500">
-                                Drag these tasks onto the timeline to schedule them
-                            </p>
-                        </div>
-                        
-                        <div className="ml-20 space-y-2">
-                            {inboxTasks.map((task) => {
-                                const project = task.projectId 
-                                    ? projects.find(p => p.id === task.projectId) || DEFAULT_PROJECT
-                                    : DEFAULT_PROJECT;
-                                
-                                return (
-                                    <QuickEditTaskCard
-                                        key={task.id}
-                                        task={task}
-                                        project={project}
-                                        onUpdate={onUpdate}
-                                        onStatusChange={onStatusChange}
-                                        onPause={onPause}
-                                        onDelete={onDelete}
-                                        onToggleSubtask={onToggleSubtask}
-                                        onUpdateSubtasks={onUpdateSubtasks}
-                                        onAIBreakdown={onAIBreakdown}
-                                        onEdit={onEdit}
-                                        onStartPomodoro={onStartPomodoro}
-                                        isSelected={selectedTaskId === task.id}
-                                        onSelect={onSelectTask}
-                                        onStartDrag={onStartDrag}
-                                        allTasks={allTasks}
-                                        allProjects={projects}
-                                        compact={compact}
-                                        subtasksExpandedAll={subtasksExpandedAll}
-                                    />
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );
