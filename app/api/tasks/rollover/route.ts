@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
 
     const rolledOverTasks: Array<{ id: string; title: string; originalDate: string | null }> = [];
 
-    // Special handling for Friday: roll incomplete tasks to Monday
-    if (dayOfWeek === 5) { // Friday
+    // Special handling for Friday: roll incomplete tasks to Monday (but only after 10pm)
+    if (dayOfWeek === 5 && currentHour >= 22) { // Friday after 10pm (22:00)
       // Calculate Monday (3 days forward)
       const mondayDate = new Date(todayDate);
       mondayDate.setDate(mondayDate.getDate() + 3);
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         });
         rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
       }
-    } else {
+    } else if (dayOfWeek !== 5) { // Not Friday - handle normal weekday rollover
       // For Monday-Thursday: roll previous days' tasks to today
       if (dayOfWeek === 1) { // Monday - roll Friday, Saturday, Sunday to today
         // Get Friday's date

@@ -11,6 +11,7 @@ interface TimelineTaskCardProps {
   isHovered?: boolean;
   onClick?: () => void;
   onDragStart?: (e: React.DragEvent) => void;
+  displayTime?: string; // Pass the calculated time from parent
 }
 
 export default function TimelineTaskCard({
@@ -20,11 +21,15 @@ export default function TimelineTaskCard({
   isHovered = false,
   onClick,
   onDragStart,
+  displayTime,
 }: TimelineTaskCardProps) {
   const isCompleted = task.status === 'completed';
   
   // Calculate display time
   const getTimeDisplay = () => {
+    // Use passed displayTime if available
+    if (displayTime) return displayTime;
+    
     if (task.startTime) {
       const time = new Date(task.startTime);
       const hours = time.getHours();
@@ -48,11 +53,14 @@ export default function TimelineTaskCard({
   const timeDisplay = getTimeDisplay();
   const duration = task.estimatedDuration || task.estimatedMinutes || 30;
 
+  // Debug: Log when rendering
+  console.log('[TimelineTaskCard] Rendering:', task.title, 'timeBlock:', task.timeBlock);
+
   return (
     <div
       className={`
-        group relative bg-white rounded-lg shadow-sm border-l-4 px-3 py-2
-        cursor-pointer transition-all duration-150
+        group relative bg-white rounded-lg shadow-sm border-l-4 px-2 py-1
+        cursor-pointer transition-all duration-150 h-full flex flex-col overflow-hidden
         ${isCompleted ? 'border-dashed opacity-60' : 'border-solid'}
         ${isSelected ? 'ring-2 ring-purple-500' : ''}
         ${isHovered ? 'ring-2 ring-purple-300' : ''}
@@ -60,39 +68,31 @@ export default function TimelineTaskCard({
       `}
       style={{
         borderLeftColor: project?.color || '#94a3b8',
-        minHeight: '52px',
       }}
       onClick={onClick}
       draggable
       onDragStart={onDragStart}
     >
-      {/* Title */}
+      {/* Time - compact at top */}
+      {timeDisplay && (
+        <div className="flex items-center gap-0.5 text-xs font-semibold text-gray-700 flex-shrink-0">
+          <Clock className="w-2.5 h-2.5 flex-shrink-0" />
+          <span className="whitespace-nowrap text-[10px] leading-tight">{timeDisplay}</span>
+        </div>
+      )}
+
+      {/* Title - truncate if needed */}
       <div className={`
-        text-sm font-medium line-clamp-2 mb-1
+        text-xs font-medium truncate flex-1 leading-tight mt-0.5
         ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'}
       `}>
         {task.title}
       </div>
 
-      {/* Time and duration */}
-      <div className="flex items-center gap-2 text-xs text-gray-500">
-        {timeDisplay && (
-          <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            <span>{timeDisplay}</span>
-          </div>
-        )}
-        {duration && (
-          <span className="text-gray-400">
-            {duration} min
-          </span>
-        )}
-      </div>
-
       {/* Status indicator for in-progress */}
       {task.status === 'in-progress' && (
-        <div className="absolute top-2 right-2">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+        <div className="absolute top-1 right-1">
+          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
         </div>
       )}
     </div>

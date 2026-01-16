@@ -77,7 +77,7 @@ export default function TimelinePanel({
   };
 
   // Calculate position in pixels for a task based on startTime or scheduledHour
-  const getTaskPosition = (task: Task) => {
+  const getTaskPosition = (task: Task, indexInBlock?: number) => {
     let hour: number;
     let minute: number;
 
@@ -88,6 +88,29 @@ export default function TimelinePanel({
     } else if (task.scheduledHour !== null && task.scheduledHour !== undefined) {
       hour = task.scheduledHour;
       minute = task.scheduledMinute || 0;
+    } else if (task.timeBlock && task.timeBlock !== 'anytime') {
+      // TEMPORARY: Spread time block tasks across their block based on index
+      // This will be replaced when drag & drop is implemented
+      const blockRanges = TIME_BLOCK_RANGES as Record<string, { start: number; end: number }>;
+      const range = blockRanges[task.timeBlock];
+      if (range) {
+        // Group tasks by time block to get count
+        const tasksInBlock = tasks.filter(t => t.timeBlock === task.timeBlock);
+        const taskIndex = indexInBlock ?? tasksInBlock.findIndex(t => t.id === task.id);
+        const blockDurationHours = range.end - range.start;
+        
+        // Spread tasks evenly across the block
+        if (tasksInBlock.length > 0) {
+          const spacing = blockDurationHours / Math.max(tasksInBlock.length, 1);
+          hour = range.start + Math.floor(taskIndex * spacing);
+          minute = Math.floor((taskIndex * spacing % 1) * 60);
+        } else {
+          hour = range.start;
+          minute = 0;
+        }
+      } else {
+        return null;
+      }
     } else {
       return null;
     }
@@ -105,6 +128,16 @@ export default function TimelinePanel({
     const position = getTaskPosition(task);
     return position !== null;
   });
+
+  // Debug: Log what we're rendering
+  useEffect(() => {
+    console.log('[TimelinePanel] Total tasks:', tasks.length);
+    console.log('[TimelinePanel] Tasks with time blocks:', tasks.filter(t => t.timeBlock && t.timeBlock !== 'anytime').length);
+    console.log('[TimelinePanel] Scheduled tasks:', scheduledTasks.length);
+    if (scheduledTasks.length > 0) {
+      console.log('[TimelinePanel] Sample scheduled task:', scheduledTasks[0]);
+    }
+  }, [tasks, scheduledTasks]);
 
   // Format hour for display
   const formatHour = (hour: number) => {
@@ -195,19 +228,48 @@ export default function TimelinePanel({
           )}
 
           {/* Scheduled tasks */}
-          {scheduledTasks.map((task) => {
-            const position = getTaskPosition(task);
+          {scheduledTasks.map((task, index) => {
+            const position = getTaskPosition(task, index);
             if (position === null) return null;
 
             const project = task.projectId
               ? projects.find((p) => p.id === task.projectId)
               : undefined;
 
+            // Calculate height based on task duration (convert minutes to pixels)
+            const durationMinutes = task.estimatedDuration || task.estimatedMinutes || 30;
+            const heightPx = (durationMinutes / 60) * HOUR_HEIGHT;
+
+            // Calculate display time from position
+            const positionHours = START_HOUR + (position / HOUR_HEIGHT);
+            const startHour = Math.floor(positionHours);
+            const startMinute = Math.round((positionHours % 1) * 60);
+            
+            // Calculate end time
+            const endTimeMinutes = startHour * 60 + startMinute + durationMinutes;
+            const endHour = Math.floor(endTimeMinutes / 60);
+            const endMinute = endTimeMinutes % 60;
+            
+            // Format times
+            const formatTime = (h: number, m: number) => {
+              const ampm = h >= 12 ? 'PM' : 'AM';
+              const displayHour = h % 12 || 12;
+              const displayMinute = m.toString().padStart(2, '0');
+              return `${displayHour}:${displayMinute}${ampm}`;
+            };
+            
+            const displayTime = `${formatTime(startHour, startMinute)} - ${formatTime(endHour, endMinute)}`;
+
             return (
               <div
                 key={task.id}
-                className="absolute left-12 right-4 transition-all duration-150 z-20"
-                style={{ top: `${position}px` }}
+                className="absolute left-12 transition-all duration-150 z-20"
+                style={{ 
+                  top: `${position}px`,
+                  height: `${Math.max(heightPx, 40)}px`, // Minimum 40px height
+                  width: 'calc(100% - 4rem)', // Leave margin on right
+                  maxWidth: '320px', // Reasonable max width
+                }}
                 onMouseEnter={() => onTaskHover(task.id)}
                 onMouseLeave={() => onTaskHover(null)}
               >
@@ -218,6 +280,7 @@ export default function TimelinePanel({
                   isHovered={hoveredTaskId === task.id}
                   onClick={() => onTaskClick(task.id)}
                   onDragStart={(e) => onTaskDragStart(task, e)}
+                  displayTime={displayTime}
                 />
               </div>
             );
