@@ -46,8 +46,11 @@ export interface Task {
     date: string | null;
     timeBlock: TimeBlock;
     scheduledHour?: number; // Specific hour (0-23) for timeline view
+    scheduledMinute?: number; // Specific minute within hour (0, 15, 30, 45) for 15-min intervals
+    startTime?: string | null; // Precise scheduled datetime for timeline panel
     order?: number;
     estimatedMinutes: number;
+    estimatedDuration?: number; // Duration in minutes for timeline visual sizing
     actualMinutes?: number;
     completed?: boolean;
     completedAt?: string | null;

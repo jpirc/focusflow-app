@@ -638,6 +638,7 @@ interface QuickEditTaskCardProps {
     onStartPomodoro?: (task: Task) => void; // Start Pomodoro timer
     compact?: boolean;
     subtasksExpandedAll?: boolean;
+    timelineHeight?: number; // Explicit height for timeline view (in pixels)
 }
 
 // Helper to lighten a hex color for backgrounds
@@ -651,7 +652,7 @@ function lightenColor(hex: string, amount: number = 0.85): string {
 
 export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     const { task, project, allTasks, allProjects, isSelected, onSelect, onUpdate, onStatusChange, onPause,
-        onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, onStartPomodoro, compact = false, subtasksExpandedAll = true } = props;
+        onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, onStartPomodoro, compact = false, subtasksExpandedAll = true, timelineHeight } = props;
 
     const [expanded, setExpanded] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
@@ -797,6 +798,11 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     const isCompleted = task.status === 'completed';
     const isPaused = task.status === 'pending' && (task.actualMinutes || 0) > 0;
 
+    // Determine layout mode
+    // If timelineHeight is set, we're in timeline/calendar view → use minimal layout
+    // If no timelineHeight, we're in time blocks view → use full detailed layout
+    const isTimelineView = !!timelineHeight;
+
     return (
         <div
             draggable={!isEditingTitle}
@@ -856,7 +862,16 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
             style={{ 
                 borderLeftColor: project.color,
                 borderLeftWidth: '4px',
-                backgroundColor: isSelected ? undefined : (project.id !== 'default' ? lightenColor(project.color, 0.97) : undefined),
+                // In timeline view, use lighter project color background (like Sunsama)
+                backgroundColor: timelineHeight && project.id !== 'default'
+                    ? `${project.color}15` // 15 = ~8% opacity for subtle color
+                    : (isSelected ? undefined : (project.id !== 'default' ? lightenColor(project.color, 0.97) : undefined)),
+                ...(timelineHeight ? {
+                    height: `${timelineHeight}px`,
+                    minHeight: `${timelineHeight}px`,
+                    maxHeight: `${timelineHeight}px`,
+                    overflow: 'hidden'
+                } : {})
             }}
         >
             {/* Hover tooltip */}
@@ -884,6 +899,24 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                 </div>
             )}
 
+            {/* TIMELINE VIEW - Minimal Sunsama-style visual blocks */}
+            {isTimelineView && (
+                <div className="px-2 py-1.5 h-full flex items-center justify-between">
+                    <p className={`text-xs font-medium truncate ${
+                        isCompleted ? 'line-through text-gray-500' : 'text-gray-900'
+                    }`}>
+                        {task.title}
+                    </p>
+                    {task.estimatedMinutes && (
+                        <span className="text-[10px] text-gray-500 font-medium ml-2 flex-shrink-0">
+                            {task.estimatedMinutes}m
+                        </span>
+                    )}
+                </div>
+            )}
+
+            {/* TIME BLOCK VIEW - Full detailed cards */}
+            {!isTimelineView && (
             <div className={compact ? 'p-1 space-y-0.5' : 'p-2 space-y-1'}>
                 {/* Header row - Action Buttons + Title + Menu */}
                 <div className={`flex items-start ${compact ? 'gap-1' : 'gap-2'}`}>
@@ -1273,6 +1306,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                     </div>
                 )}
             </div>
+            )}
 
             {/* Context menu portal */}
             {showMenu && menuStyle && createPortal(

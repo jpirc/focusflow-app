@@ -68,8 +68,11 @@ export async function POST(req: NextRequest) {
           where: { id: task.id },
           data: {
             date: mondayStr,
-            timeBlock: 'anytime', // Reset to anytime for replanning
+            timeBlock: 'morning', // Start Monday fresh in the morning
+            scheduledHour: null, // Clear specific time, let user reschedule
+            scheduledMinute: null,
             rolloverCount: { increment: 1 },
+            status: 'pending', // Reset to pending from in-progress if needed
           },
         });
         rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
@@ -103,12 +106,18 @@ export async function POST(req: NextRequest) {
         });
 
         for (const task of weekendTasks) {
+          // Determine appropriate time block for rolled-over task
+          let targetTimeBlock = 'morning'; // Default to morning for Monday
+          
           await prisma.task.update({
             where: { id: task.id },
             data: {
               date: today,
-              timeBlock: 'anytime', // Reset to anytime for replanning
+              timeBlock: targetTimeBlock,
+              scheduledHour: null, // Clear specific time, let user reschedule
+              scheduledMinute: null,
               rolloverCount: { increment: 1 },
+              status: 'pending', // Reset to pending from in-progress if needed
             },
           });
           rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
@@ -129,12 +138,29 @@ export async function POST(req: NextRequest) {
         });
 
         for (const task of yesterdayTasks) {
+          // Determine appropriate time block for rolled-over task
+          let targetTimeBlock = 'anytime'; // Default
+          
+          // If task was in evening (after 6pm), move to morning
+          // If task was in afternoon, move to afternoon  
+          // If task was in morning, move to morning
+          if (task.timeBlock === 'evening') {
+            targetTimeBlock = 'morning';
+          } else if (task.timeBlock === 'afternoon') {
+            targetTimeBlock = 'afternoon';
+          } else if (task.timeBlock === 'morning') {
+            targetTimeBlock = 'morning';
+          }
+          
           await prisma.task.update({
             where: { id: task.id },
             data: {
               date: today,
-              timeBlock: 'anytime', // Reset to anytime for replanning
+              timeBlock: targetTimeBlock,
+              scheduledHour: null, // Clear specific time, let user reschedule
+              scheduledMinute: null,
               rolloverCount: { increment: 1 },
+              status: 'pending', // Reset to pending from in-progress if needed
             },
           });
           rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });

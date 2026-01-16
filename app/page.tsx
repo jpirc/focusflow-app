@@ -33,6 +33,8 @@ import { Top3Section } from '@/components/Top3Section';
 import { RolloverNotification } from '@/components/RolloverNotification';
 import { UnblockedTasksNotification } from '@/components/UnblockedTasksNotification';
 import { QuickWinSuggestions } from '@/components/QuickWinSuggestions';
+import DualPanelLayout from '@/components/DualPanelLayout';
+import TimelinePanel from '@/components/TimelinePanel';
 
 // Utilities & Constants
 import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeekend } from '@/lib/utils/date';
@@ -154,6 +156,10 @@ export default function FocusFlowApp() {
     });
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+    
+    // Timeline panel state
+    const [selectedTimelineTaskId, setSelectedTimelineTaskId] = useState<string | null>(null);
+    const [hoveredTimelineTaskId, setHoveredTimelineTaskId] = useState<string | null>(null);
 
     // Modal state
     const [editModalOpen, setEditModalOpen] = useState(false);
@@ -391,6 +397,24 @@ export default function FocusFlowApp() {
         await setTopPriorities(taskIds, todayDateStr);
         setDailyPrioritiesModalOpen(false);
     }, [setTopPriorities, todayDateStr]);
+
+    // Timeline panel handlers
+    const handleTimelineTaskClick = useCallback((taskId: string) => {
+        setSelectedTimelineTaskId(taskId);
+        setSelectedTaskId(taskId);
+    }, []);
+    
+    const handleTimelineTaskHover = useCallback((taskId: string | null) => {
+        setHoveredTimelineTaskId(taskId);
+    }, []);
+    
+    const handleTimelineTaskDragStart = useCallback((task: Task, e: React.DragEvent) => {
+        handleStartDrag({
+            taskId: task.id,
+            sourceDate: task.date,
+            sourceTimeBlock: task.timeBlock
+        });
+    }, []);
 
     const handleStartDrag = useCallback((item: DragItem) => {
         console.log('Dragging', item);
@@ -644,7 +668,7 @@ export default function FocusFlowApp() {
                                                 ? 'bg-white text-gray-900 shadow-sm'
                                                 : 'text-gray-600 hover:text-gray-900'
                                         }`}
-                                        title="Block view"
+                                        title="Time blocks only"
                                     >
                                         Blocks
                                     </button>
@@ -658,9 +682,9 @@ export default function FocusFlowApp() {
                                                 ? 'bg-white text-gray-900 shadow-sm'
                                                 : 'text-gray-600 hover:text-gray-900'
                                         }`}
-                                        title="Timeline view"
+                                        title="Dual panel: blocks + timeline"
                                     >
-                                        Timeline
+                                        Dual
                                     </button>
                                 </div>
                             )}
@@ -689,28 +713,107 @@ export default function FocusFlowApp() {
                     {/* Time Blocks or Timeline View */}
                     <div className="flex-1 overflow-hidden">
                         {viewDays === 1 && viewMode === 'timeline' ? (
-                            <TimelineView
-                                date={day.dateStr}
-                                tasks={day.tasks}
-                                allTasks={tasks}
-                                projects={projects}
-                                inboxTasks={inboxTasks}
-                                selectedTaskId={selectedTaskId}
-                                onSelectTask={setSelectedTaskId}
-                                onUpdate={updateTask}
-                                onStatusChange={handleStatusChange}
-                                onPause={pauseTask}
-                                onToggleSubtask={toggleSubtask}
-                                onStartDrag={handleStartDrag}
-                                onDrop={handleDrop}
-                                onDelete={deleteTask}
-                                onAIBreakdown={handleAIBreakdown}
-                                onUpdateSubtasks={handleUpdateSubtasks}
-                                onEdit={handleEditTask}
-                                onStartPomodoro={(task) => pomodoro.startPomodoro(task)}
-                                compact={false}
-                                subtasksExpandedAll={subtasksExpandedAll}
-                                theme={theme}
+                            /* Dual Panel Layout: Time Blocks (67%) + Timeline (33%) */
+                            <DualPanelLayout
+                                timeBlocksPanel={
+                                    <div className="h-full overflow-y-auto pr-0.5 pb-2 space-y-2 px-2">
+                                        {TIME_BLOCKS
+                                            .filter(block => {
+                                                // For today, hide past time blocks
+                                                if (!day.isToday) return true;
+                                                
+                                                const now = new Date();
+                                                const currentHour = now.getHours();
+                                                
+                                                // Hide morning (6-12) if it's past noon
+                                                if (block.id === 'morning' && currentHour >= 12) return false;
+                                                // Hide afternoon (12-17) if it's past 5pm
+                                                if (block.id === 'afternoon' && currentHour >= 17) return false;
+                                                // Hide evening (17-22) if it's past 10pm
+                                                if (block.id === 'evening' && currentHour >= 22) return false;
+                                                
+                                                return true;
+                                            })
+                                            .map(block => (
+                                                <TimeBlockColumn
+                                                    key={`${day.dateStr}-${block.id}`}
+                                                    block={block}
+                                                    date={day.dateStr}
+                                                    tasks={day.tasks.filter(t => t.timeBlock === block.id)}
+                                                    allTasks={tasks}
+                                                    projects={projects}
+                                                    selectedTaskId={selectedTaskId}
+                                                    onSelectTask={setSelectedTaskId}
+                                                    onUpdate={updateTask}
+                                                    onStatusChange={handleStatusChange}
+                                                    onPause={pauseTask}
+                                                    onToggleSubtask={toggleSubtask}
+                                                    onStartDrag={handleStartDrag}
+                                                    onDrop={handleDrop}
+                                                    onDelete={deleteTask}
+                                                    onAIBreakdown={handleAIBreakdown}
+                                                    onUpdateSubtasks={handleUpdateSubtasks}
+                                                    onEdit={handleEditTask}
+                                                    onStartPomodoro={(task) => pomodoro.startPomodoro(task)}
+                                                    compact={false}
+                                                    subtasksExpandedAll={subtasksExpandedAll}
+                                                    theme={theme}
+                                                />
+                                            ))}
+                                        
+                                        {/* Completed Tasks for this day */}
+                                        {day.completedTasks.length > 0 && (
+                                            <div className="rounded-lg border border-green-200 bg-green-50/50 p-2">
+                                                <div className="flex items-center gap-1 text-green-600 mb-1.5">
+                                                    <CheckCircle2 size={12} />
+                                                    <span className="font-medium text-[10px]">
+                                                        Done ({day.completedTasks.length})
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-1 max-h-48 overflow-y-auto">
+                                                    {day.completedTasks.map(task => {
+                                                        const project = projects.find(p => p.id === task.projectId);
+                                                        return (
+                                                            <div
+                                                                key={task.id}
+                                                                className="group relative flex items-center gap-1.5 py-1 px-1.5 bg-white/60 rounded border border-green-100 hover:bg-white transition-colors"
+                                                            >
+                                                                <button
+                                                                    onClick={() => handleStatusChange(task.id, 'pending')}
+                                                                    className="flex-shrink-0 p-0.5 text-green-600 hover:text-green-700 hover:bg-green-100 rounded transition-colors"
+                                                                    title="Mark incomplete"
+                                                                >
+                                                                    <RotateCcw size={12} />
+                                                                </button>
+                                                                <span className="flex-1 text-xs line-through text-gray-500 truncate">
+                                                                    {task.title}
+                                                                </span>
+                                                                {project && (
+                                                                    <div
+                                                                        className="flex-shrink-0 w-2 h-2 rounded-full"
+                                                                        style={{ backgroundColor: project.color }}
+                                                                        title={project.name}
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                }
+                                timelinePanel={
+                                    <TimelinePanel
+                                        tasks={day.tasks}
+                                        projects={projects}
+                                        selectedTaskId={selectedTimelineTaskId}
+                                        hoveredTaskId={hoveredTimelineTaskId}
+                                        onTaskClick={handleTimelineTaskClick}
+                                        onTaskHover={handleTimelineTaskHover}
+                                        onTaskDragStart={handleTimelineTaskDragStart}
+                                    />
+                                }
                             />
                         ) : (
                             <div className={`h-full overflow-y-auto pr-0.5 pb-2 ${viewDays === 7 ? 'space-y-0.5' : 'space-y-2'}`}>

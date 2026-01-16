@@ -100,10 +100,13 @@ model Task {
   date             String?   // ISO date string YYYY-MM-DD
   timeBlock        String    @default("anytime") // morning, afternoon, evening, anytime
   scheduledHour    Int?      // Specific hour (0-23) for timeline view, null = use timeBlock default
+  scheduledMinute  Int?      // Specific minute (0, 15, 30, 45) for 15-min intervals within hour
+  startTime        DateTime? // Precise scheduled datetime for timeline panel
   order            Int       @default(0) // Order within the same date/timeBlock
   
   // Time tracking
   estimatedMinutes Int       @default(30)
+  estimatedDuration Int?     // Duration in minutes for timeline visual sizing
   actualMinutes    Int?
   startedAt        DateTime? // When task status changed to in-progress
   completedAt      DateTime? // When task was marked completed
