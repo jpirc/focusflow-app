@@ -12,14 +12,14 @@ export default function DualPanelLayout({
   timelinePanel,
 }: DualPanelLayoutProps) {
   return (
-    <div className="flex-1 flex overflow-hidden">
+    <div className="flex-1 flex overflow-hidden h-full">
       {/* Time Blocks Panel (67%) */}
-      <div className="flex-[2] overflow-y-auto">
+      <div className="flex-[2] overflow-y-auto h-full">
         {timeBlocksPanel}
       </div>
 
       {/* Timeline Panel (33%) */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 h-full">
         {timelinePanel}
       </div>
     </div>

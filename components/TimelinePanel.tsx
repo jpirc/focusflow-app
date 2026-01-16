@@ -14,9 +14,9 @@ interface TimelinePanelProps {
   onTaskDragStart: (task: Task, e: React.DragEvent) => void;
 }
 
-const HOUR_HEIGHT = 60; // 60px per hour
+const HOUR_HEIGHT = 80; // 80px per hour for comfortable spacing
 const START_HOUR = 6; // 6am
-const END_HOUR = 18; // 6pm
+const END_HOUR = 19; // 7pm (to include 6pm hour)
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 
 export default function TimelinePanel({
@@ -29,6 +29,7 @@ export default function TimelinePanel({
   onTaskDragStart,
 }: TimelinePanelProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const timelineRef = React.useRef<HTMLDivElement>(null);
 
   // Update current time every minute
   useEffect(() => {
@@ -39,7 +40,22 @@ export default function TimelinePanel({
     return () => clearInterval(interval);
   }, []);
 
-  // Calculate position for current time indicator
+  // Scroll to current time on mount
+  useEffect(() => {
+    const scrollToCurrentTime = () => {
+      const currentPos = getCurrentTimePosition();
+      if (currentPos !== null && timelineRef.current) {
+        // Scroll so current time is roughly in the middle of the viewport
+        const scrollPosition = currentPos - (timelineRef.current.clientHeight / 2);
+        timelineRef.current.scrollTop = Math.max(0, scrollPosition);
+      }
+    };
+
+    // Delay slightly to ensure DOM is ready
+    setTimeout(scrollToCurrentTime, 100);
+  }, []); // Only run on mount
+
+  // Calculate position in pixels for current time indicator
   const getCurrentTimePosition = () => {
     const now = new Date();
     const hour = now.getHours();
@@ -49,36 +65,32 @@ export default function TimelinePanel({
       return null; // Outside visible range
     }
     
-    const position = (hour - START_HOUR) * HOUR_HEIGHT + minute;
+    const position = (hour - START_HOUR) * HOUR_HEIGHT + (minute / 60) * HOUR_HEIGHT;
     return position;
   };
 
-  // Calculate position for a task based on startTime or scheduledHour
+  // Calculate position in pixels for a task based on startTime or scheduledHour
   const getTaskPosition = (task: Task) => {
+    let hour: number;
+    let minute: number;
+
     if (task.startTime) {
       const time = new Date(task.startTime);
-      const hour = time.getHours();
-      const minute = time.getMinutes();
-      
-      if (hour < START_HOUR || hour >= END_HOUR) {
-        return null; // Outside visible range
-      }
-      
-      return (hour - START_HOUR) * HOUR_HEIGHT + minute;
+      hour = time.getHours();
+      minute = time.getMinutes();
+    } else if (task.scheduledHour !== null && task.scheduledHour !== undefined) {
+      hour = task.scheduledHour;
+      minute = task.scheduledMinute || 0;
+    } else {
+      return null;
     }
     
-    if (task.scheduledHour !== null && task.scheduledHour !== undefined) {
-      const hour = task.scheduledHour;
-      const minute = task.scheduledMinute || 0;
-      
-      if (hour < START_HOUR || hour >= END_HOUR) {
-        return null;
-      }
-      
-      return (hour - START_HOUR) * HOUR_HEIGHT + minute;
+    if (hour < START_HOUR || hour >= END_HOUR) {
+      return null; // Outside visible range
     }
     
-    return null;
+    const position = (hour - START_HOUR) * HOUR_HEIGHT + (minute / 60) * HOUR_HEIGHT;
+    return position;
   };
 
   // Filter tasks that have a time scheduled
@@ -99,15 +111,15 @@ export default function TimelinePanel({
   return (
     <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 bg-white">
+      <div className="px-4 py-3 border-b border-gray-200 bg-white flex-shrink-0">
         <h2 className="font-semibold text-gray-900">Timeline</h2>
         <p className="text-xs text-gray-500 mt-1">
-          {START_HOUR === 6 ? '6' : START_HOUR}AM - {END_HOUR === 18 ? '6' : END_HOUR}PM
+          6AM - 6PM
         </p>
       </div>
 
-      {/* Timeline content */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Timeline content - scrollable */}
+      <div ref={timelineRef} className="flex-1 overflow-y-auto scroll-smooth">
         <div className="relative" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
           {/* Hour grid */}
           {HOURS.map((hour, index) => (
@@ -117,18 +129,18 @@ export default function TimelinePanel({
               style={{ top: `${index * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
             >
               {/* Hour label */}
-              <div className="sticky left-0 px-4 py-1">
+              <div className="px-4 py-1">
                 <span className="text-xs font-medium text-gray-500">
                   {formatHour(hour)}
                 </span>
               </div>
 
               {/* 15-minute interval guides (subtle) */}
-              {[15, 30, 45].map((minute) => (
+              {[0.25, 0.5, 0.75].map((fraction, idx) => (
                 <div
-                  key={minute}
+                  key={idx}
                   className="absolute left-0 right-0 border-t border-gray-100"
-                  style={{ top: `${minute}px` }}
+                  style={{ top: `${fraction * HOUR_HEIGHT}px` }}
                 />
               ))}
             </div>
@@ -159,7 +171,7 @@ export default function TimelinePanel({
             return (
               <div
                 key={task.id}
-                className="absolute left-12 right-4 transition-all duration-150"
+                className="absolute left-12 right-4 transition-all duration-150 z-20"
                 style={{ top: `${position}px` }}
                 onMouseEnter={() => onTaskHover(task.id)}
                 onMouseLeave={() => onTaskHover(null)}
@@ -178,7 +190,7 @@ export default function TimelinePanel({
 
           {/* Empty state */}
           {scheduledTasks.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center px-4">
                 <p className="text-sm text-gray-500">No scheduled tasks</p>
                 <p className="text-xs text-gray-400 mt-1">
