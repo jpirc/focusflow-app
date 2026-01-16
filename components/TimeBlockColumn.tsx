@@ -11,7 +11,9 @@ interface TimeBlockColumnProps {
     projects: Project[];
     date: string;
     selectedTaskId: string | null;
+    highlightedTaskId?: string | null; // Cross-panel highlighting
     onSelectTask: (id: string) => void;
+    onHoverTask?: (id: string | null) => void; // Cross-panel hover
     onUpdate: (id: string, updates: Partial<Task>) => void;
     onStatusChange: (id: string, status: TaskStatus) => void;
     onPause: (id: string) => void;
@@ -29,8 +31,8 @@ interface TimeBlockColumnProps {
 }
 
 export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
-    block, tasks, allTasks, projects, date, selectedTaskId,
-    onSelectTask, onUpdate, onStatusChange, onPause, onToggleSubtask, onStartDrag, onDrop, onDelete,
+    block, tasks, allTasks, projects, date, selectedTaskId, highlightedTaskId,
+    onSelectTask, onHoverTask, onUpdate, onStatusChange, onPause, onToggleSubtask, onStartDrag, onDrop, onDelete,
     onAIBreakdown, onUpdateSubtasks, onEdit, onStartPomodoro, compact = false, subtasksExpandedAll = true, theme
 }) => {
     const [isDragOver, setIsDragOver] = useState(false);
@@ -198,7 +200,9 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
                                 allTasks={allTasks}
                                 allProjects={projects}
                                 isSelected={selectedTaskId === task.id}
+                                isHighlighted={highlightedTaskId === task.id}
                                 onSelect={onSelectTask}
+                                onHover={onHoverTask}
                                 onUpdate={onUpdate}
                                 onStatusChange={onStatusChange}
                                 onPause={onPause}

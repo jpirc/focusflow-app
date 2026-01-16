@@ -625,7 +625,9 @@ interface QuickEditTaskCardProps {
     allTasks: Task[];
     allProjects: Project[];
     isSelected: boolean;
+    isHighlighted?: boolean; // Cross-panel highlighting
     onSelect: (id: string) => void;
+    onHover?: (id: string | null) => void; // Cross-panel hover
     onUpdate: (id: string, updates: Partial<Task>) => void;
     onStatusChange: (id: string, status: TaskStatus) => void;
     onPause: (id: string) => void;
@@ -651,7 +653,7 @@ function lightenColor(hex: string, amount: number = 0.85): string {
 }
 
 export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
-    const { task, project, allTasks, allProjects, isSelected, onSelect, onUpdate, onStatusChange, onPause,
+    const { task, project, allTasks, allProjects, isSelected, isHighlighted = false, onSelect, onHover, onUpdate, onStatusChange, onPause,
         onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, onStartPomodoro, compact = false, subtasksExpandedAll = true, timelineHeight } = props;
 
     const [expanded, setExpanded] = useState(false);
@@ -848,10 +850,12 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
             }}
             onDragEnd={() => setIsDragging(false)}
             onClick={() => !isEditingTitle && onSelect(task.id)}
+            onMouseEnter={() => onHover?.(task.id)}
+            onMouseLeave={() => onHover?.(null)}
             className={[
                 'group relative border-l-4 transition-all duration-150 bg-white shadow-md border border-gray-200',
                 isEditingTitle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing',
-                isSelected ? 'ring-2 ring-purple-400 ring-offset-1 bg-purple-50/50' : 'hover:shadow-lg',
+                isSelected ? 'ring-2 ring-purple-400 ring-offset-1 bg-purple-50/50' : isHighlighted ? 'ring-2 ring-purple-300 bg-purple-50/30' : 'hover:shadow-lg',
                 isCompleted ? 'opacity-50' : '',
                 task.status === 'in-progress' ? 'ring-4 ring-blue-400 ring-offset-2 shadow-2xl shadow-blue-500/50 animate-pulse' : '',
                 isPaused ? 'ring-2 ring-amber-300 ring-offset-1 bg-amber-50/30' : '',

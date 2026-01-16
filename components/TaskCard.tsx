@@ -99,7 +99,9 @@ interface TaskCardProps {
     project: Project;
     allTasks: Task[];
     isSelected: boolean;
+    isHighlighted?: boolean; // Cross-panel highlighting from timeline
     onSelect: (id: string) => void;
+    onHover?: (id: string | null) => void; // Cross-panel hover
     onStatusChange: (id: string, status: TaskStatus) => void;
     onPause: (id: string) => void;
     onToggleSubtask: (taskId: string, subtaskId: string) => void;
@@ -122,7 +124,7 @@ function lightenColor(hex: string, amount: number = 0.85): string {
 }
 
 export const TaskCard: React.FC<TaskCardProps> = (props) => {
-    const { task, project, allTasks, isSelected, onSelect, onStatusChange, onPause,
+    const { task, project, allTasks, isSelected, isHighlighted = false, onSelect, onHover, onStatusChange, onPause,
         onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, onStartPomodoro, compact = false } = props;
 
     const [expanded, setExpanded] = useState(false);
@@ -235,9 +237,11 @@ export const TaskCard: React.FC<TaskCardProps> = (props) => {
             }}
             onDragEnd={() => setIsDragging(false)}
             onClick={() => onSelect(task.id)}
+            onMouseEnter={() => onHover?.(task.id)}
+            onMouseLeave={() => onHover?.(null)}
             className={[
                 'group relative rounded-md border-l-3 transition-all duration-150 cursor-grab active:cursor-grabbing',
-                isSelected ? 'ring-2 ring-purple-400 ring-offset-1 bg-purple-50/50' : 'hover:bg-gray-50/80',
+                isSelected ? 'ring-2 ring-purple-400 ring-offset-1 bg-purple-50/50' : isHighlighted ? 'ring-2 ring-purple-300 bg-purple-50/30' : 'hover:bg-gray-50/80',
                 task.status === 'completed' ? 'opacity-50' : '',
                 hasBlockingDeps ? 'border-r border-r-amber-400 border-dashed' : '',
                 isDragging ? 'opacity-50 scale-95' : '',

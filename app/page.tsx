@@ -402,9 +402,15 @@ export default function FocusFlowApp() {
     const handleTimelineTaskClick = useCallback((taskId: string) => {
         setSelectedTimelineTaskId(taskId);
         setSelectedTaskId(taskId);
+        // TODO: Scroll task into view in time block column
     }, []);
     
     const handleTimelineTaskHover = useCallback((taskId: string | null) => {
+        setHoveredTimelineTaskId(taskId);
+    }, []);
+
+    // Time block panel hover handler (syncs with timeline)
+    const handleTaskHover = useCallback((taskId: string | null) => {
         setHoveredTimelineTaskId(taskId);
     }, []);
     
@@ -743,7 +749,9 @@ export default function FocusFlowApp() {
                                                     allTasks={tasks}
                                                     projects={projects}
                                                     selectedTaskId={selectedTaskId}
+                                                    highlightedTaskId={hoveredTimelineTaskId}
                                                     onSelectTask={setSelectedTaskId}
+                                                    onHoverTask={handleTaskHover}
                                                     onUpdate={updateTask}
                                                     onStatusChange={handleStatusChange}
                                                     onPause={pauseTask}
@@ -843,7 +851,9 @@ export default function FocusFlowApp() {
                                                 allTasks={tasks}
                                                 projects={projects}
                                                 selectedTaskId={selectedTaskId}
+                                                highlightedTaskId={hoveredTimelineTaskId}
                                                 onSelectTask={setSelectedTaskId}
+                                                onHoverTask={handleTaskHover}
                                                 onUpdate={updateTask}
                                                 onStatusChange={handleStatusChange}
                                                 onPause={pauseTask}
