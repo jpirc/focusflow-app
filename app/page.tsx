@@ -547,8 +547,8 @@ export default function FocusFlowApp() {
             // If moving from timeline to time block, clear scheduled time
             const updates: Partial<Task> = {};
             if (task.scheduledHour !== null || task.scheduledMinute !== null) {
-                updates.scheduledHour = null;
-                updates.scheduledMinute = null;
+                updates.scheduledHour = undefined;
+                updates.scheduledMinute = undefined;
             }
             await moveTask(taskId, targetDate, targetBlock);
             if (Object.keys(updates).length > 0) {
@@ -800,14 +800,17 @@ export default function FocusFlowApp() {
                                                         .filter(t => t.timeBlock === block.id)
                                                         .sort((a, b) => {
                                                             // Sort by scheduled time first (if exists)
-                                                            if (a.scheduledHour !== null && b.scheduledHour !== null) {
+                                                            if (a.scheduledHour !== null && a.scheduledHour !== undefined && 
+                                                                b.scheduledHour !== null && b.scheduledHour !== undefined) {
                                                                 const aTime = a.scheduledHour * 60 + (a.scheduledMinute || 0);
                                                                 const bTime = b.scheduledHour * 60 + (b.scheduledMinute || 0);
                                                                 if (aTime !== bTime) return aTime - bTime;
                                                             }
                                                             // Scheduled tasks come before unscheduled
-                                                            if (a.scheduledHour !== null && b.scheduledHour === null) return -1;
-                                                            if (a.scheduledHour === null && b.scheduledHour !== null) return 1;
+                                                            if ((a.scheduledHour !== null && a.scheduledHour !== undefined) && 
+                                                                (b.scheduledHour === null || b.scheduledHour === undefined)) return -1;
+                                                            if ((a.scheduledHour === null || a.scheduledHour === undefined) && 
+                                                                (b.scheduledHour !== null && b.scheduledHour !== undefined)) return 1;
                                                             // Fall back to order field
                                                             return (a.order || 0) - (b.order || 0);
                                                         })

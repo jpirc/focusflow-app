@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type TimeBlock = 'anytime' | 'morning' | 'afternoon' | 'evening';
+export type TimeBlock = 'inbox' | 'anytime' | 'morning' | 'afternoon' | 'evening';
 export type EnergyLevel = 'low' | 'medium' | 'high';
 export type TaskStatus = 'pending' | 'in-progress' | 'completed' | 'skipped' | 'carried-over';
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';

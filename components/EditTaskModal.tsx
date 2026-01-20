@@ -94,8 +94,8 @@ export function EditTaskModal({
                 priority,
                 energyLevel,
                 estimatedMinutes,
-                scheduledHour,
-                scheduledMinute,
+                scheduledHour: scheduledHour ?? undefined,
+                scheduledMinute: scheduledMinute ?? undefined,
             });
             onClose();
         }

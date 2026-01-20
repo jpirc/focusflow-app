@@ -102,6 +102,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
 
     // Clean outlined style with subtle color accents
     const blockStyles = {
+        inbox: { border: 'border-gray-200', icon: 'text-gray-400', headerBg: 'bg-gray-50/50' },
         morning: { border: 'border-sky-200', icon: 'text-sky-500', headerBg: 'bg-sky-50/50' },
         afternoon: { border: 'border-emerald-200', icon: 'text-emerald-500', headerBg: 'bg-emerald-50/50' },
         evening: { border: 'border-violet-200', icon: 'text-violet-500', headerBg: 'bg-violet-50/50' },

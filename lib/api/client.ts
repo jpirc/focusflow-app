@@ -72,7 +72,7 @@ export interface UpdateTaskInput {
     title?: string;
     description?: string | null;
     date?: string | null;
-    timeBlock?: TimeBlock;
+    timeBlock?: TimeBlock | 'inbox';
     scheduledHour?: number | null;
     scheduledMinute?: number | null;
     startTime?: string | null;
