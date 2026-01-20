@@ -21,6 +21,7 @@ interface CompactInboxTaskProps {
     onSelect: (id: string) => void;
     onStartDrag: (item: any) => void;
     onEdit: (task: Task) => void;
+    onDelete: (id: string) => void;
 }
 
 export function CompactInboxTask({ 
@@ -30,6 +31,7 @@ export function CompactInboxTask({
     onSelect,
     onStartDrag,
     onEdit,
+    onDelete,
 }: CompactInboxTaskProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
@@ -181,16 +183,29 @@ export function CompactInboxTask({
                         </span>
                     </div>
 
-                    {/* Edit button */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(task);
-                        }}
-                        className="text-[10px] text-purple-600 hover:text-purple-700 font-medium"
-                    >
-                        Edit details →
-                    </button>
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(task);
+                            }}
+                            className="text-[10px] text-purple-600 hover:text-purple-700 font-medium"
+                        >
+                            Edit details →
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`Delete "${task.title}"?`)) {
+                                    onDelete(task.id);
+                                }
+                            }}
+                            className="text-[10px] text-red-600 hover:text-red-700 font-medium"
+                        >
+                            Delete
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

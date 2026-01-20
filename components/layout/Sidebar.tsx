@@ -191,6 +191,7 @@ export function Sidebar({
                                         onSelect={onSelectTask}
                                         onStartDrag={onStartDrag}
                                         onEdit={onEdit}
+                                        onDelete={onDelete}
                                     />
                                 ))}
                             </div>
