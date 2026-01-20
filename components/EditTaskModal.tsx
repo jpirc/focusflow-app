@@ -44,6 +44,14 @@ export function EditTaskModal({
     const [priority, setPriority] = useState(task.priority);
     const [energyLevel, setEnergyLevel] = useState(task.energyLevel);
     const [estimatedMinutes, setEstimatedMinutes] = useState(task.estimatedMinutes);
+    const [scheduledTime, setScheduledTime] = useState(() => {
+        if (task.scheduledHour !== null && task.scheduledHour !== undefined) {
+            const h = String(task.scheduledHour).padStart(2, '0');
+            const m = String(task.scheduledMinute || 0).padStart(2, '0');
+            return `${h}:${m}`;
+        }
+        return '';
+    });
 
     // Update form when task changes
     useEffect(() => {
@@ -55,6 +63,13 @@ export function EditTaskModal({
         setPriority(task.priority);
         setEnergyLevel(task.energyLevel);
         setEstimatedMinutes(task.estimatedMinutes);
+        if (task.scheduledHour !== null && task.scheduledHour !== undefined) {
+            const h = String(task.scheduledHour).padStart(2, '0');
+            const m = String(task.scheduledMinute || 0).padStart(2, '0');
+            setScheduledTime(`${h}:${m}`);
+        } else {
+            setScheduledTime('');
+        }
     }, [task]);
 
     if (!isOpen) return null;
@@ -62,6 +77,14 @@ export function EditTaskModal({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (title.trim()) {
+            let scheduledHour: number | null = null;
+            let scheduledMinute: number | null = null;
+            if (scheduledTime) {
+                const [h, m] = scheduledTime.split(':');
+                scheduledHour = parseInt(h, 10);
+                scheduledMinute = parseInt(m, 10);
+            }
+            
             onUpdate(task.id, {
                 title,
                 description: description || undefined,
@@ -71,6 +94,8 @@ export function EditTaskModal({
                 priority,
                 energyLevel,
                 estimatedMinutes,
+                scheduledHour,
+                scheduledMinute,
             });
             onClose();
         }
@@ -140,6 +165,32 @@ export function EditTaskModal({
                                 </button>
                             ))}
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Scheduled Time (optional)
+                        </label>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="time"
+                                value={scheduledTime}
+                                onChange={(e) => setScheduledTime(e.target.value)}
+                                className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            />
+                            {scheduledTime && (
+                                <button
+                                    type="button"
+                                    onClick={() => setScheduledTime('')}
+                                    className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded"
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                            {scheduledTime ? 'Will appear on timeline' : 'Leave blank for time block only'}
+                        </p>
                     </div>
 
                     <div className="flex items-center gap-2">

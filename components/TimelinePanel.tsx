@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Task, Project } from '@/types';
 import TimelineTaskCard from './TimelineTaskCard';
+import { X } from 'lucide-react';
 
 interface TimelinePanelProps {
   tasks: Task[];
@@ -12,12 +13,16 @@ interface TimelinePanelProps {
   onTaskClick: (taskId: string) => void;
   onTaskHover: (taskId: string | null) => void;
   onTaskDragStart: (task: Task, e: React.DragEvent) => void;
+  onTaskDrop: (taskId: string, hour: number, minute: number) => void;
+  onEdit?: (task: Task) => void;
+  onUnschedule?: (taskId: string) => void;
 }
 
 const HOUR_HEIGHT = 80; // 80px per hour for comfortable spacing
 const START_HOUR = 6; // 6am
 const END_HOUR = 23; // 11pm (to include 10pm hour)
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
+const SNAP_INTERVAL = 15; // Snap to 15-minute intervals
 
 // Time block boundaries matching TIME_BLOCKS from constants
 const TIME_BLOCK_RANGES = {
@@ -34,9 +39,81 @@ export default function TimelinePanel({
   onTaskClick,
   onTaskHover,
   onTaskDragStart,
+  onTaskDrop,
+  onEdit,
+  onUnschedule,
 }: TimelinePanelProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [dropPreviewPosition, setDropPreviewPosition] = useState<number | null>(null);
+  const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
   const timelineRef = React.useRef<HTMLDivElement>(null);
+
+  // Find next available time slot after conflicts
+  const findNextAvailableSlot = (taskId: string, proposedHour: number, proposedMinute: number, duration: number): { hour: number; minute: number; adjusted: boolean } => {
+    let currentStart = proposedHour * 60 + proposedMinute;
+    const maxTime = (END_HOUR - 1) * 60 + 45; // Latest slot (e.g., 9:45pm if END_HOUR is 23)
+    let adjusted = false;
+    
+    while (currentStart <= maxTime) {
+      const currentEnd = currentStart + duration;
+      const testHour = Math.floor(currentStart / 60);
+      const testMinute = currentStart % 60;
+      
+      // Check if this slot is free
+      let isFree = true;
+      for (const task of tasks) {
+        if (task.id === taskId) continue;
+        if (task.scheduledHour === null || task.scheduledHour === undefined) continue;
+        
+        const taskStart = task.scheduledHour * 60 + (task.scheduledMinute || 0);
+        const taskEnd = taskStart + (task.estimatedMinutes || 30);
+        
+        // Check if this slot overlaps
+        if (currentStart < taskEnd && currentEnd > taskStart) {
+          isFree = false;
+          // Jump to after this task
+          currentStart = taskEnd;
+          // Snap to next 15-min interval
+          currentStart = Math.ceil(currentStart / SNAP_INTERVAL) * SNAP_INTERVAL;
+          adjusted = true;
+          break;
+        }
+      }
+      
+      if (isFree) {
+        return { 
+          hour: testHour, 
+          minute: testMinute, 
+          adjusted 
+        };
+      }
+    }
+    
+    // If we couldn't find a slot, return the original time anyway
+    return { hour: proposedHour, minute: proposedMinute, adjusted: false };
+  };
+
+  // Check for time overlap with existing tasks
+  const checkOverlap = (taskId: string, hour: number, minute: number, duration: number): { hasOverlap: boolean; overlappingTask?: Task } => {
+    const proposedStart = hour * 60 + minute;
+    const proposedEnd = proposedStart + duration;
+    
+    for (const task of tasks) {
+      if (task.id === taskId) continue; // Skip the task being moved
+      if (task.scheduledHour === null || task.scheduledHour === undefined) continue;
+      
+      const taskStart = task.scheduledHour * 60 + (task.scheduledMinute || 0);
+      const taskEnd = taskStart + (task.estimatedMinutes || 30);
+      
+      // Check if times overlap (allowing shared boundaries)
+      if (proposedStart < taskEnd && proposedEnd > taskStart) {
+        return { hasOverlap: true, overlappingTask: task };
+      }
+    }
+    
+    return { hasOverlap: false };
+  };
 
   // Update current time every minute
   useEffect(() => {
@@ -46,6 +123,77 @@ export default function TimelinePanel({
 
     return () => clearInterval(interval);
   }, []);
+
+  // Handle drag over timeline
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!timelineRef.current) return;
+    
+    const rect = timelineRef.current.getBoundingClientRect();
+    const y = e.clientY - rect.top + timelineRef.current.scrollTop;
+    
+    // Calculate time from Y position
+    const totalMinutes = (y / HOUR_HEIGHT) * 60;
+    const snappedMinutes = Math.round(totalMinutes / SNAP_INTERVAL) * SNAP_INTERVAL;
+    const position = (snappedMinutes / 60) * HOUR_HEIGHT;
+    
+    setDropPreviewPosition(position);
+    setIsDragOver(true);
+  };
+
+  // Handle drop on timeline
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setIsDragOver(false);
+    setDropPreviewPosition(null);
+    setOverlapWarning(null);
+    
+    if (!timelineRef.current) return;
+    
+    // Get task ID from drag data
+    const taskId = e.dataTransfer.getData('taskId');
+    if (!taskId) return;
+    
+    // Find the task being dropped
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    
+    // Calculate time from drop position
+    const rect = timelineRef.current.getBoundingClientRect();
+    const y = e.clientY - rect.top + timelineRef.current.scrollTop;
+    const totalMinutes = (y / HOUR_HEIGHT) * 60;
+    const snappedMinutes = Math.round(totalMinutes / SNAP_INTERVAL) * SNAP_INTERVAL;
+    
+    let hour = START_HOUR + Math.floor(snappedMinutes / 60);
+    let minute = snappedMinutes % 60;
+    
+    // Validate hour is within range
+    if (hour >= START_HOUR && hour < END_HOUR) {
+      // Find next available slot (auto-adjust if conflict)
+      const duration = task.estimatedMinutes || 30;
+      const { hour: adjustedHour, minute: adjustedMinute, adjusted } = findNextAvailableSlot(taskId, hour, minute, duration);
+      
+      if (adjusted) {
+        setOverlapWarning(`Moved to ${adjustedHour % 12 || 12}:${adjustedMinute.toString().padStart(2, '0')}${adjustedHour >= 12 ? 'PM' : 'AM'} (next available slot)`);
+        setTimeout(() => setOverlapWarning(null), 3000);
+      }
+      
+      onTaskDrop(taskId, adjustedHour, adjustedMinute);
+    }
+  };
+
+  // Handle drag leave
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if leaving the timeline entirely
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+      setDropPreviewPosition(null);
+    }
+  };
 
   // Scroll to current time on mount
   useEffect(() => {
@@ -157,9 +305,30 @@ export default function TimelinePanel({
           6AM - 10PM
         </p>
       </div>
+      
+      {/* Overlap Warning */}
+      {overlapWarning && (
+        <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
+          <div className="flex-1 text-xs text-amber-800 font-medium">
+            ⚠️ {overlapWarning}
+          </div>
+          <button
+            onClick={() => setOverlapWarning(null)}
+            className="text-amber-600 hover:text-amber-800"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Timeline content - scrollable */}
-      <div ref={timelineRef} className="flex-1 overflow-y-auto scroll-smooth">
+      <div 
+        ref={timelineRef} 
+        className="flex-1 overflow-y-auto scroll-smooth"
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        onDragLeave={handleDragLeave}
+      >
         <div className="relative" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
           {/* Time block background shading */}
           <div className="absolute inset-0 pointer-events-none">
@@ -227,6 +396,23 @@ export default function TimelinePanel({
             </div>
           )}
 
+          {/* Drop preview indicator */}
+          {isDragOver && dropPreviewPosition !== null && (
+            <div
+              className="absolute left-0 right-0 z-30 pointer-events-none"
+              style={{ top: `${dropPreviewPosition}px` }}
+            >
+              <div className="h-1 bg-purple-500 shadow-lg relative rounded-full">
+                {/* Circle indicator on the left */}
+                <div className="absolute -left-1.5 -top-1 w-3 h-3 bg-purple-500 rounded-full border-2 border-white shadow-lg" />
+                {/* Time label */}
+                <div className="absolute left-4 -top-3 bg-purple-500 text-white text-xs px-2 py-0.5 rounded shadow-lg font-semibold">
+                  Drop here
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Scheduled tasks */}
           {scheduledTasks.map((task, index) => {
             const position = getTaskPosition(task, index);
@@ -279,7 +465,14 @@ export default function TimelinePanel({
                   isSelected={selectedTaskId === task.id}
                   isHovered={hoveredTaskId === task.id}
                   onClick={() => onTaskClick(task.id)}
-                  onDragStart={(e) => onTaskDragStart(task, e)}
+                  onEdit={onEdit}
+                  onUnschedule={onUnschedule}
+                  onDragStart={(e) => {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', task.id);
+                    e.dataTransfer.setData('taskId', task.id);
+                    onTaskDragStart(task, e);
+                  }}
                   displayTime={displayTime}
                 />
               </div>

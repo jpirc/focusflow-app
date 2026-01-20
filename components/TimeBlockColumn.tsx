@@ -25,6 +25,7 @@ interface TimeBlockColumnProps {
     onUpdateSubtasks: (taskId: string, subtasks: Subtask[]) => void;
     onEdit: (task: Task) => void;
     onStartPomodoro?: (task: Task) => void;
+    onUnschedule?: (taskId: string) => void;
     compact?: boolean;
     subtasksExpandedAll?: boolean;
     theme?: Theme;
@@ -33,7 +34,7 @@ interface TimeBlockColumnProps {
 export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
     block, tasks, allTasks, projects, date, selectedTaskId, highlightedTaskId,
     onSelectTask, onHoverTask, onUpdate, onStatusChange, onPause, onToggleSubtask, onStartDrag, onDrop, onDelete,
-    onAIBreakdown, onUpdateSubtasks, onEdit, onStartPomodoro, compact = false, subtasksExpandedAll = true, theme
+    onAIBreakdown, onUpdateSubtasks, onEdit, onStartPomodoro, onUnschedule, compact = false, subtasksExpandedAll = true, theme
 }) => {
     const [isDragOver, setIsDragOver] = useState(false);
     
@@ -213,6 +214,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
                                 onUpdateSubtasks={onUpdateSubtasks}
                                 onEdit={onEdit}
                                 onStartPomodoro={onStartPomodoro}
+                                onUnschedule={onUnschedule}
                                 compact={compact}
                                 subtasksExpandedAll={subtasksExpandedAll}
                             />

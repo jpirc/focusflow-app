@@ -163,12 +163,8 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
     }, [isAuthenticated]);
 
     const updateTask = useCallback(async (id: string, updates: UpdateTaskInput) => {
-        // Optimistic update - convert null to undefined for local state
-        const localUpdates: Partial<Task> = {};
-        for (const [key, value] of Object.entries(updates)) {
-            (localUpdates as any)[key] = value === null ? undefined : value;
-        }
-        setTasks(prev => prev.map(t => t.id === id ? { ...t, ...localUpdates } : t));
+        // Optimistic update
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
 
         if (!isAuthenticated) return;
 

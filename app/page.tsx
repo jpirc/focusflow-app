@@ -247,7 +247,7 @@ export default function FocusFlowApp() {
             const date = addDays(startDate, i);
             const dateStr = formatDate(date);
             const dayTasks = tasks.filter(t =>
-                formatDate(t.date!) === dateStr &&
+                t.date && formatDate(t.date) === dateStr &&
                 t.status !== 'completed' &&
                 (!selectedProjectId || t.projectId === selectedProjectId)
             );
@@ -289,7 +289,7 @@ export default function FocusFlowApp() {
                 isWeekend: isWeekend(date),
                 isToday: i === 0,
                 taskCount: tasks.filter(t => 
-                    formatDate(t.date!) === dateStr && 
+                    t.date && formatDate(t.date) === dateStr && 
                     t.status !== 'completed' &&
                     (!selectedProjectId || t.projectId === selectedProjectId)
                 ).length,
@@ -426,6 +426,45 @@ export default function FocusFlowApp() {
         console.log('Dragging', item);
     }, []);
 
+    // Handle drop on timeline - set specific scheduled time
+    const handleTimelineDrop = useCallback(async (taskId: string, hour: number, minute: number) => {
+        console.log(`Dropping task ${taskId} at ${hour}:${minute}`);
+        
+        try {
+            // Determine which time block this hour belongs to
+            let newTimeBlock: TimeBlock = 'anytime';
+            if (hour >= 6 && hour < 12) {
+                newTimeBlock = 'morning';
+            } else if (hour >= 12 && hour < 17) {
+                newTimeBlock = 'afternoon';
+            } else if (hour >= 17 && hour < 22) {
+                newTimeBlock = 'evening';
+            }
+            
+            await updateTask(taskId, {
+                scheduledHour: hour,
+                scheduledMinute: minute,
+                timeBlock: newTimeBlock,
+            });
+        } catch (error) {
+            console.error('Failed to schedule task:', error);
+        }
+    }, [updateTask]);
+
+    // Handle unschedule - remove from timeline, return to inbox
+    const handleUnschedule = useCallback(async (taskId: string) => {
+        try {
+            await updateTask(taskId, {
+                scheduledHour: null,
+                scheduledMinute: null,
+                timeBlock: 'inbox',
+                date: null,
+            });
+        } catch (error) {
+            console.error('Failed to unschedule task:', error);
+        }
+    }, [updateTask]);
+
     // Wrap updateStatus to trigger celebration on completion
     const handleStatusChange = useCallback((taskId: string, status: TaskStatus) => {
         updateStatus(taskId, status);
@@ -505,7 +544,16 @@ export default function FocusFlowApp() {
             }
         } else {
             // Moving to different bucket - use existing logic
+            // If moving from timeline to time block, clear scheduled time
+            const updates: Partial<Task> = {};
+            if (task.scheduledHour !== null || task.scheduledMinute !== null) {
+                updates.scheduledHour = null;
+                updates.scheduledMinute = null;
+            }
             await moveTask(taskId, targetDate, targetBlock);
+            if (Object.keys(updates).length > 0) {
+                await updateTask(taskId, updates);
+            }
         }
     }, [tasks, moveTask, updateTask, refreshTasks]);
 
@@ -725,6 +773,9 @@ export default function FocusFlowApp() {
                                     <div className="h-full overflow-y-auto pr-0.5 pb-2 space-y-2 px-2">
                                         {TIME_BLOCKS
                                             .filter(block => {
+                                                // Hide anytime block
+                                                if (block.id === 'anytime') return false;
+                                                
                                                 // For today, hide past time blocks
                                                 if (!day.isToday) return true;
                                                 
@@ -745,7 +796,22 @@ export default function FocusFlowApp() {
                                                     key={`${day.dateStr}-${block.id}`}
                                                     block={block}
                                                     date={day.dateStr}
-                                                    tasks={day.tasks.filter(t => t.timeBlock === block.id)}
+                                                    tasks={day.tasks
+                                                        .filter(t => t.timeBlock === block.id)
+                                                        .sort((a, b) => {
+                                                            // Sort by scheduled time first (if exists)
+                                                            if (a.scheduledHour !== null && b.scheduledHour !== null) {
+                                                                const aTime = a.scheduledHour * 60 + (a.scheduledMinute || 0);
+                                                                const bTime = b.scheduledHour * 60 + (b.scheduledMinute || 0);
+                                                                if (aTime !== bTime) return aTime - bTime;
+                                                            }
+                                                            // Scheduled tasks come before unscheduled
+                                                            if (a.scheduledHour !== null && b.scheduledHour === null) return -1;
+                                                            if (a.scheduledHour === null && b.scheduledHour !== null) return 1;
+                                                            // Fall back to order field
+                                                            return (a.order || 0) - (b.order || 0);
+                                                        })
+                                                    }
                                                     allTasks={tasks}
                                                     projects={projects}
                                                     selectedTaskId={selectedTaskId}
@@ -763,6 +829,7 @@ export default function FocusFlowApp() {
                                                     onUpdateSubtasks={handleUpdateSubtasks}
                                                     onEdit={handleEditTask}
                                                     onStartPomodoro={(task) => pomodoro.startPomodoro(task)}
+                                                    onUnschedule={handleUnschedule}
                                                     compact={false}
                                                     subtasksExpandedAll={subtasksExpandedAll}
                                                     theme={theme}
@@ -820,6 +887,9 @@ export default function FocusFlowApp() {
                                         onTaskClick={handleTimelineTaskClick}
                                         onTaskHover={handleTimelineTaskHover}
                                         onTaskDragStart={handleTimelineTaskDragStart}
+                                        onTaskDrop={handleTimelineDrop}
+                                        onEdit={handleEditTask}
+                                        onUnschedule={handleUnschedule}
                                     />
                                 }
                             />
@@ -827,6 +897,9 @@ export default function FocusFlowApp() {
                             <div className={`h-full overflow-y-auto pr-0.5 pb-2 ${viewDays === 7 ? 'space-y-0.5' : 'space-y-2'}`}>
                                 {TIME_BLOCKS
                                             .filter(block => {
+                                                // Hide anytime block
+                                                if (block.id === 'anytime') return false;
+                                                
                                                 // For today, hide past time blocks
                                                 if (!day.isToday) return true;
                                                 
@@ -865,6 +938,7 @@ export default function FocusFlowApp() {
                                                 onUpdateSubtasks={handleUpdateSubtasks}
                                                 onEdit={handleEditTask}
                                                 onStartPomodoro={(task) => pomodoro.startPomodoro(task)}
+                                                onUnschedule={handleUnschedule}
                                                 compact={viewDays === 7}
                                                 subtasksExpandedAll={subtasksExpandedAll}
                                                 theme={theme}

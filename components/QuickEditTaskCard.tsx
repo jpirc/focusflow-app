@@ -638,6 +638,7 @@ interface QuickEditTaskCardProps {
     onUpdateSubtasks: (taskId: string, subtasks: Subtask[]) => void;
     onEdit: (task: Task) => void; // Opens full modal for advanced editing
     onStartPomodoro?: (task: Task) => void; // Start Pomodoro timer
+    onUnschedule?: (taskId: string) => void; // Remove from timeline
     compact?: boolean;
     subtasksExpandedAll?: boolean;
     timelineHeight?: number; // Explicit height for timeline view (in pixels)
@@ -654,7 +655,7 @@ function lightenColor(hex: string, amount: number = 0.85): string {
 
 export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
     const { task, project, allTasks, allProjects, isSelected, isHighlighted = false, onSelect, onHover, onUpdate, onStatusChange, onPause,
-        onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, onStartPomodoro, compact = false, subtasksExpandedAll = true, timelineHeight } = props;
+        onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, onStartPomodoro, onUnschedule, compact = false, subtasksExpandedAll = true, timelineHeight } = props;
 
     const [expanded, setExpanded] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
@@ -811,6 +812,7 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
             onDragStart={(e) => {
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/plain', task.id);
+                e.dataTransfer.setData('taskId', task.id);
                 e.dataTransfer.setData('task-order', String(task.order || 0));
                 const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
                 dragImage.style.position = 'absolute';
@@ -1144,6 +1146,27 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                         onChange={handleTimeBlockChange}
                         disabled={isCompleted || isBlocked}
                     />
+                    {/* Scheduled Time Badge */}
+                    {task.scheduledHour !== null && task.scheduledHour !== undefined && (
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 border border-blue-200 rounded text-blue-700 text-[10px] font-medium">
+                            <Clock size={10} />
+                            <span>
+                                {task.scheduledHour % 12 || 12}:{String(task.scheduledMinute || 0).padStart(2, '0')}{task.scheduledHour >= 12 ? 'PM' : 'AM'}
+                            </span>
+                            {onUnschedule && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onUnschedule(task.id);
+                                    }}
+                                    className="ml-0.5 hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                                    title="Remove from timeline"
+                                >
+                                    <X size={8} />
+                                </button>
+                            )}
+                        </div>
+                    )}
                     {task.rolloverCount && task.rolloverCount >= 3 ? (
                         <RolloverWarning
                             rolloverCount={task.rolloverCount}
