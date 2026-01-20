@@ -73,6 +73,10 @@ export interface UpdateTaskInput {
     description?: string | null;
     date?: string | null;
     timeBlock?: TimeBlock;
+    scheduledHour?: number | null;
+    scheduledMinute?: number | null;
+    startTime?: string | null;
+    estimatedDuration?: number | null;
     projectId?: string | null;
     status?: TaskStatus;
     priority?: Priority;
