@@ -550,6 +550,45 @@ export default function FocusFlowApp() {
                 updates.scheduledHour = undefined;
                 updates.scheduledMinute = undefined;
             }
+            
+            // Find available time slot if moving to a time block (not inbox)
+            if (targetBlock !== 'inbox') {
+                const blockTasks = tasks.filter(t => 
+                    t.date === targetDate && 
+                    t.timeBlock === targetBlock &&
+                    t.scheduledHour !== null && 
+                    t.scheduledHour !== undefined
+                ).sort((a, b) => {
+                    const aTime = (a.scheduledHour || 0) * 60 + (a.scheduledMinute || 0);
+                    const bTime = (b.scheduledHour || 0) * 60 + (b.scheduledMinute || 0);
+                    return aTime - bTime;
+                });
+
+                // Determine time block range
+                const timeRanges = {
+                    morning: { start: 6, end: 12 },
+                    afternoon: { start: 12, end: 17 },
+                    evening: { start: 17, end: 22 },
+                    anytime: { start: 6, end: 22 },
+                };
+                const range = timeRanges[targetBlock as keyof typeof timeRanges];
+
+                if (range && blockTasks.length > 0) {
+                    // Find first available slot after existing tasks
+                    const lastTask = blockTasks[blockTasks.length - 1];
+                    const lastTaskEnd = (lastTask.scheduledHour || 0) + Math.ceil((lastTask.estimatedMinutes || 30) / 60);
+                    
+                    if (lastTaskEnd < range.end) {
+                        updates.scheduledHour = Math.min(lastTaskEnd, range.end - 1);
+                        updates.scheduledMinute = 0;
+                    }
+                } else if (range) {
+                    // No tasks in this block yet, use start of range
+                    updates.scheduledHour = range.start;
+                    updates.scheduledMinute = 0;
+                }
+            }
+            
             await moveTask(taskId, targetDate, targetBlock);
             if (Object.keys(updates).length > 0) {
                 await updateTask(taskId, updates);
