@@ -423,7 +423,11 @@ export default function TimelinePanel({
               : undefined;
 
             // Calculate height based on task duration (convert minutes to pixels)
-            const durationMinutes = task.estimatedDuration || task.estimatedMinutes || 30;
+            // For completed tasks, use actual duration; otherwise use estimated
+            const isCompleted = task.status === 'completed';
+            const durationMinutes = isCompleted && task.actualMinutes 
+              ? task.actualMinutes 
+              : (task.estimatedDuration || task.estimatedMinutes || 30);
             const heightPx = (durationMinutes / 60) * HOUR_HEIGHT;
 
             // Calculate display time from position
