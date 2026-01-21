@@ -574,7 +574,8 @@ export default function FocusFlowApp() {
                     t.date === targetDate && 
                     t.timeBlock === targetBlock &&
                     t.scheduledHour !== null && 
-                    t.scheduledHour !== undefined
+                    t.scheduledHour !== undefined &&
+                    t.status !== 'completed' // Skip completed tasks - they're ghosts
                 ).sort((a, b) => {
                     const aTime = (a.scheduledHour || 0) * 60 + (a.scheduledMinute || 0);
                     const bTime = (b.scheduledHour || 0) * 60 + (b.scheduledMinute || 0);

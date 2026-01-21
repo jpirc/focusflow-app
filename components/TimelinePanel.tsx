@@ -65,6 +65,8 @@ export default function TimelinePanel({
       for (const task of tasks) {
         if (task.id === taskId) continue;
         if (task.scheduledHour === null || task.scheduledHour === undefined) continue;
+        // Skip completed tasks - they're ghosts and don't block scheduling
+        if (task.status === 'completed') continue;
         
         const taskStart = task.scheduledHour * 60 + (task.scheduledMinute || 0);
         const taskEnd = taskStart + (task.estimatedMinutes || 30);
@@ -102,6 +104,8 @@ export default function TimelinePanel({
     for (const task of tasks) {
       if (task.id === taskId) continue; // Skip the task being moved
       if (task.scheduledHour === null || task.scheduledHour === undefined) continue;
+      // Skip completed tasks - they're ghosts and don't block scheduling
+      if (task.status === 'completed') continue;
       
       const taskStart = task.scheduledHour * 60 + (task.scheduledMinute || 0);
       const taskEnd = taskStart + (task.estimatedMinutes || 30);
