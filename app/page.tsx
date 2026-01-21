@@ -257,6 +257,22 @@ export default function FocusFlowApp() {
                 const completedDate = formatDate(new Date(t.completedAt));
                 return completedDate === dateStr && (!selectedProjectId || t.projectId === selectedProjectId);
             });
+            // For timeline view: include completed tasks with scheduled times so they show as ghosts
+            const timelineTasks = tasks.filter(t => {
+                // Include incomplete tasks for this day
+                if (t.date && formatDate(t.date) === dateStr && t.status !== 'completed' &&
+                    (!selectedProjectId || t.projectId === selectedProjectId)) {
+                    return true;
+                }
+                // Include completed tasks if they have a scheduled time
+                if (t.status === 'completed' && t.completedAt &&
+                    (t.scheduledHour !== null && t.scheduledHour !== undefined) &&
+                    (!selectedProjectId || t.projectId === selectedProjectId)) {
+                    const completedDate = formatDate(new Date(t.completedAt));
+                    return completedDate === dateStr;
+                }
+                return false;
+            });
             return {
                 date,
                 dateStr,
@@ -265,6 +281,7 @@ export default function FocusFlowApp() {
                 isWeekend: isWeekend(date),
                 tasks: dayTasks,
                 completedTasks,
+                timelineTasks, // New: tasks for timeline (includes completed with scheduledHour)
             };
         });
     }, [currentDate, viewDays, tasks, selectedProjectId]);
@@ -922,7 +939,7 @@ export default function FocusFlowApp() {
                                 }
                                 timelinePanel={
                                     <TimelinePanel
-                                        tasks={day.tasks}
+                                        tasks={day.timelineTasks}
                                         projects={projects}
                                         selectedTaskId={selectedTimelineTaskId}
                                         hoveredTaskId={hoveredTimelineTaskId}
