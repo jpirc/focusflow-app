@@ -144,7 +144,12 @@ export async function POST(req: NextRequest) {
         if (data!.date !== undefined && data!.date !== null) taskData.date = data!.date;
         if (data!.timeBlock !== undefined && data!.timeBlock !== null) taskData.timeBlock = data!.timeBlock;
         if (data!.scheduledHour !== undefined) taskData.scheduledHour = data!.scheduledHour;
-        if (data!.estimatedMinutes !== undefined) taskData.estimatedMinutes = data!.estimatedMinutes;
+        // Default to 30 minutes if not specified (changed from 60 to be more realistic)
+        if (data!.estimatedMinutes !== undefined) {
+            taskData.estimatedMinutes = data!.estimatedMinutes;
+        } else {
+            taskData.estimatedMinutes = 30; // Realistic default for ADHD time estimation
+        }
         if (data!.priority !== undefined) taskData.priority = data!.priority;
         if (data!.energyLevel !== undefined) taskData.energyLevel = data!.energyLevel;
         if (data!.icon !== undefined) taskData.icon = data!.icon;

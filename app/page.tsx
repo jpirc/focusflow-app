@@ -38,6 +38,7 @@ import { UnblockedTasksNotification } from '@/components/UnblockedTasksNotificat
 import { QuickWinSuggestions } from '@/components/QuickWinSuggestions';
 import DualPanelLayout from '@/components/DualPanelLayout';
 import TimelinePanel from '@/components/TimelinePanel';
+import { TimeBudget } from '@/components/ui/TimeBudget';
 
 // Utilities & Constants
 import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeekend } from '@/lib/utils/date';
@@ -203,6 +204,9 @@ export default function FocusFlowApp() {
         todayTopPriorities,
         activeTask,
         displayDays,
+        timeFilter,
+        setTimeFilter,
+        timeFilterCounts,
     } = useTaskFilters({
         tasks,
         projects,
@@ -617,6 +621,9 @@ export default function FocusFlowApp() {
                 onUpdateSubtasks={handleUpdateSubtasks}
                 onEdit={handleEditTask}
                 onStartNow={handleStartNow}
+                timeFilter={timeFilter}
+                onTimeFilterChange={setTimeFilter}
+                timeFilterCounts={timeFilterCounts}
                 projects={projects}
                 selectedProjectId={selectedProjectId}
                 onSelectProject={selectProject}
@@ -702,17 +709,18 @@ export default function FocusFlowApp() {
                                     }`}
                                 >
                                     {/* Day Header */}
-                                    <div className={`mb-1.5 sm:mb-2 flex items-center justify-between ${
-                                        day.isToday ? 'text-blue-600' : day.isWeekend ? 'text-amber-600' : 'text-gray-500'
-                                    }`}>
-                                        <div className="min-w-0">
-                                            <h3 className={`font-bold truncate ${viewDays === 7 ? 'text-xs sm:text-sm' : viewDays === 1 ? 'text-lg sm:text-xl' : 'text-sm sm:text-lg'}`}>
-                                                {viewDays === 7 ? day.date.toLocaleDateString('en-US', { weekday: 'short' }) : day.display}
-                                            </h3>
-                                            <p className={`opacity-70 truncate ${viewDays === 7 ? 'text-[9px]' : 'text-[10px] sm:text-xs'}`}>
-                                                {day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                            </p>
-                                        </div>
+                                    <div className={`mb-1.5 sm:mb-2 space-y-2`}>
+                                        <div className={`flex items-center justify-between ${
+                                            day.isToday ? 'text-blue-600' : day.isWeekend ? 'text-amber-600' : 'text-gray-500'
+                                        }`}>
+                                            <div className="min-w-0">
+                                                <h3 className={`font-bold truncate ${viewDays === 7 ? 'text-xs sm:text-sm' : viewDays === 1 ? 'text-lg sm:text-xl' : 'text-sm sm:text-lg'}`}>
+                                                    {viewDays === 7 ? day.date.toLocaleDateString('en-US', { weekday: 'short' }) : day.display}
+                                                </h3>
+                                                <p className={`opacity-70 truncate ${viewDays === 7 ? 'text-[9px]' : 'text-[10px] sm:text-xs'}`}>
+                                                    {day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                </p>
+                                            </div>
                         <div className="flex items-center gap-2">
                             {/* View Toggle (only show in 1-day view) */}
                             {viewDays === 1 && (
@@ -753,6 +761,19 @@ export default function FocusFlowApp() {
                                 </span>
                             )}
                         </div>
+                        </div>
+
+                        {/* Time Budget - Show only in 1-day and 3-day views */}
+                        {viewDays <= 3 && (
+                            <div className="px-1">
+                                <TimeBudget
+                                    scheduledMinutes={day.tasks.reduce((total, task) =>
+                                        total + (task.estimatedMinutes || task.estimatedDuration || 30), 0
+                                    )}
+                                    showDetails={viewDays === 1}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* Top 3 Priorities (only show on today in non-week view) */}

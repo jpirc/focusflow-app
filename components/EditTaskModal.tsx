@@ -206,16 +206,37 @@ export function EditTaskModal({
                                 </option>
                             ))}
                         </select>
-                        <input
-                            type="number"
-                            value={estimatedMinutes}
-                            onChange={(e) => setEstimatedMinutes(parseInt(e.target.value))}
-                            className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-center"
-                            min="5"
-                            step="5"
-                            title="Minutes"
-                        />
-                        <span className="text-xs text-gray-400">min</span>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number"
+                                value={estimatedMinutes}
+                                onChange={(e) => setEstimatedMinutes(parseInt(e.target.value))}
+                                className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-center"
+                                min="5"
+                                step="5"
+                                title="Minutes"
+                            />
+                            <span className="text-xs text-gray-400">min</span>
+
+                            {/* Quick-pick duration buttons */}
+                            <div className="flex gap-1 ml-2">
+                                {[15, 30, 45, 60].map(minutes => (
+                                    <button
+                                        key={minutes}
+                                        type="button"
+                                        onClick={() => setEstimatedMinutes(minutes)}
+                                        className={`px-2 py-0.5 text-[10px] font-medium rounded transition-all ${
+                                            estimatedMinutes === minutes
+                                                ? 'bg-purple-500 text-white'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                        title={`Set to ${minutes} minutes`}
+                                    >
+                                        {minutes}m
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-3">

@@ -1,6 +1,7 @@
 /**
  * useTaskFilters - Task filtering and derived data
  * - Inbox tasks (unscheduled)
+ * - Time-based filtering ("I Have X Minutes")
  * - Today's top priorities
  * - Active task tracking
  * - Display days calculation
@@ -25,8 +26,11 @@ export function useTaskFilters({
     viewDays,
     selectedProjectId,
 }: UseTaskFiltersProps) {
-    // Inbox tasks (unscheduled)
-    const inboxTasks = useMemo(() =>
+    // Time filter state for "I Have X Minutes" feature
+    const [timeFilter, setTimeFilter] = useState<number | null>(null);
+
+    // Raw inbox tasks (unscheduled only, for sidebar display)
+    const rawInboxTasks = useMemo(() =>
         tasks.filter(t =>
             !t.date &&
             t.status !== 'completed' &&
@@ -34,6 +38,75 @@ export function useTaskFilters({
         ),
         [tasks, selectedProjectId]
     );
+
+    // Filtered and sorted inbox tasks
+    const inboxTasks = useMemo(() => {
+        let filtered = rawInboxTasks;
+
+        // When time filter is active, also include scheduled incomplete tasks
+        if (timeFilter !== null) {
+            const scheduledIncomplete = tasks.filter(t =>
+                t.date &&
+                t.status !== 'completed' &&
+                (!selectedProjectId || t.projectId === selectedProjectId)
+            );
+            filtered = [...rawInboxTasks, ...scheduledIncomplete];
+        }
+
+        // Apply time filter
+        if (timeFilter !== null) {
+            filtered = filtered.filter(t =>
+                (t.estimatedMinutes || 30) <= timeFilter
+            );
+        }
+
+        // Intelligent sorting: Quick wins → Priority → Rollover count
+        return filtered.sort((a, b) => {
+            // 1. Quick wins (≤15 min) first
+            const aIsQuickWin = (a.estimatedMinutes || 30) <= 15;
+            const bIsQuickWin = (b.estimatedMinutes || 30) <= 15;
+            if (aIsQuickWin !== bIsQuickWin) return bIsQuickWin ? 1 : -1;
+
+            // 2. Then by priority
+            const priorityOrder: Record<string, number> = {
+                urgent: 4,
+                high: 3,
+                medium: 2,
+                low: 1,
+            };
+            const aPriority = priorityOrder[a.priority || 'medium'] || 2;
+            const bPriority = priorityOrder[b.priority || 'medium'] || 2;
+            if (aPriority !== bPriority) return bPriority - aPriority;
+
+            // 3. Then by rollover count (tasks that have been pushed forward more)
+            const aRollovers = a.rolloverCount || 0;
+            const bRollovers = b.rolloverCount || 0;
+            if (aRollovers !== bRollovers) return bRollovers - aRollovers;
+
+            // 4. Finally by created date (older first)
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        });
+    }, [rawInboxTasks, timeFilter]);
+
+    // Task counts for each time filter option (includes scheduled incomplete tasks)
+    const timeFilterCounts = useMemo(() => {
+        const allFilterableTasks = [
+            ...rawInboxTasks,
+            ...tasks.filter(t =>
+                t.date &&
+                t.status !== 'completed' &&
+                (!selectedProjectId || t.projectId === selectedProjectId)
+            )
+        ];
+
+        return {
+            '15': allFilterableTasks.filter(t => (t.estimatedMinutes || 30) <= 15).length,
+            '30': allFilterableTasks.filter(t => (t.estimatedMinutes || 30) <= 30).length,
+            '60': allFilterableTasks.filter(t => (t.estimatedMinutes || 30) <= 60).length,
+            '120': allFilterableTasks.filter(t => (t.estimatedMinutes || 30) <= 120).length,
+            all: allFilterableTasks.length,
+        };
+    }, [rawInboxTasks, tasks, selectedProjectId]);
 
     // Today's date string for Top 3 priorities
     const todayDateStr = useMemo(() => formatDate(new Date()), []);
@@ -134,5 +207,9 @@ export function useTaskFilters({
         todayTopPriorities,
         activeTask,
         displayDays,
+        // Time filter
+        timeFilter,
+        setTimeFilter,
+        timeFilterCounts,
     };
 }

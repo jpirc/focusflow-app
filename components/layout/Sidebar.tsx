@@ -11,6 +11,7 @@ import { Settings, LogOut, MoreVertical, ChevronDown, ChevronRight, Inbox, Folde
 import { Task, Project } from '@/types';
 import { CompactInboxTask } from '@/components/CompactInboxTask';
 import { TimingInsightsCard } from '@/components/TimingInsightsCard';
+import { TimeFilterButtons } from '@/components/ui/TimeFilterButtons';
 import { Theme } from '@/lib/themes';
 
 const projectIconMap: Record<string, string> = {
@@ -47,6 +48,17 @@ interface SidebarProps {
     inboxTasks: Task[];
     selectedTaskId: string | null;
     onSelectTask: (id: string | null) => void;
+
+    // Time filter
+    timeFilter: number | null;
+    onTimeFilterChange: (minutes: number | null) => void;
+    timeFilterCounts?: {
+        '15': number;
+        '30': number;
+        '60': number;
+        '120': number;
+        all: number;
+    };
 
     // Task handlers
     onUpdate: (id: string, updates: Partial<Task>) => void;
@@ -89,6 +101,9 @@ export function Sidebar({
     onUpdateSubtasks,
     onEdit,
     onStartNow,
+    timeFilter,
+    onTimeFilterChange,
+    timeFilterCounts,
     projects,
     selectedProjectId,
     onSelectProject,
@@ -183,23 +198,35 @@ export function Sidebar({
                             )
                         )}
                         {isOpen && !inboxCollapsed && (
-                            <div className="space-y-1 mt-2">
-                                {inboxTasks.map(task => (
-                                    <CompactInboxTask
-                                        key={task.id}
-                                        task={task}
-                                        project={getProjectById(task.projectId)}
-                                        allProjects={projects}
-                                        isSelected={selectedTaskId === task.id}
-                                        onSelect={onSelectTask}
-                                        onStartDrag={onStartDrag}
-                                        onEdit={onEdit}
-                                        onDelete={onDelete}
-                                        onUpdate={onUpdate}
-                                        onStartNow={onStartNow}
+                            <>
+                                {/* Time Filter Buttons */}
+                                <div className="mt-3 mb-3">
+                                    <TimeFilterButtons
+                                        activeFilter={timeFilter}
+                                        onFilterChange={onTimeFilterChange}
+                                        taskCounts={timeFilterCounts}
                                     />
-                                ))}
-                            </div>
+                                </div>
+
+                                {/* Task List */}
+                                <div className="space-y-1">
+                                    {inboxTasks.map(task => (
+                                        <CompactInboxTask
+                                            key={task.id}
+                                            task={task}
+                                            project={getProjectById(task.projectId)}
+                                            allProjects={projects}
+                                            isSelected={selectedTaskId === task.id}
+                                            onSelect={onSelectTask}
+                                            onStartDrag={onStartDrag}
+                                            onEdit={onEdit}
+                                            onDelete={onDelete}
+                                            onUpdate={onUpdate}
+                                            onStartNow={onStartNow}
+                                        />
+                                    ))}
+                                </div>
+                            </>
                         )}
                     </div>
 
