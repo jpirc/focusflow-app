@@ -103,9 +103,9 @@ function TimelineTaskCardComponent({
       draggable
       onDragStart={onDragStart}
     >
-      {/* Tooltip - show on hover */}
+      {/* Tooltip - show on hover, positioned above */}
       {showTooltip && (
-        <div className="absolute left-full ml-2 top-0 z-50 w-64 bg-white border-2 border-gray-300 rounded-lg shadow-2xl p-3 pointer-events-none">
+        <div className="absolute bottom-full left-0 mb-2 z-50 w-72 bg-white border-2 border-gray-300 rounded-lg shadow-2xl p-3 pointer-events-none">
           <div className="space-y-2">
             {/* Project */}
             {project && (
@@ -175,9 +175,9 @@ function TimelineTaskCardComponent({
             </div>
           </div>
 
-          {/* Tooltip arrow */}
-          <div className="absolute right-full top-2 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-gray-300" />
-          <div className="absolute right-full top-2 ml-px w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-white" style={{ marginLeft: '2px' }} />
+          {/* Tooltip arrow pointing down */}
+          <div className="absolute top-full left-4 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-gray-300" />
+          <div className="absolute top-full left-4 mt-px w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-white" style={{ marginTop: '-2px' }} />
         </div>
       )}
 
