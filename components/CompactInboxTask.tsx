@@ -7,6 +7,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, GripVertical, FileText, Link2, ChevronDown, ChevronRight, Calendar, Clock, Coffee, Briefcase, Home, Check, Flag, BatteryLow, BatteryMedium, BatteryFull } from 'lucide-react';
 import { Task, Project, Priority, EnergyLevel, TimeBlock } from '@/types';
+import { StartNowButton } from './ui/StartNowButton';
 
 const iconMap: Record<string, string> = {
     coffee: '☕', briefcase: '💼', home: '🏠', heart: '❤️', 
@@ -39,11 +40,12 @@ interface CompactInboxTaskProps {
     onEdit: (task: Task) => void;
     onDelete: (id: string) => void;
     onUpdate: (id: string, updates: Partial<Task>) => void;
+    onStartNow: (taskId: string) => Promise<void>;
 }
 
-function CompactInboxTaskComponent({ 
-    task, 
-    project, 
+function CompactInboxTaskComponent({
+    task,
+    project,
     allProjects,
     isSelected = false,
     onSelect,
@@ -51,6 +53,7 @@ function CompactInboxTaskComponent({
     onEdit,
     onDelete,
     onUpdate,
+    onStartNow,
 }: CompactInboxTaskProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
@@ -505,6 +508,12 @@ function CompactInboxTaskComponent({
 
                     {/* Action buttons */}
                     <div className="flex items-center gap-2 pt-1 border-t border-gray-200">
+                        {/* Start Now button - primary action */}
+                        <StartNowButton
+                            onStartNow={() => onStartNow(task.id)}
+                            size="xs"
+                            showLabel={true}
+                        />
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();

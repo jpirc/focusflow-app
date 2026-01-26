@@ -58,6 +58,7 @@ interface SidebarProps {
     onAIBreakdown: (task: Task) => void;
     onUpdateSubtasks: (taskId: string, subtasks: any[]) => void;
     onEdit: (task: Task) => void;
+    onStartNow: (taskId: string) => Promise<void>;
 
     // Projects
     projects: Project[];
@@ -87,6 +88,7 @@ export function Sidebar({
     onAIBreakdown,
     onUpdateSubtasks,
     onEdit,
+    onStartNow,
     projects,
     selectedProjectId,
     onSelectProject,
@@ -194,6 +196,7 @@ export function Sidebar({
                                         onEdit={onEdit}
                                         onDelete={onDelete}
                                         onUpdate={onUpdate}
+                                        onStartNow={onStartNow}
                                     />
                                 ))}
                             </div>

@@ -56,6 +56,9 @@ interface UseTasksReturn {
     applyAIBreakdown: (taskId: string, subtasks: Subtask[]) => void;
     clearFinishedTasks: (taskIds: string[]) => Promise<void>;
     refreshTasks: () => Promise<void>;
+
+    // ADHD-friendly quick actions
+    startTaskNow: (taskId: string) => Promise<void>;
 }
 
 export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: UseTasksOptions): UseTasksReturn {
@@ -597,9 +600,62 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
         }
     }, [isAuthenticated]);
 
+    /**
+     * Start Task Now - ADHD-friendly one-click start
+     * Schedules task at current time and sets to in-progress
+     */
+    const startTaskNow = useCallback(async (taskId: string) => {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        const currentDateStr = formatDate(now);
+
+        // Determine which time block we're in
+        const timeBlock: TimeBlock =
+            currentHour >= 6 && currentHour < 12 ? 'morning' :
+            currentHour >= 12 && currentHour < 17 ? 'afternoon' :
+            currentHour >= 17 && currentHour < 22 ? 'evening' :
+            'anytime';
+
+        // Optimistic update
+        setTasks(prev => prev.map(t =>
+            t.id === taskId ? {
+                ...t,
+                date: currentDateStr,
+                timeBlock,
+                scheduledHour: currentHour,
+                scheduledMinute: currentMinute,
+                status: 'in-progress' as TaskStatus,
+                startedAt: now.toISOString(),
+            } : t
+        ));
+
+        if (!isAuthenticated) return;
+
+        // Use batch update for atomic operation
+        const result = await taskApi.batchUpdate([{
+            id: taskId,
+            data: {
+                date: currentDateStr,
+                timeBlock,
+                scheduledHour: currentHour,
+                scheduledMinute: currentMinute,
+                status: 'in-progress',
+                startedAt: now.toISOString(),
+            }
+        }]);
+
+        if (result.error) {
+            console.error('Failed to start task now:', result.error);
+            // Rollback optimistic update
+            await refreshTasks();
+            throw new Error(result.error);
+        }
+    }, [isAuthenticated, refreshTasks]);
+
     const clearFinishedTasks = useCallback(async (taskIds: string[]) => {
         if (taskIds.length === 0) return;
-        
+
         // Optimistic update - remove all specified tasks
         setTasks(prev => prev.filter(t => !taskIds.includes(t.id)));
 
@@ -609,7 +665,7 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
         const results = await Promise.all(
             taskIds.map(id => taskApi.delete(id))
         );
-        
+
         // If any failed, refresh to sync
         if (results.some(r => r.error)) {
             await refreshTasks();
@@ -641,5 +697,6 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
         applyAIBreakdown,
         clearFinishedTasks,
         refreshTasks,
+        startTaskNow,
     };
 }

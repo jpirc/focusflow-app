@@ -115,7 +115,8 @@ export default function FocusFlowApp() {
         setTopPriorities,
         applyAIBreakdown,
         refreshTasks,
-    } = useTasks({ 
+        startTaskNow,
+    } = useTasks({
         isAuthenticated,
         onTaskComplete: () => {
             celebrate();
@@ -406,6 +407,24 @@ export default function FocusFlowApp() {
         }
     }, [updateTask]);
 
+    // Handle Start Now - ADHD-friendly one-click start
+    // Schedules task, sets to in-progress, and starts Pomodoro timer
+    const handleStartNow = useCallback(async (taskId: string) => {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        try {
+            // Schedule + set in-progress
+            await startTaskNow(taskId);
+
+            // Start Pomodoro timer
+            pomodoro.startPomodoro(task);
+        } catch (error) {
+            console.error('Failed to start task now:', error);
+            // Error is already handled in startTaskNow (shows in UI)
+        }
+    }, [tasks, startTaskNow, pomodoro]);
+
     // Wrap updateStatus to trigger celebration on completion
     const handleStatusChange = useCallback((taskId: string, status: TaskStatus) => {
         updateStatus(taskId, status);
@@ -593,6 +612,7 @@ export default function FocusFlowApp() {
                 onAIBreakdown={handleAIBreakdown}
                 onUpdateSubtasks={handleUpdateSubtasks}
                 onEdit={handleEditTask}
+                onStartNow={handleStartNow}
                 projects={projects}
                 selectedProjectId={selectedProjectId}
                 onSelectProject={selectProject}
