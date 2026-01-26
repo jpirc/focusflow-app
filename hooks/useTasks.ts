@@ -207,14 +207,17 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
 
     const updateStatus = useCallback(async (id: string, status: TaskStatus) => {
         // Optimistic update - set timestamps based on status
-        const now = new Date().toISOString();
-        
+        const nowDate = new Date();
+        const now = nowDate.toISOString();
+        const currentHour = nowDate.getHours();
+        const currentMinute = nowDate.getMinutes();
+
         // If completing a task, check for newly unblocked tasks
         if (status === 'completed') {
             const completedTask = tasks.find(t => t.id === id);
             if (completedTask) {
                 // Find tasks that depend on this completed task
-                const newlyUnblocked = tasks.filter(task => 
+                const newlyUnblocked = tasks.filter(task =>
                     task.dependencies?.some(dep => dep.dependsOnId === id) &&
                     task.status !== 'completed' &&
                     // Check if ALL dependencies are now completed
@@ -223,7 +226,7 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
                         return depTask?.status === 'completed' || dep.dependsOnId === id;
                     })
                 );
-                
+
                 if (newlyUnblocked.length > 0) {
                     setUnblockedTasks(prev => [
                         ...prev,
@@ -235,12 +238,15 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
                 }
             }
         }
-        
+
         setTasks(prev => prev.map(t => {
             if (t.id !== id) return t;
             const updates: Partial<typeof t> = { status };
             if (status === 'in-progress') {
                 updates.startedAt = now;
+                // Update scheduled time to actual start time (for timeline accuracy)
+                updates.scheduledHour = currentHour;
+                updates.scheduledMinute = currentMinute;
             } else if (status === 'completed') {
                 updates.completedAt = now;
                 // Add current session's time to existing accumulated time
@@ -259,7 +265,23 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
 
         if (!isAuthenticated) return;
 
-        const result = await taskApi.update(id, { status });
+        // Build update payload with actual times
+        const updatePayload: any = { status };
+        if (status === 'in-progress') {
+            updatePayload.startedAt = now;
+            updatePayload.scheduledHour = currentHour;
+            updatePayload.scheduledMinute = currentMinute;
+        } else if (status === 'completed') {
+            updatePayload.completedAt = now;
+            // Calculate actual duration
+            const task = tasks.find(t => t.id === id);
+            if (task?.startedAt) {
+                const elapsed = Math.round((Date.now() - new Date(task.startedAt).getTime()) / 60000);
+                updatePayload.actualMinutes = (task.actualMinutes || 0) + elapsed;
+            }
+        }
+
+        const result = await taskApi.update(id, updatePayload);
         if (result.error) {
             await refreshTasks(); // Rollback
         }

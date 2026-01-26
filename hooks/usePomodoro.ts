@@ -284,20 +284,24 @@ export function usePomodoro({
         console.log('[Pomodoro] Timer complete:', { wasWorkSession, timerState, currentTask: currentTask?.title });
         
         if (wasWorkSession) {
-            // Work session completed
+            // Work session completed - calculate actual duration
+            const endTime = new Date();
+            const actualDurationSeconds = Math.floor((endTime.getTime() - sessionStartedAt!.getTime()) / 1000) - totalPausedTime;
+            const actualDurationMinutes = Math.max(1, Math.round(actualDurationSeconds / 60)); // At least 1 minute
+
             const sessionData: PomodoroSessionData = {
                 sessionId: currentSessionId || undefined,
                 taskId: currentTask?.id,
                 startedAt: sessionStartedAt!,
-                endedAt: new Date(),
+                endedAt: endTime,
                 plannedDuration: settings.workDuration,
-                actualDuration: settings.workDuration,
+                actualDuration: actualDurationMinutes, // Use actual elapsed time
                 completed: true,
                 abandoned: false,
                 pausedDuration: totalPausedTime,
                 breakTaken: false,
                 sessionNumber,
-                timeOfDay: new Date().getHours(),
+                timeOfDay: endTime.getHours(),
             };
             
             // Save session to database
@@ -528,11 +532,12 @@ export function usePomodoro({
     
     const stopPomodoro = useCallback(async (abandoned: boolean = false) => {
         stopTimer();
-        
+
         // Save session if it was a work session
         if (timerState === 'work' && sessionStartedAt) {
-            const actualDuration = Math.floor((Date.now() - sessionStartedAt.getTime()) / 1000 / 60);
-            
+            const actualDurationSeconds = Math.floor((Date.now() - sessionStartedAt.getTime()) / 1000) - totalPausedTime;
+            const actualDuration = Math.max(1, Math.round(actualDurationSeconds / 60)); // At least 1 minute
+
             const sessionData: PomodoroSessionData = {
                 sessionId: currentSessionId || undefined,
                 taskId: currentTask?.id,
