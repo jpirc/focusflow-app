@@ -100,6 +100,7 @@ function CompactInboxTaskComponent({
     const handleDragStart = (e: React.DragEvent) => {
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', task.id);
+        e.dataTransfer.setData('taskId', task.id); // For TimelinePanel compatibility
         onStartDrag({ type: 'task', id: task.id, task });
     };
 
