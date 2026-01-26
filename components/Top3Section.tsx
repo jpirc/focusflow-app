@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { Star, Edit2, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { Task, Project } from '@/types';
 import { Theme } from '@/lib/themes';
+import { StartNowButton } from './ui/StartNowButton';
 
 interface Top3SectionProps {
     topPriorities: Task[];
@@ -17,6 +18,7 @@ interface Top3SectionProps {
     onEdit: (task: Task) => void;
     onSetPriorities: () => void;
     onStatusChange: (taskId: string, status: 'completed' | 'in-progress') => void;
+    onStartNow?: (taskId: string) => Promise<void>;
     theme?: Theme;
 }
 
@@ -26,6 +28,7 @@ export function Top3Section({
     onEdit,
     onSetPriorities,
     onStatusChange,
+    onStartNow,
     theme,
 }: Top3SectionProps) {
     const [isExpanded, setIsExpanded] = useState(() => {
@@ -186,6 +189,14 @@ export function Top3Section({
                                         {/* Actions */}
                                         {!isCompleted && (
                                             <div className="flex items-center gap-0.5">
+                                                {/* Start Now button - show if task is not scheduled and onStartNow is provided */}
+                                                {onStartNow && !task.scheduledHour && task.scheduledHour !== 0 && (
+                                                    <StartNowButton
+                                                        onStartNow={() => onStartNow(task.id)}
+                                                        size="xs"
+                                                        showLabel={false}
+                                                    />
+                                                )}
                                                 <button
                                                     onClick={() => onStatusChange(task.id, 'completed')}
                                                     className="p-0.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"

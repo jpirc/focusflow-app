@@ -57,6 +57,7 @@ interface TimelineViewProps {
     onUpdateSubtasks: (taskId: string, subtasks: Subtask[]) => void;
     onEdit: (task: Task) => void;
     onStartPomodoro?: (task: Task) => void;
+    onStartNow?: (taskId: string) => Promise<void>;
     hourStart?: number; // Default 6 (6am)
     hourEnd?: number; // Default 22 (10pm)
     compact?: boolean;
@@ -137,6 +138,7 @@ const TimelineViewComponent: React.FC<TimelineViewProps> = ({
     onUpdateSubtasks,
     onEdit,
     onStartPomodoro,
+    onStartNow,
     hourStart = 6,
     hourEnd = 22,
     compact = false,
@@ -806,6 +808,7 @@ const TimelineViewComponent: React.FC<TimelineViewProps> = ({
                                                 onAIBreakdown={onAIBreakdown}
                                                 onEdit={onEdit}
                                                 onStartPomodoro={onStartPomodoro}
+                                                onStartNow={onStartNow}
                                                 isSelected={selectedTaskId === task.id}
                                                 onSelect={onSelectTask}
                                                 onStartDrag={onStartDrag}
@@ -853,6 +856,7 @@ const TimelineViewComponent: React.FC<TimelineViewProps> = ({
                                         onAIBreakdown={onAIBreakdown}
                                         onEdit={onEdit}
                                         onStartPomodoro={onStartPomodoro}
+                                        onStartNow={onStartNow}
                                         isSelected={selectedTaskId === task.id}
                                         onSelect={onSelectTask}
                                         onStartDrag={onStartDrag}

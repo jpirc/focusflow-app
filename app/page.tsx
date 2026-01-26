@@ -760,6 +760,7 @@ export default function FocusFlowApp() {
                                 onEdit={handleEditTask}
                                 onSetPriorities={() => setDailyPrioritiesModalOpen(true)}
                                 onStatusChange={handleStatusChange}
+                                onStartNow={handleStartNow}
                                 theme={theme}
                             />
                         </div>
@@ -801,16 +802,16 @@ export default function FocusFlowApp() {
                                                         .filter(t => t.timeBlock === block.id)
                                                         .sort((a, b) => {
                                                             // Sort by scheduled time first (if exists)
-                                                            if (a.scheduledHour !== null && a.scheduledHour !== undefined && 
+                                                            if (a.scheduledHour !== null && a.scheduledHour !== undefined &&
                                                                 b.scheduledHour !== null && b.scheduledHour !== undefined) {
                                                                 const aTime = a.scheduledHour * 60 + (a.scheduledMinute || 0);
                                                                 const bTime = b.scheduledHour * 60 + (b.scheduledMinute || 0);
                                                                 if (aTime !== bTime) return aTime - bTime;
                                                             }
                                                             // Scheduled tasks come before unscheduled
-                                                            if ((a.scheduledHour !== null && a.scheduledHour !== undefined) && 
+                                                            if ((a.scheduledHour !== null && a.scheduledHour !== undefined) &&
                                                                 (b.scheduledHour === null || b.scheduledHour === undefined)) return -1;
-                                                            if ((a.scheduledHour === null || a.scheduledHour === undefined) && 
+                                                            if ((a.scheduledHour === null || a.scheduledHour === undefined) &&
                                                                 (b.scheduledHour !== null && b.scheduledHour !== undefined)) return 1;
                                                             // Fall back to order field
                                                             return (a.order || 0) - (b.order || 0);
@@ -819,6 +820,7 @@ export default function FocusFlowApp() {
                                                     allTasks={tasks}
                                                     projects={projects}
                                                     selectedTaskId={selectedTaskId}
+                                                    onStartNow={handleStartNow}
                                                     highlightedTaskId={hoveredTimelineTaskId}
                                                     onSelectTask={setSelectedTaskId}
                                                     onHoverTask={handleTaskHover}
@@ -943,6 +945,7 @@ export default function FocusFlowApp() {
                                                 onEdit={handleEditTask}
                                                 onStartPomodoro={(task) => pomodoro.startPomodoro(task)}
                                                 onUnschedule={handleUnschedule}
+                                                onStartNow={handleStartNow}
                                                 compact={viewDays === 7}
                                                 subtasksExpandedAll={subtasksExpandedAll}
                                                 theme={theme}
