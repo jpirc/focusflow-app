@@ -30,6 +30,8 @@ function TimelineTaskCardComponent({
   const isCompleted = task.status === 'completed';
   const [showActions, setShowActions] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const [tooltipStyle, setTooltipStyle] = React.useState<React.CSSProperties>({});
   
   // Get background color based on project color with opacity
   const getBgColor = () => {
@@ -70,11 +72,25 @@ function TimelineTaskCardComponent({
   const timeDisplay = getTimeDisplay();
   const duration = task.estimatedDuration || task.estimatedMinutes || 30;
 
+  // Calculate tooltip position when showing
+  React.useEffect(() => {
+    if (showTooltip && cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      setTooltipStyle({
+        position: 'fixed',
+        left: `${rect.left}px`,
+        top: `${rect.top - 8}px`, // 8px above the card
+        transform: 'translateY(-100%)', // Move up by its own height
+      });
+    }
+  }, [showTooltip]);
+
   // Debug: Log when rendering
   console.log('[TimelineTaskCard] Rendering:', task.title, 'timeBlock:', task.timeBlock);
 
   return (
     <div
+      ref={cardRef}
       className={`
         group relative rounded-lg shadow-sm border-l-4 px-2 py-1
         cursor-pointer transition-all duration-150 h-full flex flex-col overflow-hidden
@@ -103,9 +119,12 @@ function TimelineTaskCardComponent({
       draggable
       onDragStart={onDragStart}
     >
-      {/* Tooltip - show on hover, positioned above */}
+      {/* Tooltip - show on hover, uses fixed positioning to escape overflow containers */}
       {showTooltip && (
-        <div className="absolute bottom-full left-0 mb-2 z-50 w-72 bg-white border-2 border-gray-300 rounded-lg shadow-2xl p-3 pointer-events-none">
+        <div
+          className="z-[100] w-72 bg-white border-2 border-gray-300 rounded-lg shadow-2xl p-3 pointer-events-none"
+          style={tooltipStyle}
+        >
           <div className="space-y-2">
             {/* Project */}
             {project && (
@@ -176,8 +195,8 @@ function TimelineTaskCardComponent({
           </div>
 
           {/* Tooltip arrow pointing down */}
-          <div className="absolute top-full left-4 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-gray-300" />
-          <div className="absolute top-full left-4 mt-px w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-white" style={{ marginTop: '-2px' }} />
+          <div className="absolute top-full left-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-gray-300" />
+          <div className="absolute top-full left-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-white" style={{ marginTop: '-2px' }} />
         </div>
       )}
 
