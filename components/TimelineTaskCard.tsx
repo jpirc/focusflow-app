@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Task, Project } from '@/types';
 import { Clock, Edit2, X } from 'lucide-react';
 
@@ -119,14 +120,15 @@ function TimelineTaskCardComponent({
       draggable
       onDragStart={onDragStart}
     >
-      {/* Tooltip - show on hover, uses fixed positioning to escape overflow containers */}
-      {showTooltip && (
+      {/* Tooltip - rendered via portal to escape stacking context */}
+      {showTooltip && typeof window !== 'undefined' && createPortal(
         <div
-          className="z-[100] w-72 bg-white border-2 border-gray-300 rounded-lg shadow-2xl p-3 pointer-events-none"
+          className="w-72 bg-white border-2 border-gray-300 rounded-lg shadow-2xl p-3 pointer-events-none"
           style={{
             ...tooltipStyle,
             backgroundColor: '#ffffff',
             opacity: 1,
+            zIndex: 9999,
           }}
         >
           <div className="space-y-2">
@@ -201,7 +203,8 @@ function TimelineTaskCardComponent({
           {/* Tooltip arrow pointing down */}
           <div className="absolute top-full left-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-gray-300" />
           <div className="absolute top-full left-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-white" style={{ marginTop: '-2px' }} />
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Action buttons - show on hover */}
