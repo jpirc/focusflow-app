@@ -7,13 +7,15 @@ import { X } from 'lucide-react';
 
 interface TimelinePanelProps {
   tasks: Task[];
+  allTasks?: Task[]; // All tasks including inbox, for drop handler
+  date?: string; // Date this timeline is showing (for setting date on dropped tasks)
   projects: Project[];
   selectedTaskId: string | null;
   hoveredTaskId: string | null;
   onTaskClick: (taskId: string) => void;
   onTaskHover: (taskId: string | null) => void;
   onTaskDragStart: (task: Task, e: React.DragEvent) => void;
-  onTaskDrop: (taskId: string, hour: number, minute: number) => void;
+  onTaskDrop: (taskId: string, hour: number, minute: number, date?: string) => void;
   onEdit?: (task: Task) => void;
   onUnschedule?: (taskId: string) => void;
 }
@@ -33,6 +35,8 @@ const TIME_BLOCK_RANGES = {
 
 export default function TimelinePanel({
   tasks,
+  allTasks,
+  date,
   projects,
   selectedTaskId,
   hoveredTaskId,
@@ -161,9 +165,9 @@ export default function TimelinePanel({
     // Get task ID from drag data
     const taskId = e.dataTransfer.getData('taskId');
     if (!taskId) return;
-    
-    // Find the task being dropped
-    const task = tasks.find(t => t.id === taskId);
+
+    // Find the task being dropped (check allTasks for inbox tasks, fall back to tasks)
+    const task = (allTasks || tasks).find(t => t.id === taskId);
     if (!task) return;
     
     // Calculate time from drop position
@@ -185,8 +189,8 @@ export default function TimelinePanel({
         setOverlapWarning(`Moved to ${adjustedHour % 12 || 12}:${adjustedMinute.toString().padStart(2, '0')}${adjustedHour >= 12 ? 'PM' : 'AM'} (next available slot)`);
         setTimeout(() => setOverlapWarning(null), 3000);
       }
-      
-      onTaskDrop(taskId, adjustedHour, adjustedMinute);
+
+      onTaskDrop(taskId, adjustedHour, adjustedMinute, date);
     }
   };
 
@@ -458,9 +462,9 @@ export default function TimelinePanel({
               <div
                 key={task.id}
                 className="absolute left-12 transition-all duration-150 z-20"
-                style={{ 
+                style={{
                   top: `${position}px`,
-                  height: `${Math.max(heightPx, 40)}px`, // Minimum 40px height
+                  height: `${Math.max(heightPx, 24)}px`, // Minimum 24px for usability (18 minutes)
                   width: 'calc(100% - 4rem)', // Leave margin on right
                   maxWidth: '320px', // Reasonable max width
                 }}

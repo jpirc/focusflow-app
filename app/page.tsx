@@ -369,9 +369,9 @@ export default function FocusFlowApp() {
     }, []);
 
     // Handle drop on timeline - set specific scheduled time
-    const handleTimelineDrop = useCallback(async (taskId: string, hour: number, minute: number) => {
-        console.log(`Dropping task ${taskId} at ${hour}:${minute}`);
-        
+    const handleTimelineDrop = useCallback(async (taskId: string, hour: number, minute: number, targetDate?: string) => {
+        console.log(`Dropping task ${taskId} at ${hour}:${minute} on ${targetDate}`);
+
         try {
             // Determine which time block this hour belongs to
             let newTimeBlock: TimeBlock = 'anytime';
@@ -382,11 +382,15 @@ export default function FocusFlowApp() {
             } else if (hour >= 17 && hour < 22) {
                 newTimeBlock = 'evening';
             }
-            
+
+            // If no target date specified, use current date (for inbox tasks)
+            const dateToSet = targetDate || formatDate(new Date());
+
             await updateTask(taskId, {
                 scheduledHour: hour,
                 scheduledMinute: minute,
                 timeBlock: newTimeBlock,
+                date: dateToSet, // Important: set the date so task appears on the timeline
             });
         } catch (error) {
             console.error('Failed to schedule task:', error);
@@ -887,6 +891,8 @@ export default function FocusFlowApp() {
                                 timelinePanel={
                                     <TimelinePanel
                                         tasks={day.timelineTasks}
+                                        allTasks={tasks}
+                                        date={day.dateStr}
                                         projects={projects}
                                         selectedTaskId={selectedTimelineTaskId}
                                         hoveredTaskId={hoveredTimelineTaskId}
