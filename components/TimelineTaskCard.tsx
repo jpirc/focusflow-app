@@ -123,7 +123,11 @@ function TimelineTaskCardComponent({
       {showTooltip && (
         <div
           className="z-[100] w-72 bg-white border-2 border-gray-300 rounded-lg shadow-2xl p-3 pointer-events-none"
-          style={tooltipStyle}
+          style={{
+            ...tooltipStyle,
+            backgroundColor: '#ffffff',
+            opacity: 1,
+          }}
         >
           <div className="space-y-2">
             {/* Project */}
