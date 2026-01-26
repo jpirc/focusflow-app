@@ -146,6 +146,16 @@ export const taskApi = {
             body: JSON.stringify({ text }),
         });
     },
+
+    /**
+     * Batch update multiple tasks in a single transaction
+     */
+    async batchUpdate(updates: Array<{ id: string; data: UpdateTaskInput }>): Promise<ApiResult<{ tasks: Task[] }>> {
+        return apiFetch<{ tasks: Task[] }>('/api/tasks/batch', {
+            method: 'POST',
+            body: JSON.stringify({ updates }),
+        });
+    },
 };
 
 // ============================================

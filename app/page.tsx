@@ -13,6 +13,9 @@ import { Brain, CheckCircle2, RotateCcw, Pencil, Trash2 } from 'lucide-react';
 
 // Hooks
 import { useTasks, useProjects, useCelebration, useTheme, usePomodoro } from '@/hooks';
+import { useViewState } from '@/hooks/useViewState';
+import { useModalState } from '@/hooks/useModalState';
+import { useTaskFilters } from '@/hooks/useTaskFilters';
 
 // Components
 import { Sidebar, Header } from '@/components/layout';
@@ -134,157 +137,78 @@ export default function FocusFlowApp() {
     // Local UI State
     // ============================================
 
-    // Normalize to local midnight to avoid timezone drift
-    const [currentDate, setCurrentDate] = useState(() => {
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        return now;
-    });
-    const [viewDays, setViewDays] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('defaultViewDays');
-            return saved ? parseInt(saved, 10) : 2;
-        }
-        return 2;
-    });
-    const [viewMode, setViewMode] = useState<'blocks' | 'timeline'>(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('focusflow_view_mode');
-            return (saved as 'blocks' | 'timeline') || 'timeline'; // Default to timeline
-        }
-        return 'timeline';
-    });
-    const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-    
-    // Timeline panel state
-    const [selectedTimelineTaskId, setSelectedTimelineTaskId] = useState<string | null>(null);
-    const [hoveredTimelineTaskId, setHoveredTimelineTaskId] = useState<string | null>(null);
+    // View state (date, viewDays, viewMode, sidebar)
+    const {
+        currentDate,
+        setCurrentDate,
+        viewDays,
+        setViewDays,
+        viewMode,
+        setViewMode,
+        sidebarOpen,
+        setSidebarOpen,
+    } = useViewState();
 
     // Modal state
-    const [editModalOpen, setEditModalOpen] = useState(false);
-    const [taskToEditId, setTaskToEditId] = useState<string | null>(null);
-    const [aiModalOpen, setAiModalOpen] = useState(false);
-    const [taskForAI, setTaskForAI] = useState<Task | null>(null);
-    const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
-    const [editingProject, setEditingProject] = useState<Project | null>(null);
-    const [smartCaptureModalOpen, setSmartCaptureModalOpen] = useState(false);
-    const [dailyPrioritiesModalOpen, setDailyPrioritiesModalOpen] = useState(false);
-    const [quickWinModalOpen, setQuickWinModalOpen] = useState(false);
-    const [quickWinTrigger, setQuickWinTrigger] = useState<'completion' | 'manual' | 'low-energy'>('manual');
+    const modalState = useModalState();
+    const {
+        editModalOpen,
+        setEditModalOpen,
+        taskToEditId,
+        setTaskToEditId,
+        aiModalOpen,
+        setAiModalOpen,
+        taskForAI,
+        setTaskForAI,
+        createProjectModalOpen,
+        setCreateProjectModalOpen,
+        editingProject,
+        setEditingProject,
+        smartCaptureModalOpen,
+        setSmartCaptureModalOpen,
+        dailyPrioritiesModalOpen,
+        setDailyPrioritiesModalOpen,
+        quickWinModalOpen,
+        setQuickWinModalOpen,
+        quickWinTrigger,
+        setQuickWinTrigger,
+        openEditModal,
+        closeEditModal,
+        openAIModal,
+        closeAIModal,
+        openProjectModal,
+        closeProjectModal,
+    } = modalState;
+
+    // Task selection state (local to page)
+    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+    const [selectedTimelineTaskId, setSelectedTimelineTaskId] = useState<string | null>(null);
+    const [hoveredTimelineTaskId, setHoveredTimelineTaskId] = useState<string | null>(null);
     const [subtasksExpandedAll, setSubtasksExpandedAll] = useState(true);
 
-    // Derive the current task to edit from the tasks array (stays in sync with subtask updates)
-    const taskToEdit = useMemo(() => 
+    // Derive the current task to edit from the tasks array
+    const taskToEdit = useMemo(() =>
         taskToEditId ? tasks.find(t => t.id === taskToEditId) || null : null,
         [taskToEditId, tasks]
     );
 
     // ============================================
-    // Computed Values
+    // Computed Values & Filters
     // ============================================
 
-    const inboxTasks = useMemo(() =>
-        tasks.filter(t =>
-            !t.date &&
-            t.status !== 'completed' &&
-            (!selectedProjectId || t.projectId === selectedProjectId)
-        ),
-        [tasks, selectedProjectId]
-    );
-
-    // Today's date string for Top 3 priorities
-    const todayDateStr = useMemo(() => formatDate(new Date()), []);
-
-    // Get existing Top 3 priorities for today
-    const todayTopPriorities = useMemo(() =>
-        tasks
-            .filter(t => t.isTopPriority && t.topPriorityDate === todayDateStr)
-            .map(t => t.id),
-        [tasks, todayDateStr]
-    );
-
-    // Active task (currently in-progress) for header nudge
-    const [elapsedTime, setElapsedTime] = useState(0);
-    
-    const activeTask = useMemo(() => {
-        const task = tasks.find(t => t.status === 'in-progress');
-        if (!task || !task.startedAt) return null;
-        const project = projects.find(p => p.id === task.projectId);
-        const currentSubtask = task.subtasks?.find(s => !s.completed);
-        return {
-            id: task.id,
-            title: task.title,
-            projectColor: project?.color || '#6b7280',
-            elapsedMinutes: elapsedTime,
-            startedAt: task.startedAt,
-            currentSubtask: currentSubtask?.title,
-        };
-    }, [tasks, projects, elapsedTime]);
-
-    // Update elapsed time every minute for active task
-    useEffect(() => {
-        const task = tasks.find(t => t.status === 'in-progress');
-        if (task && task.startedAt) {
-            const updateElapsed = () => {
-                const currentSessionMinutes = Math.floor((Date.now() - new Date(task.startedAt!).getTime()) / 60000);
-                const accumulatedMinutes = task.actualMinutes || 0;
-                setElapsedTime(currentSessionMinutes + accumulatedMinutes);
-            };
-            updateElapsed(); // Initial update
-            const interval = setInterval(updateElapsed, 60000); // Update every minute
-            return () => clearInterval(interval);
-        } else {
-            setElapsedTime(0);
-        }
-    }, [tasks]);
-
-    // For week view (7 days), start from Sunday of current week
-    const displayDays = useMemo(() => {
-        const startDate = viewDays === 7 ? getWeekStart(currentDate) : currentDate;
-        
-        return Array.from({ length: viewDays }, (_, i) => {
-            const date = addDays(startDate, i);
-            const dateStr = formatDate(date);
-            const dayTasks = tasks.filter(t =>
-                t.date && formatDate(t.date) === dateStr &&
-                t.status !== 'completed' &&
-                (!selectedProjectId || t.projectId === selectedProjectId)
-            );
-            // Get completed tasks for this day (by completedAt date)
-            const completedTasks = tasks.filter(t => {
-                if (t.status !== 'completed' || !t.completedAt) return false;
-                const completedDate = formatDate(new Date(t.completedAt));
-                return completedDate === dateStr && (!selectedProjectId || t.projectId === selectedProjectId);
-            });
-            // For timeline view: include completed tasks with scheduled times so they show as ghosts
-            const timelineTasks = tasks.filter(t => {
-                // Include incomplete tasks for this day
-                if (t.date && formatDate(t.date) === dateStr && t.status !== 'completed' &&
-                    (!selectedProjectId || t.projectId === selectedProjectId)) {
-                    return true;
-                }
-                // Include completed tasks if they have a scheduled time
-                if (t.status === 'completed' && t.completedAt &&
-                    (t.scheduledHour !== null && t.scheduledHour !== undefined) &&
-                    (!selectedProjectId || t.projectId === selectedProjectId)) {
-                    const completedDate = formatDate(new Date(t.completedAt));
-                    return completedDate === dateStr;
-                }
-                return false;
-            });
-            return {
-                date,
-                dateStr,
-                display: formatDisplayDate(dateStr),
-                isToday: isToday(dateStr),
-                isWeekend: isWeekend(date),
-                tasks: dayTasks,
-                completedTasks,
-                timelineTasks, // New: tasks for timeline (includes completed with scheduledHour)
-            };
-        });
-    }, [currentDate, viewDays, tasks, selectedProjectId]);
+    const {
+        inboxTasks,
+        todayDateStr,
+        todayTopPriorities,
+        activeTask,
+        displayDays,
+    } = useTaskFilters({
+        tasks,
+        projects,
+        currentDate,
+        viewDays,
+        selectedProjectId,
+    });
 
     // Sidebar: Always show 5 days starting from today (fixed navigation)
     // This provides consistent quick-nav regardless of what date you're viewing

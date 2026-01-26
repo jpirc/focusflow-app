@@ -27,10 +27,16 @@ const DEFAULT_PROJECT: Project = {
 };
 
 // Constants for precise time calculations
-const HOUR_HEIGHT = 60; // pixels per hour (60px = 1 minute per pixel)
-const MIN_TASK_HEIGHT = 20; // minimum height in pixels
+// Using 180px per hour = 3px per minute, so:
+// - 15 min task = 45px (readable with clear gaps)
+// - 30 min task = 90px (comfortable)  
+// - 60 min task = 180px (spacious)
+// - 15 min gap = 45px (clearly visible)
+const HOUR_HEIGHT = 180; // pixels per hour
+const PIXELS_PER_MINUTE = HOUR_HEIGHT / 60; // 3px per minute
+const MIN_DISPLAY_HEIGHT = 28; // Minimum height for readability (single line of text)
 const INTERVAL_MINUTES = 15; // Snap to 15-minute intervals (0, 15, 30, 45)
-const PIXELS_PER_INTERVAL = HOUR_HEIGHT / (60 / INTERVAL_MINUTES); // 15px per 15-min interval
+const PIXELS_PER_INTERVAL = HOUR_HEIGHT / (60 / INTERVAL_MINUTES); // 45px per 15-min interval
 
 interface TimelineViewProps {
     tasks: Task[];
@@ -112,7 +118,7 @@ const snapToInterval = (minute: number): number => {
     return Math.round(minute / INTERVAL_MINUTES) * INTERVAL_MINUTES;
 };
 
-export const TimelineView: React.FC<TimelineViewProps> = ({
+const TimelineViewComponent: React.FC<TimelineViewProps> = ({
     tasks,
     allTasks,
     projects,
@@ -205,6 +211,111 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         return grouped;
     }, [tasks]);
 
+    // Detect overlapping tasks and assign columns for horizontal positioning
+    // Uses DISPLAY heights (with minimum) to detect VISUAL overlaps
+    const taskPositions = useMemo(() => {
+        const positions: Record<string, { column: number; totalColumns: number }> = {};
+        
+        // Convert tasks to intervals with start/end positions in PIXELS
+        const intervals = tasks.map(task => {
+            const startMinutes = getScheduledHour(task) * 60 + getScheduledMinute(task);
+            const startPx = startMinutes * PIXELS_PER_MINUTE;
+            const durationMinutes = task.estimatedMinutes || 30;
+            const displayHeight = Math.max(MIN_DISPLAY_HEIGHT, durationMinutes * PIXELS_PER_MINUTE);
+            
+            return {
+                id: task.id,
+                start: startPx,
+                end: startPx + displayHeight,
+            };
+        });
+        
+        // Sort by start time, then by end time
+        intervals.sort((a, b) => {
+            if (a.start !== b.start) return a.start - b.start;
+            return a.end - b.end;
+        });
+        
+        // Build overlap groups - tasks that actually overlap in time
+        const overlapGroups: string[][] = [];
+        
+        intervals.forEach(interval => {
+            // Find all tasks that overlap with this one (including exact time matches)
+            const overlapping = intervals.filter(other => 
+                other.id !== interval.id && 
+                !(interval.end <= other.start || interval.start >= other.end)
+            );
+            
+            if (overlapping.length === 0) {
+                // No overlap - this task is alone
+                positions[interval.id] = { column: 0, totalColumns: 1 };
+            } else {
+                // Find or create overlap group
+                const overlappingIds = [interval.id, ...overlapping.map(t => t.id)];
+                let group = overlapGroups.find(g => 
+                    overlappingIds.some(id => g.includes(id))
+                );
+                
+                if (!group) {
+                    group = [];
+                    overlapGroups.push(group);
+                }
+                
+                // Add all overlapping tasks to the group
+                overlappingIds.forEach(id => {
+                    if (!group!.includes(id)) {
+                        group!.push(id);
+                    }
+                });
+            }
+        });
+        
+        // Assign columns within each overlap group
+        overlapGroups.forEach(group => {
+            const groupIntervals = intervals.filter(i => group.includes(i.id));
+            
+            // Sort by start time within group
+            groupIntervals.sort((a, b) => {
+                if (a.start !== b.start) return a.start - b.start;
+                return a.end - b.end;
+            });
+            
+            // Track which columns are occupied at each time point
+            groupIntervals.forEach(interval => {
+                // Find overlapping tasks in this group that are already positioned
+                const overlappingInGroup = groupIntervals.filter(other =>
+                    other.id !== interval.id &&
+                    positions[other.id] !== undefined &&
+                    !(interval.end <= other.start || interval.start >= other.end)
+                );
+                
+                const occupiedColumns = overlappingInGroup.map(t => positions[t.id].column);
+                
+                // Find first available column
+                let column = 0;
+                while (occupiedColumns.includes(column)) {
+                    column++;
+                }
+                
+                // Initially set with placeholder totalColumns (will be updated below)
+                positions[interval.id] = { column, totalColumns: 1 };
+            });
+            
+            // Calculate actual max columns needed for this group
+            const maxColumn = Math.max(...group.map(id => positions[id]?.column ?? 0));
+            const totalColumns = maxColumn + 1;
+            
+            // Update all tasks in group with correct totalColumns
+            group.forEach(id => {
+                if (positions[id]) {
+                    positions[id].totalColumns = totalColumns;
+                }
+            });
+        });
+        
+        return positions;
+    }, [tasks]);
+
     // Calculate capacity per time block
     const blockCapacity = useMemo(() => {
         const capacity: Record<string, { scheduled: number; available: number }> = {
@@ -282,7 +393,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         const taskId = e.dataTransfer.getData('text/plain');
         const draggedTask = tasks.find(t => t.id === taskId);
         if (draggedTask) {
-            const duration = Math.max(MIN_TASK_HEIGHT, draggedTask.estimatedMinutes || 30);
+            const duration = draggedTask.estimatedMinutes || 30;
             setDraggedTaskDuration(duration);
         }
         
@@ -541,12 +652,12 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                             
                             {/* NOW indicator */}
                             {showNow && (
-                                <div className="absolute left-20 top-8 right-4 flex items-center gap-2 z-20">
+                                <div 
+                                    className="absolute left-20 right-4 flex items-center gap-2 z-20"
+                                    style={{ top: `${currentTime.getMinutes() * PIXELS_PER_MINUTE}px` }}
+                                >
+                                    <div className="w-3 h-3 rounded-full bg-red-500 -ml-1.5" />
                                     <div className="flex-1 h-0.5 bg-red-500" />
-                                    <span className="text-xs font-bold text-red-500 px-2 py-1 bg-red-50 dark:bg-red-900/20 rounded">
-                                        {currentTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} ← YOU ARE HERE
-                                    </span>
-                                    <div className="w-0 h-0 border-t-4 border-t-transparent border-b-4 border-b-transparent border-l-8 border-l-red-500" />
                                 </div>
                             )}
                             
@@ -555,8 +666,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                                 <div 
                                     className="absolute left-20 right-4 z-30 pointer-events-none bg-purple-200 dark:bg-purple-600/30 rounded border-2 border-purple-500 border-dashed"
                                     style={{ 
-                                        top: `${dragOverMinute}px`,
-                                        height: `${draggedTaskDuration}px`
+                                        top: `${dragOverMinute * PIXELS_PER_MINUTE}px`,
+                                        height: `${Math.max(MIN_DISPLAY_HEIGHT, draggedTaskDuration * PIXELS_PER_MINUTE)}px`
                                     }}
                                 >
                                     {/* Time label at top */}
@@ -584,14 +695,18 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                                         ? projects.find(p => p.id === task.projectId) || DEFAULT_PROJECT
                                         : DEFAULT_PROJECT;
                                     
-                                    // Calculate task height based on estimated minutes
-                                    const taskHeight = task.estimatedMinutes 
-                                        ? Math.max(MIN_TASK_HEIGHT, task.estimatedMinutes) // 1 pixel = 1 minute
-                                        : MIN_TASK_HEIGHT;
+                                    // Calculate task height: duration * pixels per minute, with minimum
+                                    const durationMinutes = task.estimatedMinutes || 30;
+                                    const taskHeight = Math.max(MIN_DISPLAY_HEIGHT, durationMinutes * PIXELS_PER_MINUTE);
                                     
-                                    // Position task at its scheduled minute
+                                    // Position task at its scheduled minute (converted to pixels)
                                     const scheduledMinute = getScheduledMinute(task);
-                                    const topPosition = scheduledMinute; // 1px = 1min, so minute value = pixel offset
+                                    const topPosition = scheduledMinute * PIXELS_PER_MINUTE;
+                                    
+                                    // Get horizontal position for overlapping tasks
+                                    const position = taskPositions[task.id] || { column: 0, totalColumns: 1 };
+                                    const columnWidth = 100 / position.totalColumns; // percentage
+                                    const leftOffset = position.column * columnWidth; // percentage
                                     
                                     const isBeforeTarget = dragOverTaskId === task.id && dragOverPosition === 'before';
                                     const isAfterTarget = dragOverTaskId === task.id && dragOverPosition === 'after';
@@ -604,11 +719,14 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                                         return (
                                             <div
                                                 key={task.id}
-                                                className="absolute left-0 right-0 border-2 border-dashed border-green-300 bg-green-50/50 dark:bg-green-900/10 rounded"
+                                                className="absolute border-2 border-dashed border-green-300 bg-green-50/50 dark:bg-green-900/10 rounded"
                                                 style={{
                                                     top: `${topPosition}px`,
+                                                    left: `${leftOffset}%`,
+                                                    width: `${columnWidth}%`,
                                                     height: `${taskHeight}px`,
-                                                    zIndex: 5
+                                                    zIndex: 5,
+                                                    paddingRight: position.totalColumns > 1 ? '2px' : '0'
                                                 }}
                                             >
                                                 <div className="flex items-center justify-between px-2 h-full">
@@ -627,11 +745,14 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                                     return (
                                         <div 
                                             key={task.id}
-                                            className="absolute left-0 right-0"
+                                            className="absolute overflow-hidden"
                                             style={{ 
                                                 top: `${topPosition}px`,
+                                                left: `${leftOffset}%`,
+                                                width: `${columnWidth}%`,
                                                 height: `${taskHeight}px`,
-                                                zIndex: isBeforeTarget || isAfterTarget ? 50 : 10
+                                                zIndex: isBeforeTarget || isAfterTarget ? 50 : 10,
+                                                paddingRight: position.totalColumns > 1 ? '2px' : '0'
                                             }}
                                         >
                                             {/* Insertion indicator - BEFORE */}
@@ -670,25 +791,12 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                                                 onDrop={(e) => handleTaskDrop(e, task, 'after')}
                                             />
                                             
-                                            {/* Time duration indicator - left edge */}
-                                            {task.estimatedMinutes && task.estimatedMinutes >= 15 && (
-                                                <div 
-                                                    className="absolute left-0 top-0 w-1 bg-gradient-to-b from-blue-400 via-blue-500 to-blue-600 opacity-30 rounded-l"
-                                                    style={{ height: `${taskHeight}px` }}
-                                                />
-                                            )}
-                                            
-                                            {/* Time duration label - right edge for longer tasks */}
-                                            {task.estimatedMinutes && task.estimatedMinutes >= 30 && (
-                                                <div className="absolute -right-1 top-1 text-[9px] font-semibold text-gray-400 bg-white dark:bg-gray-800 px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 shadow-sm">
-                                                    {task.estimatedMinutes}m
-                                                </div>
-                                            )}
-                                            
                                             <QuickEditTaskCard
                                                 key={task.id}
                                                 task={task}
                                                 project={project}
+                                                allTasks={allTasks}
+                                                allProjects={projects}
                                                 onUpdate={onUpdate}
                                                 onStatusChange={onStatusChange}
                                                 onPause={onPause}
@@ -701,11 +809,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                                                 isSelected={selectedTaskId === task.id}
                                                 onSelect={onSelectTask}
                                                 onStartDrag={onStartDrag}
-                                                allTasks={allTasks}
-                                                allProjects={projects}
-                                                compact={compact}
                                                 subtasksExpandedAll={subtasksExpandedAll}
                                                 timelineHeight={taskHeight}
+                                                compact={position.totalColumns > 1 || taskHeight < 50}
                                             />
                                         </div>
                                     );
@@ -764,3 +870,19 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         </div>
     );
 };
+
+// Memoize to prevent re-renders
+export const TimelineView = React.memo(
+    TimelineViewComponent,
+    (prevProps, nextProps) => {
+        return (
+            prevProps.date === nextProps.date &&
+            prevProps.tasks === nextProps.tasks &&
+            prevProps.selectedTaskId === nextProps.selectedTaskId &&
+            prevProps.compact === nextProps.compact &&
+            prevProps.subtasksExpandedAll === nextProps.subtasksExpandedAll &&
+            prevProps.hourStart === nextProps.hourStart &&
+            prevProps.hourEnd === nextProps.hourEnd
+        );
+    }
+);

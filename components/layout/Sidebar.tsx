@@ -187,11 +187,13 @@ export function Sidebar({
                                         key={task.id}
                                         task={task}
                                         project={getProjectById(task.projectId)}
+                                        allProjects={projects}
                                         isSelected={selectedTaskId === task.id}
                                         onSelect={onSelectTask}
                                         onStartDrag={onStartDrag}
                                         onEdit={onEdit}
                                         onDelete={onDelete}
+                                        onUpdate={onUpdate}
                                     />
                                 ))}
                             </div>

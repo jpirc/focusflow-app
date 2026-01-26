@@ -1,12 +1,12 @@
 /**
- * CompactInboxTask - Minimal task display for sidebar inbox
+ * CompactInboxTask - Minimal task display for sidebar inbox with quick edit
  */
 
 'use client';
 
-import React, { useState } from 'react';
-import { Play, GripVertical, FileText, Link2, ChevronDown, ChevronRight } from 'lucide-react';
-import { Task, Project } from '@/types';
+import React, { useState, useRef, useEffect } from 'react';
+import { Play, GripVertical, FileText, Link2, ChevronDown, ChevronRight, Calendar, Clock, Coffee, Briefcase, Home, Check, Flag, BatteryLow, BatteryMedium, BatteryFull } from 'lucide-react';
+import { Task, Project, Priority, EnergyLevel, TimeBlock } from '@/types';
 
 const iconMap: Record<string, string> = {
     coffee: '☕', briefcase: '💼', home: '🏠', heart: '❤️', 
@@ -14,27 +14,85 @@ const iconMap: Record<string, string> = {
     // Add more as needed
 };
 
+const projectIconMap: Record<string, string> = {
+    briefcase: '💼', laptop: '💻', chart: '📊', calendar: '📅', clipboard: '📋',
+    phone: '📱', email: '📧', rocket: '🚀', book: '📚', graduation: '🎓',
+    lightbulb: '💡', pencil: '✏️', notebook: '📓', microscope: '🔬',
+    heart: '❤️', dumbbell: '💪', apple: '🍎', yoga: '🧘', running: '🏃',
+    bicycle: '🚴', home: '🏠', family: '👨‍👩‍👧‍👦', baby: '👶', pet: '🐕',
+    plant: '🌱', cooking: '🍳', art: '🎨', music: '🎵', camera: '📷',
+    game: '🎮', guitar: '🎸', movie: '🎬', money: '💰', bank: '🏦',
+    'chart-up': '📈', piggy: '🐷', 'credit-card': '💳', target: '🎯',
+    trophy: '🏆', star: '⭐', fire: '🔥', gem: '💎', crown: '👑',
+    plane: '✈️', world: '🌍', beach: '🏖️', mountain: '⛰️', camping: '🏕️',
+    folder: '📁', coffee: '☕', pizza: '🍕', gift: '🎁', balloon: '🎈',
+    sunny: '☀️', moon: '🌙', rainbow: '🌈',
+};
+
 interface CompactInboxTaskProps {
     task: Task;
     project?: Project;
+    allProjects: Project[];
     isSelected?: boolean;
     onSelect: (id: string) => void;
     onStartDrag: (item: any) => void;
     onEdit: (task: Task) => void;
     onDelete: (id: string) => void;
+    onUpdate: (id: string, updates: Partial<Task>) => void;
 }
 
-export function CompactInboxTask({ 
+function CompactInboxTaskComponent({ 
     task, 
     project, 
+    allProjects,
     isSelected = false,
     onSelect,
     onStartDrag,
     onEdit,
     onDelete,
+    onUpdate,
 }: CompactInboxTaskProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
+    const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+    const [showEnergyDropdown, setShowEnergyDropdown] = useState(false);
+    const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+    const [showTimeDropdown, setShowTimeDropdown] = useState(false);
+    const [showTimeBlockDropdown, setShowTimeBlockDropdown] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    
+    const priorityRef = useRef<HTMLDivElement>(null);
+    const energyRef = useRef<HTMLDivElement>(null);
+    const projectRef = useRef<HTMLDivElement>(null);
+    const timeRef = useRef<HTMLDivElement>(null);
+    const timeBlockRef = useRef<HTMLDivElement>(null);
+    const datePickerRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdowns on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (priorityRef.current && !priorityRef.current.contains(e.target as Node)) {
+                setShowPriorityDropdown(false);
+            }
+            if (energyRef.current && !energyRef.current.contains(e.target as Node)) {
+                setShowEnergyDropdown(false);
+            }
+            if (projectRef.current && !projectRef.current.contains(e.target as Node)) {
+                setShowProjectDropdown(false);
+            }
+            if (timeRef.current && !timeRef.current.contains(e.target as Node)) {
+                setShowTimeDropdown(false);
+            }
+            if (timeBlockRef.current && !timeBlockRef.current.contains(e.target as Node)) {
+                setShowTimeBlockDropdown(false);
+            }
+            if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) {
+                setShowDatePicker(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleDragStart = (e: React.DragEvent) => {
         e.dataTransfer.effectAllowed = 'move';
@@ -57,6 +115,49 @@ export function CompactInboxTask({
 
     const hasDescription = !!task.description;
     const hasDependencies = task.dependencies && task.dependencies.length > 0;
+
+    // Priority config
+    const priorityStyles = {
+        low: { color: '#9CA3AF', label: 'Low' },
+        medium: { color: '#3B82F6', label: 'Medium' },
+        high: { color: '#F97316', label: 'High' },
+        urgent: { color: '#EF4444', label: 'Urgent' },
+    };
+
+    // Time block config
+    const timeBlocks = [
+        { value: 'morning' as TimeBlock, label: 'Morning', icon: <Coffee size={12} />, color: 'text-amber-500' },
+        { value: 'afternoon' as TimeBlock, label: 'Afternoon', icon: <Briefcase size={12} />, color: 'text-blue-500' },
+        { value: 'evening' as TimeBlock, label: 'Evening', icon: <Home size={12} />, color: 'text-indigo-500' },
+    ];
+
+    // Energy levels
+    const energyLevels = [
+        { value: 'low' as EnergyLevel, icon: <BatteryLow size={14} />, color: 'text-slate-500', label: 'Low' },
+        { value: 'medium' as EnergyLevel, icon: <BatteryMedium size={14} />, color: 'text-amber-500', label: 'Medium' },
+        { value: 'high' as EnergyLevel, icon: <BatteryFull size={14} />, color: 'text-green-500', label: 'High' },
+    ];
+
+    // Quick date options
+    const getQuickDates = () => {
+        const today = new Date();
+        const dates = [];
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
+            const dateStr = date.toISOString().split('T')[0];
+            const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            dates.push({ value: dateStr, label });
+        }
+        return dates;
+    };
+
+    // Time estimate presets
+    const timePresets = [15, 30, 45, 60, 90, 120];
+
+    const handleUpdate = (updates: Partial<Task>) => {
+        onUpdate(task.id, updates);
+    };
 
     return (
         <div className="relative">
@@ -150,7 +251,7 @@ export function CompactInboxTask({
 
             {/* Expanded details */}
             {isExpanded && (
-                <div className="px-2 pb-2 pt-1 bg-gray-50 rounded-b border-l-2 border-gray-200 ml-6 space-y-1.5">
+                <div className="px-2 pb-2 pt-1 bg-gray-50 rounded-b border-l-2 border-gray-200 ml-6 space-y-2">
                     {/* Description */}
                     {task.description && (
                         <div className="text-[11px] text-gray-600 leading-relaxed">
@@ -158,33 +259,252 @@ export function CompactInboxTask({
                         </div>
                     )}
 
-                    {/* Metadata row */}
-                    <div className="flex flex-wrap gap-1.5 text-[10px]">
-                        {/* Project */}
-                        {project && (
-                            <span className="px-1.5 py-0.5 rounded" style={{ 
-                                backgroundColor: project.bgColor,
-                                color: project.color 
-                            }}>
-                                {project.icon} {project.name}
-                            </span>
-                        )}
+                    {/* Quick Edit Controls */}
+                    <div className="space-y-1.5">
+                        {/* Row 1: Priority & Energy */}
+                        <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-gray-500 uppercase tracking-wide w-12">Level</span>
+                            
+                            {/* Priority Badge */}
+                            <div className="relative" ref={priorityRef}>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowPriorityDropdown(!showPriorityDropdown);
+                                    }}
+                                    className="w-3 h-3 rounded-full cursor-pointer hover:ring-2 hover:ring-offset-1 transition-all flex items-center justify-center"
+                                    style={{ backgroundColor: priorityStyles[task.priority].color }}
+                                    title={`${priorityStyles[task.priority].label} priority (click to change)`}
+                                >
+                                    {task.priority === 'urgent' && <Flag size={7} className="text-white" />}
+                                </button>
+                                
+                                {showPriorityDropdown && (
+                                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 min-w-[100px]">
+                                        {(['low', 'medium', 'high', 'urgent'] as Priority[]).map((p) => (
+                                            <button
+                                                key={p}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleUpdate({ priority: p });
+                                                    setShowPriorityDropdown(false);
+                                                }}
+                                                className="w-full text-left px-3 py-1.5 text-xs text-gray-900 hover:bg-gray-100 flex items-center gap-2"
+                                            >
+                                                <div className="w-2.5 h-2.5 rounded-full flex items-center justify-center" style={{ backgroundColor: priorityStyles[p].color }}>
+                                                    {p === 'urgent' && <Flag size={6} className="text-white" />}
+                                                </div>
+                                                {priorityStyles[p].label}
+                                                {p === task.priority && <Check size={10} className="ml-auto text-gray-600" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
 
-                        {/* Energy level */}
-                        <span className={`px-1.5 py-0.5 rounded border ${energyColors[task.energyLevel].bg} ${energyColors[task.energyLevel].text} ${energyColors[task.energyLevel].border}`}>
-                            {task.energyLevel === 'low' && '🔋 Low'}
-                            {task.energyLevel === 'medium' && '⚡ Medium'}
-                            {task.energyLevel === 'high' && '🔥 High'}
-                        </span>
+                            {/* Energy Badge */}
+                            <div className="relative" ref={energyRef}>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowEnergyDropdown(!showEnergyDropdown);
+                                    }}
+                                    className={`${energyLevels.find(l => l.value === task.energyLevel)?.color} cursor-pointer hover:opacity-70 transition-opacity`}
+                                    title="Click to change energy level"
+                                >
+                                    {energyLevels.find(l => l.value === task.energyLevel)?.icon}
+                                </button>
+                                
+                                {showEnergyDropdown && (
+                                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 min-w-[100px]">
+                                        {energyLevels.map((lvl) => (
+                                            <button
+                                                key={lvl.value}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleUpdate({ energyLevel: lvl.value });
+                                                    setShowEnergyDropdown(false);
+                                                }}
+                                                className="w-full text-left px-3 py-1.5 text-xs text-gray-900 hover:bg-gray-100 flex items-center gap-2"
+                                            >
+                                                <span className={lvl.color}>{lvl.icon}</span>
+                                                {lvl.label}
+                                                {lvl.value === task.energyLevel && <Check size={10} className="ml-auto text-gray-600" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
 
-                        {/* Priority */}
-                        <span className={`px-1.5 py-0.5 rounded bg-gray-100 ${priorityColor}`}>
-                            {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                        </span>
+                            {/* Time Estimate */}
+                            <div className="relative ml-auto" ref={timeRef}>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowTimeDropdown(!showTimeDropdown);
+                                    }}
+                                    className="flex items-center gap-0.5 text-gray-500 text-xs cursor-pointer hover:text-gray-700 hover:bg-gray-100 px-1.5 py-0.5 rounded transition-colors"
+                                    title="Click to set time estimate"
+                                >
+                                    <Clock size={11} />
+                                    <span className="font-medium">{task.estimatedMinutes || '?'}</span>
+                                </button>
+                                
+                                {showTimeDropdown && (
+                                    <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 min-w-[100px]">
+                                        {timePresets.map((minutes) => (
+                                            <button
+                                                key={minutes}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleUpdate({ estimatedMinutes: minutes });
+                                                    setShowTimeDropdown(false);
+                                                }}
+                                                className="w-full text-left px-3 py-1.5 text-xs text-gray-900 hover:bg-gray-100 flex items-center justify-between"
+                                            >
+                                                {minutes}m
+                                                {minutes === task.estimatedMinutes && <Check size={10} className="text-gray-600" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Row 2: Project */}
+                        <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-gray-500 uppercase tracking-wide w-12">Project</span>
+                            
+                            <div className="relative" ref={projectRef}>
+                                {project && project.id !== 'default' ? (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowProjectDropdown(!showProjectDropdown);
+                                        }}
+                                        className="w-5 h-5 rounded flex items-center justify-center text-xs cursor-pointer hover:ring-2 hover:ring-offset-1 transition-all"
+                                        style={{ backgroundColor: project.color }}
+                                        title={`${project.name} (click to change)`}
+                                    >
+                                        {projectIconMap[project.icon] || '📁'}
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowProjectDropdown(!showProjectDropdown);
+                                        }}
+                                        className="w-5 h-5 rounded border border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-gray-400 hover:bg-gray-50 transition-all text-[10px]"
+                                        title="Click to assign project"
+                                    >
+                                        +
+                                    </button>
+                                )}
+                                
+                                {showProjectDropdown && (
+                                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 max-h-48 overflow-y-auto min-w-[140px]">
+                                        {allProjects.map((proj) => (
+                                            <button
+                                                key={proj.id}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleUpdate({ projectId: proj.id });
+                                                    setShowProjectDropdown(false);
+                                                }}
+                                                className="w-full text-left px-3 py-1.5 text-xs text-gray-900 hover:bg-gray-100 flex items-center gap-2"
+                                            >
+                                                <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 text-[10px]" style={{ backgroundColor: proj.color }}>
+                                                    {projectIconMap[proj.icon] || '📁'}
+                                                </div>
+                                                <span className="flex-1 truncate">{proj.name}</span>
+                                                {proj.id === task.projectId && <Check size={10} className="text-gray-600 flex-shrink-0" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {project && project.id !== 'default' && (
+                                <span className="text-[10px] text-gray-600 truncate flex-1">{project.name}</span>
+                            )}
+                        </div>
+
+                        {/* Row 3: Schedule */}
+                        <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-gray-500 uppercase tracking-wide w-12">Schedule</span>
+                            
+                            {/* Date Picker */}
+                            <div className="relative" ref={datePickerRef}>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowDatePicker(!showDatePicker);
+                                    }}
+                                    className="flex items-center gap-1 text-gray-600 text-[10px] cursor-pointer hover:bg-gray-100 px-1.5 py-0.5 rounded transition-colors"
+                                    title="Click to schedule"
+                                >
+                                    <Calendar size={11} />
+                                    <span>Pick date</span>
+                                </button>
+                                
+                                {showDatePicker && (
+                                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 min-w-[130px]">
+                                        {getQuickDates().map(({ value, label }) => (
+                                            <button
+                                                key={value}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleUpdate({ date: value, timeBlock: 'morning' });
+                                                    setShowDatePicker(false);
+                                                }}
+                                                className="w-full text-left px-3 py-1.5 text-xs text-gray-900 hover:bg-gray-100"
+                                            >
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Time Block Picker */}
+                            <div className="relative" ref={timeBlockRef}>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowTimeBlockDropdown(!showTimeBlockDropdown);
+                                    }}
+                                    className="flex items-center gap-1 text-gray-600 text-[10px] cursor-pointer hover:bg-gray-100 px-1.5 py-0.5 rounded transition-colors"
+                                    title="Click to pick time block"
+                                >
+                                    <Clock size={11} />
+                                    <span>Pick time</span>
+                                </button>
+                                
+                                {showTimeBlockDropdown && (
+                                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 min-w-[120px]">
+                                        {timeBlocks.map((block) => (
+                                            <button
+                                                key={block.value}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const today = new Date().toISOString().split('T')[0];
+                                                    handleUpdate({ timeBlock: block.value, date: today });
+                                                    setShowTimeBlockDropdown(false);
+                                                }}
+                                                className="w-full text-left px-3 py-1.5 text-xs text-gray-900 hover:bg-gray-100 flex items-center gap-2"
+                                            >
+                                                {block.icon}
+                                                {block.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 pt-1 border-t border-gray-200">
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -192,7 +512,7 @@ export function CompactInboxTask({
                             }}
                             className="text-[10px] text-purple-600 hover:text-purple-700 font-medium"
                         >
-                            Edit details →
+                            Advanced edit →
                         </button>
                         <button
                             onClick={(e) => {
@@ -201,7 +521,7 @@ export function CompactInboxTask({
                                     onDelete(task.id);
                                 }
                             }}
-                            className="text-[10px] text-red-600 hover:text-red-700 font-medium"
+                            className="text-[10px] text-red-600 hover:text-red-700 font-medium ml-auto"
                         >
                             Delete
                         </button>
@@ -211,3 +531,15 @@ export function CompactInboxTask({
         </div>
     );
 }
+
+// Memoize to prevent re-renders
+export const CompactInboxTask = React.memo(
+    CompactInboxTaskComponent,
+    (prevProps, nextProps) => {
+        return (
+            prevProps.task === nextProps.task &&
+            prevProps.project?.id === nextProps.project?.id &&
+            prevProps.isSelected === nextProps.isSelected
+        );
+    }
+);

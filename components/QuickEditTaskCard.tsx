@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Task, Project, Subtask, TaskStatus, Priority, EnergyLevel, DragItem, TimeBlock } from '../types';
 import { RolloverWarning } from './RolloverWarning';
+import { RolloverBadge, TaskAgeBadge } from './ui/badges';
 
 // BADGES & UTILS
 // ============================================
@@ -314,25 +315,6 @@ export const EditableEnergyBadge: React.FC<{
     );
 };
 
-export const RolloverBadge: React.FC<{ count: number }> = ({ count }) => {
-    if (count === 0) return null;
-    
-    const config = {
-        low: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300' },
-        medium: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
-        high: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
-    };
-    
-    const level = count <= 2 ? 'low' : count <= 4 ? 'medium' : 'high';
-    const style = config[level];
-    
-    return (
-        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${style.bg} ${style.text} ${style.border} flex items-center gap-0.5`} title={`Rolled over ${count} time${count > 1 ? 's' : ''}`}>
-            <RotateCcw size={12} />
-            {count}
-        </span>
-    );
-};
 
 // Editable Time Estimate Badge
 export const EditableTimeBadge: React.FC<{ 
@@ -534,27 +516,6 @@ export const EditableProjectBadge: React.FC<{
     );
 };
 
-export const TaskAgeBadge: React.FC<{ createdAt: string }> = ({ createdAt }) => {
-    const daysOld = Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysOld < 3) return null;
-    
-    const config = {
-        aging: { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-300' },
-        stale: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
-        stuck: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
-    };
-    
-    const level = daysOld < 7 ? 'aging' : daysOld < 14 ? 'stale' : 'stuck';
-    const style = config[level];
-    
-    return (
-        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${style.bg} ${style.text} ${style.border} flex items-center gap-0.5`} title={`Created ${daysOld} days ago`}>
-            <Clock size={12} />
-            {daysOld}d
-        </span>
-    );
-};
 
 // Dependency Badge - Shows if task is blocked, linked, or blocking others
 export const DependencyBadge: React.FC<{ 
@@ -653,7 +614,7 @@ function lightenColor(hex: string, amount: number = 0.85): string {
     return `rgb(${r}, ${g}, ${b})`;
 }
 
-export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
+const QuickEditTaskCardComponent: React.FC<QuickEditTaskCardProps> = (props) => {
     const { task, project, allTasks, allProjects, isSelected, isHighlighted = false, onSelect, onHover, onUpdate, onStatusChange, onPause,
         onToggleSubtask, onStartDrag, onDelete, onAIBreakdown, onEdit, onStartPomodoro, onUnschedule, compact = false, subtasksExpandedAll = true, timelineHeight } = props;
 
@@ -869,8 +830,13 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                 borderLeftColor: project.color,
                 borderLeftWidth: '4px',
                 // In timeline view, use lighter project color background (like Sunsama)
-                backgroundColor: timelineHeight && project.id !== 'default'
-                    ? `${project.color}15` // 15 = ~8% opacity for subtle color
+                // When compact (overlapping tasks), use OPAQUE white background to prevent see-through
+                backgroundColor: timelineHeight 
+                    ? (compact && project.id !== 'default' 
+                        ? lightenColor(project.color, 0.94) // Opaque light color for overlapping tasks
+                        : project.id !== 'default'
+                            ? `${project.color}15` // Semi-transparent for single column
+                            : 'white')
                     : (isSelected ? undefined : (project.id !== 'default' ? lightenColor(project.color, 0.97) : undefined)),
                 ...(timelineHeight ? {
                     height: `${timelineHeight}px`,
@@ -905,19 +871,36 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
                 </div>
             )}
 
-            {/* TIMELINE VIEW - Minimal Sunsama-style visual blocks */}
+            {/* TIMELINE VIEW - Compact single-line layout */}
             {isTimelineView && (
-                <div className="px-2 py-1.5 h-full flex items-center justify-between">
-                    <p className={`text-xs font-medium truncate ${
-                        isCompleted ? 'line-through text-gray-500' : 'text-gray-900'
-                    }`}>
-                        {task.title}
-                    </p>
-                    {task.estimatedMinutes && (
-                        <span className="text-[10px] text-gray-500 font-medium ml-2 flex-shrink-0">
-                            {task.estimatedMinutes}m
+                <div className="px-1.5 h-full flex items-center overflow-hidden">
+                    <div className="flex items-center gap-1 w-full min-w-0 text-[9px]">
+                        <Clock size={9} className="text-gray-500 flex-shrink-0" />
+                        <span className="text-gray-600 font-semibold flex-shrink-0 whitespace-nowrap">
+                            {(() => {
+                                const startHour = task.scheduledHour ?? 0;
+                                const startMin = task.scheduledMinute ?? 0;
+                                const duration = task.estimatedMinutes || 30;
+                                const endTotalMin = startHour * 60 + startMin + duration;
+                                const endHour = Math.floor(endTotalMin / 60) % 24;
+                                const endMin = endTotalMin % 60;
+                                
+                                const formatTime = (h: number, m: number) => {
+                                    const hr = h % 12 || 12;
+                                    return `${hr}:${String(m).padStart(2, '0')}`;
+                                };
+                                const ampm = (h: number) => h >= 12 ? 'P' : 'A';
+                                
+                                return `${formatTime(startHour, startMin)}-${formatTime(endHour, endMin)}${ampm(endHour)}`;
+                            })()}
                         </span>
-                    )}
+                        <span className="text-gray-400">•</span>
+                        <span className={`font-medium truncate ${
+                            isCompleted ? 'line-through text-gray-500' : 'text-gray-900'
+                        }`}>
+                            {task.title}
+                        </span>
+                    </div>
                 </div>
             )}
 
@@ -1396,3 +1379,20 @@ export const QuickEditTaskCard: React.FC<QuickEditTaskCardProps> = (props) => {
         </div>
     );
 };
+
+// Memoize to prevent re-renders when props haven't changed
+export const QuickEditTaskCard = React.memo(
+    QuickEditTaskCardComponent,
+    (prevProps, nextProps) => {
+        // Only re-render if these key props actually changed
+        return (
+            prevProps.task === nextProps.task &&
+            prevProps.project.id === nextProps.project.id &&
+            prevProps.isSelected === nextProps.isSelected &&
+            prevProps.isHighlighted === nextProps.isHighlighted &&
+            prevProps.compact === nextProps.compact &&
+            prevProps.subtasksExpandedAll === nextProps.subtasksExpandedAll &&
+            prevProps.timelineHeight === nextProps.timelineHeight
+        );
+    }
+);

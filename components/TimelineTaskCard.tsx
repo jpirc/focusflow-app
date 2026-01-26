@@ -16,7 +16,7 @@ interface TimelineTaskCardProps {
   displayTime?: string; // Pass the calculated time from parent
 }
 
-export default function TimelineTaskCard({
+function TimelineTaskCardComponent({
   task,
   project,
   isSelected = false,
@@ -150,3 +150,19 @@ export default function TimelineTaskCard({
     </div>
   );
 }
+
+// Memoize to prevent re-renders
+const TimelineTaskCard = React.memo(
+  TimelineTaskCardComponent,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.task === nextProps.task &&
+      prevProps.project?.id === nextProps.project?.id &&
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.isHovered === nextProps.isHovered &&
+      prevProps.displayTime === nextProps.displayTime
+    );
+  }
+);
+
+export default TimelineTaskCard;

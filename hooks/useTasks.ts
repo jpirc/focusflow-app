@@ -396,34 +396,34 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
 
         if (!isAuthenticated) return;
 
-        // Update subtask completion
-        const result = await taskApi.update(subtaskId, { completed: newCompleted });
-        if (result.error) {
-            await refreshTasks(); // Rollback
-            return;
+        // Batch update: subtask + parent task (if needed)
+        const updates: Array<{ id: string; data: UpdateTaskInput }> = [
+            { id: subtaskId, data: { completed: newCompleted } }
+        ];
+
+        if (shouldAutoComplete) {
+            updates.push({
+                id: taskId,
+                data: {
+                    status: 'completed',
+                    completedAt: new Date().toISOString()
+                }
+            });
+        } else if (shouldAutoStart) {
+            updates.push({
+                id: taskId,
+                data: {
+                    status: 'in-progress',
+                    startedAt: new Date().toISOString()
+                }
+            });
         }
 
-        // Auto-complete parent task if this was the last subtask
-        if (shouldAutoComplete) {
-            const completeResult = await taskApi.update(taskId, { 
-                status: 'completed',
-                completedAt: new Date().toISOString()
-            });
-            if (completeResult.error) {
-                await refreshTasks(); // Rollback
-            } else {
-                onTaskComplete?.(); // Trigger celebration
-            }
-        }
-        // Otherwise auto-start if needed
-        else if (shouldAutoStart) {
-            const startResult = await taskApi.update(taskId, { 
-                status: 'in-progress',
-                startedAt: new Date().toISOString()
-            });
-            if (startResult.error) {
-                await refreshTasks(); // Rollback
-            }
+        const result = await taskApi.batchUpdate(updates);
+        if (result.error) {
+            await refreshTasks(); // Rollback
+        } else if (shouldAutoComplete) {
+            onTaskComplete?.(); // Trigger celebration
         }
     }, [isAuthenticated, tasks, refreshTasks]);
 
