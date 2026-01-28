@@ -51,20 +51,20 @@ export function TimeBudget({
   // Color coding: green < 80%, yellow 80-100%, red > 100%
   const getColor = () => {
     if (isOverbooked) return 'bg-red-500';
-    if (percentage >= 80) return 'bg-yellow-500';
+    if (totalPercentage >= 80) return 'bg-yellow-500';
     return 'bg-green-500';
   };
 
   const getTextColor = () => {
     if (isOverbooked) return 'text-red-600';
-    if (percentage >= 80) return 'text-yellow-600';
+    if (totalPercentage >= 80) return 'text-yellow-600';
     return 'text-green-600';
   };
 
   const getStatusText = () => {
     if (isOverbooked) return 'Overbooked';
-    if (percentage >= 80) return 'Almost full';
-    if (percentage >= 50) return 'Good pace';
+    if (totalPercentage >= 80) return 'Almost full';
+    if (totalPercentage >= 50) return 'Good pace';
     return 'Light day';
   };
 

@@ -178,8 +178,8 @@ export default function TimelinePanel({
     const scrollToCurrentTime = () => {
       const currentPos = getCurrentTimePosition();
       if (currentPos !== null && timelineRef.current) {
-        // Scroll so current time is roughly in the middle of the viewport
-        const scrollPosition = currentPos - (timelineRef.current.clientHeight / 2);
+        // Scroll so current hour is near the top (with ~120px padding for context)
+        const scrollPosition = currentPos - 120;
         timelineRef.current.scrollTop = Math.max(0, scrollPosition);
       }
     };
@@ -272,7 +272,7 @@ export default function TimelinePanel({
   const currentTimePos = getCurrentTimePosition();
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200">
+    <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200 overflow-hidden">
       {/* Overlap Warning */}
       {overlapWarning && (
         <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
@@ -289,7 +289,7 @@ export default function TimelinePanel({
       )}
 
       {/* Floating Tasks Band (All-Day) */}
-      <div className="px-3 py-2 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 flex-shrink-0">
+      <div className="px-3 py-2 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 flex-shrink-0 overflow-hidden">
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Today (Anytime)</h3>
           <span className="text-[9px] text-gray-500">Drag to schedule</span>
@@ -330,7 +330,7 @@ export default function TimelinePanel({
       {/* Timeline content - scrollable */}
       <div
         ref={timelineRef}
-        className="flex-1 overflow-y-auto scroll-smooth"
+        className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth"
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         onDragLeave={handleDragLeave}
@@ -483,7 +483,7 @@ export default function TimelinePanel({
                   onProjectChange={async (taskId, projectId) => {
                     // Update task project inline
                     if (onUpdate) {
-                      onUpdate(taskId, { projectId });
+                      onUpdate(taskId, { projectId: projectId || undefined });
                     }
                   }}
                   onDurationChange={async (taskId, newMinutes) => {

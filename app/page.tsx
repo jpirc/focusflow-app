@@ -764,16 +764,12 @@ export default function FocusFlowApp() {
                         {viewDays <= 3 && (
                             <div className="px-1">
                                 <TimeBudget
-                                    scheduledMinutes={day.tasks
-                                        .filter(task => task.status !== 'completed')
-                                        .reduce((total, task) =>
-                                            total + (task.estimatedMinutes || task.estimatedDuration || 30), 0
-                                        )}
-                                    completedMinutes={day.tasks
-                                        .filter(task => task.status === 'completed')
-                                        .reduce((total, task) =>
-                                            total + (task.estimatedMinutes || task.estimatedDuration || 30), 0
-                                        )}
+                                    scheduledMinutes={day.tasks.reduce((total, task) =>
+                                        total + (task.estimatedMinutes || task.estimatedDuration || 30), 0
+                                    )}
+                                    completedMinutes={day.completedTasks.reduce((total, task) =>
+                                        total + (task.estimatedMinutes || task.estimatedDuration || 30), 0
+                                    )}
                                     mode="compact"
                                     startHour={8}
                                     endHour={18}
