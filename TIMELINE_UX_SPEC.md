@@ -1,8 +1,26 @@
 # Timeline UX Improvements - Implementation Spec
 
 **Created:** January 28, 2026
-**Status:** Planning Phase
+**Updated:** January 28, 2026
+**Status:** In Progress
 **Priority:** Critical (blocks visual redesign completion)
+
+## Recent Progress (Jan 28, 2026)
+
+✅ **Completed:**
+- Timeline header removed to save vertical space
+- Adaptive timeline card layouts (short/medium/long tasks)
+- Title-first visual hierarchy for better scanability
+- Compact mode applied universally across all views
+- Panel split changed from 67/33 to 50/50
+- Floating tasks band implemented (all-day section at top)
+
+🔧 **Known Issues:**
+- Page refreshes when dragging to expand tasks on timeline (needs state management fix)
+- TimeBudget doesn't include completed tasks (progress disappears when tasks are done)
+- No configurable time range for TimeBudget (should support 9-5, 8-6, etc.)
+
+---
 
 ---
 

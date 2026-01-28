@@ -17,6 +17,7 @@ interface TimelinePanelProps {
   onTaskHover: (taskId: string | null) => void;
   onTaskDragStart: (task: Task, e: React.DragEvent) => void;
   onTaskDrop: (taskId: string, hour: number, minute: number, date?: string) => void;
+  onUpdate?: (taskId: string, updates: Partial<Task>) => void;
   onEdit?: (task: Task) => void;
   onUnschedule?: (taskId: string) => void;
   onStartNow?: (taskId: string) => void;
@@ -49,6 +50,7 @@ export default function TimelinePanel({
   onTaskHover,
   onTaskDragStart,
   onTaskDrop,
+  onUpdate,
   onEdit,
   onUnschedule,
   onStartNow,
@@ -480,25 +482,14 @@ export default function TimelinePanel({
                   onStartPomodoro={onStartPomodoro}
                   onProjectChange={async (taskId, projectId) => {
                     // Update task project inline
-                    const response = await fetch(`/api/tasks/${taskId}`, {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ projectId }),
-                    });
-                    if (response.ok) {
-                      // Refresh would be handled by parent component's state management
-                      window.location.reload(); // Temp solution - ideally use parent's refresh callback
+                    if (onUpdate) {
+                      onUpdate(taskId, { projectId });
                     }
                   }}
                   onDurationChange={async (taskId, newMinutes) => {
                     // Update task duration inline
-                    const response = await fetch(`/api/tasks/${taskId}`, {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ estimatedMinutes: newMinutes }),
-                    });
-                    if (response.ok) {
-                      window.location.reload(); // Temp solution
+                    if (onUpdate) {
+                      onUpdate(taskId, { estimatedMinutes: newMinutes });
                     }
                   }}
                   onDragStart={(e) => {
