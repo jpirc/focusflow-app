@@ -20,6 +20,7 @@ interface Top3SectionProps {
     onStatusChange: (taskId: string, status: 'completed' | 'in-progress') => void;
     onStartNow?: (taskId: string) => Promise<void>;
     theme?: Theme;
+    mode?: 'full' | 'compact' | 'minimal'; // Display mode
 }
 
 export function Top3Section({
@@ -30,6 +31,7 @@ export function Top3Section({
     onStatusChange,
     onStartNow,
     theme,
+    mode = 'full',
 }: Top3SectionProps) {
     const [isExpanded, setIsExpanded] = useState(() => {
         // Load saved preference from localStorage
@@ -46,10 +48,97 @@ export function Top3Section({
 
     const completedCount = topPriorities.filter(t => t.status === 'completed').length;
     const hasAnyPriorities = topPriorities.length > 0;
-    
+
     // Create array of exactly 3 slots, filling missing ones with null
     const prioritySlots = Array.from({ length: 3 }, (_, i) => topPriorities[i] || null);
 
+    // Minimal mode: Just a single line with count
+    if (mode === 'minimal') {
+        return (
+            <div className="flex items-center justify-between px-1 py-0.5 bg-purple-50 border-b border-purple-200">
+                <div className="flex items-center gap-1">
+                    <Star size={10} className="text-purple-600 fill-purple-600" />
+                    <span className="text-[9px] font-semibold text-purple-900">Top 3</span>
+                    <span className="text-[9px] text-purple-600">
+                        {completedCount}/{topPriorities.length}✓
+                    </span>
+                </div>
+            </div>
+        );
+    }
+
+    // Compact mode: Horizontal chips layout
+    if (mode === 'compact') {
+        return (
+            <div className="border-b border-purple-200 bg-purple-50/50 px-1 py-1">
+                <div className="flex items-center gap-1 mb-1">
+                    <Star size={10} className="text-purple-600 fill-purple-600" />
+                    <span className="text-[9px] font-bold text-purple-900">Top 3</span>
+                    <span className="text-[9px] text-purple-600">{completedCount}/3✓</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                    {hasAnyPriorities ? (
+                        prioritySlots.map((task, index) => {
+                            if (!task) {
+                                return (
+                                    <button
+                                        key={`empty-${index}`}
+                                        onClick={onSetPriorities}
+                                        className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-white border border-dashed border-purple-300 rounded text-[9px] text-purple-400 hover:border-purple-400 hover:bg-purple-50 transition-colors"
+                                    >
+                                        <div className="w-3 h-3 rounded-full bg-purple-200 text-purple-400 flex items-center justify-center text-[8px] font-bold">
+                                            {index + 1}
+                                        </div>
+                                        +
+                                    </button>
+                                );
+                            }
+
+                            const project = getProject(task.projectId);
+                            const isCompleted = task.status === 'completed';
+
+                            return (
+                                <button
+                                    key={task.id}
+                                    onClick={() => onEdit(task)}
+                                    className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] transition-colors ${
+                                        isCompleted
+                                            ? 'bg-green-100 border border-green-300 text-gray-500'
+                                            : 'bg-white border border-purple-300 text-gray-900 hover:border-purple-400 hover:bg-purple-50'
+                                    }`}
+                                    title={task.title}
+                                >
+                                    <div className={`w-3 h-3 rounded-full flex items-center justify-center text-[8px] font-bold ${
+                                        isCompleted ? 'bg-green-500 text-white' : 'bg-purple-500 text-white'
+                                    }`}>
+                                        {isCompleted ? <Check size={8} /> : index + 1}
+                                    </div>
+                                    {project && (
+                                        <div
+                                            className="w-1 h-1 rounded-full flex-shrink-0"
+                                            style={{ backgroundColor: project.color }}
+                                        />
+                                    )}
+                                    <span className={`truncate max-w-[60px] ${isCompleted ? 'line-through' : ''}`}>
+                                        {task.title}
+                                    </span>
+                                </button>
+                            );
+                        })
+                    ) : (
+                        <button
+                            onClick={onSetPriorities}
+                            className="text-[9px] text-purple-600 hover:text-purple-700 hover:underline"
+                        >
+                            + Set priorities
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // Full mode: Original design with collapsible panels
     return (
         <div 
             className="border-2 mb-2 overflow-hidden"

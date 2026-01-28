@@ -908,7 +908,7 @@ const QuickEditTaskCardComponent: React.FC<QuickEditTaskCardProps> = (props) => 
 
             {/* TIME BLOCK VIEW - Full detailed cards */}
             {!isTimelineView && (
-            <div className={compact ? 'p-1 space-y-0.5' : 'p-2 space-y-1'}>
+            <div className="p-1 space-y-0.5">
                 {/* Header row - Action Buttons + Title + Menu */}
                 <div className={`flex items-start ${compact ? 'gap-1' : 'gap-2'}`}>
                     {/* Action buttons */}
@@ -934,49 +934,51 @@ const QuickEditTaskCardComponent: React.FC<QuickEditTaskCardProps> = (props) => 
                         ) : (
                             <>
                                 {/* Start/Pause button */}
-                                {/* Start Now button - for unscheduled tasks only */}
-                                {onStartNow && task.status !== 'in-progress' && !task.scheduledHour && task.scheduledHour !== 0 ? (
+                                {task.status === 'in-progress' ? (
+                                    /* Pause button for in-progress tasks */
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onPause(task.id);
+                                        }}
+                                        className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors`}
+                                        title="Pause"
+                                    >
+                                        <Pause size={compact ? 14 : 18} />
+                                    </button>
+                                ) : onStartNow ? (
+                                    /* Start Now button - available for ALL tasks (unscheduled and scheduled) */
                                     <StartNowButton
                                         onStartNow={() => onStartNow(task.id)}
                                         size={compact ? 'xs' : 'sm'}
                                         showLabel={!compact}
                                     />
                                 ) : (
-                                    <>
-                                        {/* Start/Pause button - for scheduled tasks */}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (task.status === 'in-progress') {
-                                                    onPause(task.id);
-                                                } else {
-                                                    onStatusChange(task.id, 'in-progress');
-                                                }
-                                            }}
-                                            className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} flex items-center justify-center transition-colors ${
-                                                task.status === 'in-progress'
-                                                    ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
-                                                    : 'text-gray-500 hover:bg-gray-100 hover:text-blue-600'
-                                            }`}
-                                            title={task.status === 'in-progress' ? 'Pause' : 'Start task'}
-                                        >
-                                            {task.status === 'in-progress' ? <Pause size={compact ? 14 : 18} /> : <Play size={compact ? 14 : 18} />}
-                                        </button>
+                                    /* Fallback: Simple start button */
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onStatusChange(task.id, 'in-progress');
+                                        }}
+                                        className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-blue-600 transition-colors`}
+                                        title="Start task"
+                                    >
+                                        <Play size={compact ? 14 : 18} />
+                                    </button>
+                                )}
 
-                                        {/* Pomodoro Timer button */}
-                                        {onStartPomodoro && (
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    onStartPomodoro(task);
-                                                }}
-                                                className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors`}
-                                                title="Start Pomodoro timer"
-                                            >
-                                                <Timer size={compact ? 14 : 18} />
-                                            </button>
-                                        )}
-                                    </>
+                                {/* Pomodoro Timer button - show for non-in-progress tasks */}
+                                {onStartPomodoro && task.status !== 'in-progress' && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onStartPomodoro(task);
+                                        }}
+                                        className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors`}
+                                        title="Start Pomodoro timer"
+                                    >
+                                        <Timer size={compact ? 14 : 18} />
+                                    </button>
                                 )}
                                 
                                 {/* Complete button */}

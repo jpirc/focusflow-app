@@ -7,7 +7,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Square, Minimize2, Maximize2, Coffee, Zap, Settings, Clock } from 'lucide-react';
+import { Play, Pause, Square, Minimize2, Maximize2, Coffee, Zap, Settings, Clock, CheckCircle2 } from 'lucide-react';
 import { Task } from '@/types';
 import { Theme } from '@/lib/themes';
 import { PomodoroSettingsModal } from './PomodoroSettingsModal';
@@ -21,16 +21,17 @@ interface PomodoroTimerProps {
     timeRemaining: number; // seconds
     currentTask: Task | null;
     sessionNumber: number;
-    
+
     // Actions
     onPause: () => void;
     onResume: () => void;
     onStop: () => void;
-    
+    onCompleteTask?: (taskId: string) => void; // Complete current task
+
     // Settings
     settings: PomodoroSettings;
     updateSettings: (updates: Partial<PomodoroSettings>) => Promise<void>;
-    
+
     // Theme
     theme?: Theme;
 }
@@ -45,6 +46,7 @@ export function PomodoroTimer({
     onPause,
     onResume,
     onStop,
+    onCompleteTask,
     settings,
     updateSettings,
     theme,
@@ -333,34 +335,54 @@ export function PomodoroTimer({
                         </div>
 
                         {/* Controls */}
-                        <div className="flex gap-3 justify-center">
-                            {isPaused ? (
+                        <div className="flex flex-col gap-2">
+                            {/* Primary Controls: Pause/Resume and Stop */}
+                            <div className="flex gap-3 justify-center">
+                                {isPaused ? (
+                                    <button
+                                        onClick={onResume}
+                                        className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors font-semibold flex items-center gap-2 shadow-lg"
+                                        title="Resume (Space)"
+                                    >
+                                        <Play size={20} fill="currentColor" />
+                                        Resume
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={onPause}
+                                        className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl transition-colors font-semibold flex items-center gap-2 shadow-lg"
+                                        title="Pause (Space)"
+                                    >
+                                        <Pause size={20} />
+                                        Pause
+                                    </button>
+                                )}
                                 <button
-                                    onClick={onResume}
-                                    className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors font-semibold flex items-center gap-2 shadow-lg"
-                                    title="Resume (Space)"
+                                    onClick={onStop}
+                                    className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl transition-colors font-semibold flex items-center gap-2 shadow-lg"
+                                    title="Stop (Esc)"
                                 >
-                                    <Play size={20} fill="currentColor" />
-                                    Resume
+                                    <Square size={18} />
+                                    Stop
                                 </button>
-                            ) : (
+                            </div>
+
+                            {/* Complete Task Button - Only show during work sessions with a task */}
+                            {!isBreak && currentTask && onCompleteTask && (
                                 <button
-                                    onClick={onPause}
-                                    className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl transition-colors font-semibold flex items-center gap-2 shadow-lg"
-                                    title="Pause (Space)"
+                                    onClick={async () => {
+                                        // Complete the task FIRST (this triggers celebration and API call)
+                                        await onCompleteTask(currentTask.id);
+                                        // Then stop timer (which will refresh - but task is already completed on server)
+                                        onStop();
+                                    }}
+                                    className="w-full px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors font-semibold flex items-center justify-center gap-2 shadow-lg"
+                                    title="Mark task as complete and stop timer"
                                 >
-                                    <Pause size={20} />
-                                    Pause
+                                    <CheckCircle2 size={18} />
+                                    Complete Task
                                 </button>
                             )}
-                            <button
-                                onClick={onStop}
-                                className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl transition-colors font-semibold flex items-center gap-2 shadow-lg"
-                                title="Stop (Esc)"
-                            >
-                                <Square size={18} />
-                                Stop
-                            </button>
                         </div>
                     </div>
                 </div>

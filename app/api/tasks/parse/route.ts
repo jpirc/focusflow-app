@@ -79,6 +79,69 @@ function parseTasksFallback(text: string): any {
       date = nextWeek.toISOString().split('T')[0];
     }
     
+    // Extract specific time (e.g., "at 12:30", "at 2pm", "9:15am")
+    let scheduledHour: number | null = null;
+    let scheduledMinute: number | null = null;
+
+    // Pattern: "at 12:30pm", "at 2:30", "12:30pm", etc.
+    const timeMatch = trimmed.match(/(?:at\s+)?(\d{1,2}):(\d{2})\s*(am|pm)?/i);
+    if (timeMatch) {
+      let hour = parseInt(timeMatch[1]);
+      let minute = parseInt(timeMatch[2]);
+      const meridiem = timeMatch[3]?.toLowerCase();
+
+      // Convert to 24-hour format
+      if (meridiem === 'pm' && hour !== 12) {
+        hour += 12;
+      } else if (meridiem === 'am' && hour === 12) {
+        hour = 0;
+      }
+
+      // Round minute to nearest 15
+      minute = Math.round(minute / 15) * 15;
+      if (minute === 60) {
+        minute = 0;
+        hour += 1;
+      }
+
+      scheduledHour = hour;
+      scheduledMinute = minute;
+
+      // Set timeBlock based on hour if not already set
+      if (scheduledHour >= 6 && scheduledHour < 12) {
+        timeBlock = 'morning';
+      } else if (scheduledHour >= 12 && scheduledHour < 17) {
+        timeBlock = 'afternoon';
+      } else if (scheduledHour >= 17 && scheduledHour < 22) {
+        timeBlock = 'evening';
+      }
+    } else {
+      // Pattern: "at 2pm", "9am", etc. (no minutes)
+      const simpleTimeMatch = trimmed.match(/(?:at\s+)?(\d{1,2})\s*(am|pm)/i);
+      if (simpleTimeMatch) {
+        let hour = parseInt(simpleTimeMatch[1]);
+        const meridiem = simpleTimeMatch[2].toLowerCase();
+
+        if (meridiem === 'pm' && hour !== 12) {
+          hour += 12;
+        } else if (meridiem === 'am' && hour === 12) {
+          hour = 0;
+        }
+
+        scheduledHour = hour;
+        scheduledMinute = 0;
+
+        // Set timeBlock based on hour
+        if (scheduledHour >= 6 && scheduledHour < 12) {
+          timeBlock = 'morning';
+        } else if (scheduledHour >= 12 && scheduledHour < 17) {
+          timeBlock = 'afternoon';
+        } else if (scheduledHour >= 17 && scheduledHour < 22) {
+          timeBlock = 'evening';
+        }
+      }
+    }
+
     // Extract estimated time
     let estimatedMinutes = 30;
     const hourMatch = trimmed.match(/(\d+)\s*(?:hour|hr)s?/i);
@@ -99,6 +162,9 @@ function parseTasksFallback(text: string): any {
       .replace(/\btomorrow\b/gi, '')
       .replace(/\btoday\b/gi, '')
       .replace(/\bnext week\b/gi, '')
+      // Remove specific times (e.g., "at 12:30pm", "at 2pm")
+      .replace(/(?:at\s+)?\d{1,2}:\d{2}\s*(?:am|pm)?/gi, '')
+      .replace(/(?:at\s+)?\d{1,2}\s*(?:am|pm)/gi, '')
       // Remove time estimates
       .replace(/\d+\s*(?:hour|hr|minute|min)s?\b/gi, '')
       // Clean up extra whitespace
@@ -121,6 +187,8 @@ function parseTasksFallback(text: string): any {
       title: title || 'New Task',
       date,
       timeBlock: date ? timeBlock : 'anytime', // Always set timeBlock if we have a date
+      scheduledHour,
+      scheduledMinute,
       estimatedMinutes,
       priority,
       energyLevel,
@@ -176,7 +244,7 @@ CRITICAL RULES:
 
 DATE AND TIME EXTRACTION (VERY IMPORTANT):
 - "this evening" or "tonight" → date: TODAY, timeBlock: "evening"
-- "this afternoon" → date: TODAY, timeBlock: "afternoon"  
+- "this afternoon" → date: TODAY, timeBlock: "afternoon"
 - "this morning" → date: TODAY, timeBlock: "morning"
 - "tomorrow evening" → date: TOMORROW, timeBlock: "evening"
 - "tomorrow afternoon" → date: TOMORROW, timeBlock: "afternoon"
@@ -186,17 +254,31 @@ DATE AND TIME EXTRACTION (VERY IMPORTANT):
 - "Friday", "next week", etc. → date: that date, timeBlock: "anytime"
 - NO date/time mentioned → date: null, timeBlock: null (goes to inbox)
 
+SPECIFIC TIME EXTRACTION (CRITICAL):
+- If a specific time is mentioned (e.g., "at 12:30", "at 2pm", "9:15am"), extract it:
+  - Set scheduledHour (0-23 in 24-hour format)
+  - Set scheduledMinute (0, 15, 30, or 45 - round to nearest 15 min)
+  - Still set the appropriate timeBlock based on the hour
+- Examples:
+  - "client call at 12:30 this afternoon" → scheduledHour: 12, scheduledMinute: 30, timeBlock: "afternoon"
+  - "meeting at 9am tomorrow" → scheduledHour: 9, scheduledMinute: 0, timeBlock: "morning"
+  - "dinner at 6:30pm" → scheduledHour: 18, scheduledMinute: 30, timeBlock: "evening"
+  - "call at 2pm" → scheduledHour: 14, scheduledMinute: 0, timeBlock: "afternoon"
+
 Return dates in YYYY-MM-DD format (e.g., "2026-01-08")
 
 EXAMPLES:
 Input: "call dad this evening to talk about the dog"
-Output: {"tasks": [{"title": "call dad to talk about the dog", "date": "2026-01-08", "timeBlock": "evening", "estimatedMinutes": 30, "priority": "medium", "energyLevel": "low", "icon": "coffee"}]}
+Output: {"tasks": [{"title": "call dad to talk about the dog", "date": "2026-01-08", "timeBlock": "evening", "scheduledHour": null, "scheduledMinute": null, "estimatedMinutes": 30, "priority": "medium", "energyLevel": "low", "icon": "coffee"}]}
+
+Input: "client call at 12:30 this afternoon"
+Output: {"tasks": [{"title": "client call", "date": "2026-01-08", "timeBlock": "afternoon", "scheduledHour": 12, "scheduledMinute": 30, "estimatedMinutes": 30, "priority": "medium", "energyLevel": "low", "icon": "briefcase"}]}
 
 Input: "finish report tomorrow afternoon - urgent 2 hours"
-Output: {"tasks": [{"title": "finish report", "date": "2026-01-09", "timeBlock": "afternoon", "estimatedMinutes": 120, "priority": "urgent", "energyLevel": "high", "icon": "briefcase"}]}
+Output: {"tasks": [{"title": "finish report", "date": "2026-01-09", "timeBlock": "afternoon", "scheduledHour": null, "scheduledMinute": null, "estimatedMinutes": 120, "priority": "urgent", "energyLevel": "high", "icon": "briefcase"}]}
 
 Input: "buy groceries"
-Output: {"tasks": [{"title": "buy groceries", "date": null, "timeBlock": null, "estimatedMinutes": 30, "priority": "medium", "energyLevel": "low", "icon": "home"}]}
+Output: {"tasks": [{"title": "buy groceries", "date": null, "timeBlock": null, "scheduledHour": null, "scheduledMinute": null, "estimatedMinutes": 30, "priority": "medium", "energyLevel": "low", "icon": "home"}]}
 
 Return a JSON object with this structure:
 {
@@ -206,6 +288,8 @@ Return a JSON object with this structure:
       "description": "Optional detailed description",
       "date": "2026-01-08" or null,
       "timeBlock": "morning" | "afternoon" | "evening" | "anytime" | null,
+      "scheduledHour": 0-23 or null (null if no specific time mentioned),
+      "scheduledMinute": 0 | 15 | 30 | 45 or null (round to nearest 15 min, null if no specific time),
       "estimatedMinutes": 30,
       "priority": "low" | "medium" | "high" | "urgent",
       "energyLevel": "low" | "medium" | "high",

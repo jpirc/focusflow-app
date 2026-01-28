@@ -415,31 +415,28 @@ export default function FocusFlowApp() {
         }
     }, [updateTask]);
 
-    // Handle Start Now - ADHD-friendly one-click start
-    // Schedules task, sets to in-progress, and starts Pomodoro timer
+    // Handle Start Now - Quick start without Pomodoro timer
+    // Just schedules task and sets to in-progress (use Start Pomodoro button for timer)
     const handleStartNow = useCallback(async (taskId: string) => {
-        const task = tasks.find(t => t.id === taskId);
-        if (!task) return;
-
         try {
-            // Schedule + set in-progress
+            // Schedule + set in-progress (no timer)
             await startTaskNow(taskId);
-
-            // Start Pomodoro timer
-            pomodoro.startPomodoro(task);
         } catch (error) {
             console.error('Failed to start task now:', error);
             // Error is already handled in startTaskNow (shows in UI)
         }
-    }, [tasks, startTaskNow, pomodoro]);
+    }, [startTaskNow]);
 
     // Wrap updateStatus to trigger celebration on completion
-    const handleStatusChange = useCallback((taskId: string, status: TaskStatus) => {
-        updateStatus(taskId, status);
+    const handleStatusChange = useCallback(async (taskId: string, status: TaskStatus) => {
+        console.log('[handleStatusChange] Called with:', { taskId, status });
+        await updateStatus(taskId, status);
         if (status === 'completed') {
+            console.log('[handleStatusChange] Task completed! Triggering celebration...');
             const newStreak = incrementStreak();
             celebrate(newStreak);
-            
+            console.log('[handleStatusChange] Celebration triggered with streak:', newStreak);
+
             // Show quick win suggestions after completing a task (30% chance)
             if (Math.random() < 0.3) {
                 setTimeout(() => {
@@ -770,7 +767,7 @@ export default function FocusFlowApp() {
                                     scheduledMinutes={day.tasks.reduce((total, task) =>
                                         total + (task.estimatedMinutes || task.estimatedDuration || 30), 0
                                     )}
-                                    showDetails={viewDays === 1}
+                                    mode="compact"
                                 />
                             </div>
                         )}
@@ -778,7 +775,7 @@ export default function FocusFlowApp() {
 
                     {/* Top 3 Priorities (only show on today in non-week view) */}
                     {day.isToday && viewDays !== 7 && (
-                        <div className="mb-2">
+                        <div className="mb-1">
                             <Top3Section
                                 topPriorities={tasks.filter(t => t.isTopPriority && t.topPriorityDate === todayDateStr)}
                                 projects={projects}
@@ -787,6 +784,7 @@ export default function FocusFlowApp() {
                                 onStatusChange={handleStatusChange}
                                 onStartNow={handleStartNow}
                                 theme={theme}
+                                mode="compact"
                             />
                         </div>
                     )}
@@ -861,7 +859,7 @@ export default function FocusFlowApp() {
                                                     onEdit={handleEditTask}
                                                     onStartPomodoro={(task) => pomodoro.startPomodoro(task)}
                                                     onUnschedule={handleUnschedule}
-                                                    compact={false}
+                                                    compact={true}
                                                     subtasksExpandedAll={subtasksExpandedAll}
                                                     theme={theme}
                                                 />
@@ -923,6 +921,8 @@ export default function FocusFlowApp() {
                                         onTaskDrop={handleTimelineDrop}
                                         onEdit={handleEditTask}
                                         onUnschedule={handleUnschedule}
+                                        onStartNow={handleStartNow}
+                                        onStartPomodoro={pomodoro.startPomodoro}
                                     />
                                 }
                             />
@@ -1190,6 +1190,7 @@ export default function FocusFlowApp() {
                 onPause={pomodoro.pausePomodoro}
                 onResume={pomodoro.resumePomodoro}
                 onStop={() => pomodoro.stopPomodoro(true)}
+                onCompleteTask={(taskId) => handleStatusChange(taskId, 'completed')}
                 settings={pomodoro.settings}
                 updateSettings={pomodoro.updateSettings}
                 theme={theme}

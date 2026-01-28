@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Task, Project } from '@/types';
 import TimelineTaskCard from './TimelineTaskCard';
 import { X } from 'lucide-react';
+import { calculateTimelineLayout, canScheduleAt, findNextAvailableSlot as findNextSlot } from '@/lib/utils/timeline-overlap';
 
 interface TimelinePanelProps {
   tasks: Task[];
@@ -18,6 +19,8 @@ interface TimelinePanelProps {
   onTaskDrop: (taskId: string, hour: number, minute: number, date?: string) => void;
   onEdit?: (task: Task) => void;
   onUnschedule?: (taskId: string) => void;
+  onStartNow?: (taskId: string) => void;
+  onStartPomodoro?: (task: Task) => void;
 }
 
 const HOUR_HEIGHT = 80; // 80px per hour for comfortable spacing
@@ -25,6 +28,8 @@ const START_HOUR = 6; // 6am
 const END_HOUR = 23; // 11pm (to include 10pm hour)
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 const SNAP_INTERVAL = 15; // Snap to 15-minute intervals
+const MAX_OVERLAPS = 3; // Maximum overlapping tasks before showing overflow
+const ALLOW_OVERLAPS = true; // Set to false to auto-adjust conflicts
 
 // Time block boundaries matching TIME_BLOCKS from constants
 const TIME_BLOCK_RANGES = {
@@ -46,6 +51,8 @@ export default function TimelinePanel({
   onTaskDrop,
   onEdit,
   onUnschedule,
+  onStartNow,
+  onStartPomodoro,
 }: TimelinePanelProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isDragOver, setIsDragOver] = useState(false);
@@ -53,75 +60,10 @@ export default function TimelinePanel({
   const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
   const timelineRef = React.useRef<HTMLDivElement>(null);
 
-  // Find next available time slot after conflicts
-  const findNextAvailableSlot = (taskId: string, proposedHour: number, proposedMinute: number, duration: number): { hour: number; minute: number; adjusted: boolean } => {
-    let currentStart = proposedHour * 60 + proposedMinute;
-    const maxTime = (END_HOUR - 1) * 60 + 45; // Latest slot (e.g., 9:45pm if END_HOUR is 23)
-    let adjusted = false;
-    
-    while (currentStart <= maxTime) {
-      const currentEnd = currentStart + duration;
-      const testHour = Math.floor(currentStart / 60);
-      const testMinute = currentStart % 60;
-      
-      // Check if this slot is free
-      let isFree = true;
-      for (const task of tasks) {
-        if (task.id === taskId) continue;
-        if (task.scheduledHour === null || task.scheduledHour === undefined) continue;
-        // Skip completed tasks - they're ghosts and don't block scheduling
-        if (task.status === 'completed') continue;
-        
-        const taskStart = task.scheduledHour * 60 + (task.scheduledMinute || 0);
-        const taskEnd = taskStart + (task.estimatedMinutes || 30);
-        
-        // Check if this slot overlaps
-        if (currentStart < taskEnd && currentEnd > taskStart) {
-          isFree = false;
-          // Jump to after this task
-          currentStart = taskEnd;
-          // Snap to next 15-min interval
-          currentStart = Math.ceil(currentStart / SNAP_INTERVAL) * SNAP_INTERVAL;
-          adjusted = true;
-          break;
-        }
-      }
-      
-      if (isFree) {
-        return { 
-          hour: testHour, 
-          minute: testMinute, 
-          adjusted 
-        };
-      }
-    }
-    
-    // If we couldn't find a slot, return the original time anyway
-    return { hour: proposedHour, minute: proposedMinute, adjusted: false };
-  };
-
-  // Check for time overlap with existing tasks
-  const checkOverlap = (taskId: string, hour: number, minute: number, duration: number): { hasOverlap: boolean; overlappingTask?: Task } => {
-    const proposedStart = hour * 60 + minute;
-    const proposedEnd = proposedStart + duration;
-    
-    for (const task of tasks) {
-      if (task.id === taskId) continue; // Skip the task being moved
-      if (task.scheduledHour === null || task.scheduledHour === undefined) continue;
-      // Skip completed tasks - they're ghosts and don't block scheduling
-      if (task.status === 'completed') continue;
-      
-      const taskStart = task.scheduledHour * 60 + (task.scheduledMinute || 0);
-      const taskEnd = taskStart + (task.estimatedMinutes || 30);
-      
-      // Check if times overlap (allowing shared boundaries)
-      if (proposedStart < taskEnd && proposedEnd > taskStart) {
-        return { hasOverlap: true, overlappingTask: task };
-      }
-    }
-    
-    return { hasOverlap: false };
-  };
+  // Calculate styled tasks with overlap detection (memoized for performance)
+  const styledTasks = useMemo(() => {
+    return calculateTimelineLayout(tasks, HOUR_HEIGHT, START_HOUR);
+  }, [tasks]);
 
   // Update current time every minute
   useEffect(() => {
@@ -181,16 +123,42 @@ export default function TimelinePanel({
     
     // Validate hour is within range
     if (hour >= START_HOUR && hour < END_HOUR) {
-      // Find next available slot (auto-adjust if conflict)
       const duration = task.estimatedMinutes || 30;
-      const { hour: adjustedHour, minute: adjustedMinute, adjusted } = findNextAvailableSlot(taskId, hour, minute, duration);
-      
-      if (adjusted) {
-        setOverlapWarning(`Moved to ${adjustedHour % 12 || 12}:${adjustedMinute.toString().padStart(2, '0')}${adjustedHour >= 12 ? 'PM' : 'AM'} (next available slot)`);
-        setTimeout(() => setOverlapWarning(null), 3000);
-      }
 
-      onTaskDrop(taskId, adjustedHour, adjustedMinute, date);
+      // Check if overlaps are allowed or if we need to auto-adjust
+      if (ALLOW_OVERLAPS) {
+        // Check if we're exceeding max overlaps
+        const canSchedule = canScheduleAt(taskId, hour, minute, duration, tasks, MAX_OVERLAPS);
+
+        if (!canSchedule) {
+          // Too many overlaps, find next slot
+          const nextSlot = findNextSlot(hour, minute, duration, tasks, END_HOUR - 1, SNAP_INTERVAL);
+
+          if (nextSlot) {
+            setOverlapWarning(`Moved to ${nextSlot.hour % 12 || 12}:${nextSlot.minute.toString().padStart(2, '0')}${nextSlot.hour >= 12 ? 'PM' : 'AM'} (max ${MAX_OVERLAPS} overlaps)`);
+            setTimeout(() => setOverlapWarning(null), 3000);
+            onTaskDrop(taskId, nextSlot.hour, nextSlot.minute, date);
+          } else {
+            setOverlapWarning('No available slot found - scheduling anyway');
+            setTimeout(() => setOverlapWarning(null), 3000);
+            onTaskDrop(taskId, hour, minute, date);
+          }
+        } else {
+          // Allow overlap
+          onTaskDrop(taskId, hour, minute, date);
+        }
+      } else {
+        // Auto-adjust mode: no overlaps allowed
+        const nextSlot = findNextSlot(hour, minute, duration, tasks, END_HOUR - 1, SNAP_INTERVAL);
+
+        if (nextSlot && (nextSlot.hour !== hour || nextSlot.minute !== minute)) {
+          setOverlapWarning(`Moved to ${nextSlot.hour % 12 || 12}:${nextSlot.minute.toString().padStart(2, '0')}${nextSlot.hour >= 12 ? 'PM' : 'AM'} (next available slot)`);
+          setTimeout(() => setOverlapWarning(null), 3000);
+          onTaskDrop(taskId, nextSlot.hour, nextSlot.minute, date);
+        } else {
+          onTaskDrop(taskId, hour, minute, date);
+        }
+      }
     }
   };
 
@@ -279,11 +247,8 @@ export default function TimelinePanel({
     return position;
   };
 
-  // Filter tasks that have a time scheduled
-  const scheduledTasks = tasks.filter(task => {
-    const position = getTaskPosition(task);
-    return position !== null;
-  });
+  // Use styled tasks (which include overlap calculations)
+  const scheduledTasks = styledTasks;
 
   // Debug: Log what we're rendering
   useEffect(() => {
@@ -306,14 +271,6 @@ export default function TimelinePanel({
 
   return (
     <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 bg-white flex-shrink-0">
-        <h2 className="font-semibold text-gray-900">Timeline</h2>
-        <p className="text-xs text-gray-500 mt-1">
-          6AM - 10PM
-        </p>
-      </div>
-      
       {/* Overlap Warning */}
       {overlapWarning && (
         <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
@@ -329,9 +286,48 @@ export default function TimelinePanel({
         </div>
       )}
 
+      {/* Floating Tasks Band (All-Day) */}
+      <div className="px-3 py-2 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 flex-shrink-0">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Today (Anytime)</h3>
+          <span className="text-[9px] text-gray-500">Drag to schedule</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5 min-h-[28px]">
+          {/* Filter floating tasks (no scheduledHour but has today's date) */}
+          {tasks
+            .filter(t => t.date === date && (t.scheduledHour === null || t.scheduledHour === undefined) && t.timeBlock !== 'inbox')
+            .map(task => {
+              const project = task.projectId ? projects.find(p => p.id === task.projectId) : undefined;
+              return (
+                <div
+                  key={task.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', task.id);
+                    e.dataTransfer.setData('taskId', task.id);
+                    onTaskDragStart(task, e);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2 py-1 bg-white border-l-2 rounded shadow-sm hover:shadow-md transition-shadow cursor-move"
+                  style={{ borderLeftColor: project?.color || '#94a3b8' }}
+                  title={`${task.title} - Drag to schedule at specific time`}
+                >
+                  <span className="text-xs font-medium text-gray-900 truncate max-w-[120px]">{task.title}</span>
+                  {task.estimatedMinutes && (
+                    <span className="text-[10px] text-gray-500">{task.estimatedMinutes}m</span>
+                  )}
+                </div>
+              );
+            })}
+          {tasks.filter(t => t.date === date && (t.scheduledHour === null || t.scheduledHour === undefined) && t.timeBlock !== 'inbox').length === 0 && (
+            <span className="text-[10px] text-gray-400 italic">No floating tasks - these show here when scheduled today but not at a specific time</span>
+          )}
+        </div>
+      </div>
+
       {/* Timeline content - scrollable */}
-      <div 
-        ref={timelineRef} 
+      <div
+        ref={timelineRef}
         className="flex-1 overflow-y-auto scroll-smooth"
         onDragOver={handleDragOver}
         onDrop={handleDrop}
@@ -421,33 +417,25 @@ export default function TimelinePanel({
             </div>
           )}
 
-          {/* Scheduled tasks */}
-          {scheduledTasks.map((task, index) => {
-            const position = getTaskPosition(task, index);
-            if (position === null) return null;
-
-            const project = task.projectId
-              ? projects.find((p) => p.id === task.projectId)
+          {/* Scheduled tasks with overlap support */}
+          {scheduledTasks.map((styledTask) => {
+            const project = styledTask.projectId
+              ? projects.find((p) => p.id === styledTask.projectId)
               : undefined;
 
-            // Calculate height based on task duration (convert minutes to pixels)
-            // For completed tasks, use actual duration; otherwise use estimated
-            const isCompleted = task.status === 'completed';
-            const durationMinutes = isCompleted && task.actualMinutes 
-              ? task.actualMinutes 
-              : (task.estimatedDuration || task.estimatedMinutes || 30);
-            const heightPx = (durationMinutes / 60) * HOUR_HEIGHT;
+            // Use pre-calculated position and height from overlap algorithm
+            const position = styledTask.top;
+            const heightPx = styledTask.height;
 
-            // Calculate display time from position
-            const positionHours = START_HOUR + (position / HOUR_HEIGHT);
-            const startHour = Math.floor(positionHours);
-            const startMinute = Math.round((positionHours % 1) * 60);
-            
-            // Calculate end time
+            // Calculate display time
+            const startHour = styledTask.scheduledHour!;
+            const startMinute = styledTask.scheduledMinute || 0;
+            const durationMinutes = styledTask.estimatedMinutes || 30;
+
             const endTimeMinutes = startHour * 60 + startMinute + durationMinutes;
             const endHour = Math.floor(endTimeMinutes / 60);
             const endMinute = endTimeMinutes % 60;
-            
+
             // Format times
             const formatTime = (h: number, m: number) => {
               const ampm = h >= 12 ? 'PM' : 'AM';
@@ -455,37 +443,72 @@ export default function TimelinePanel({
               const displayMinute = m.toString().padStart(2, '0');
               return `${displayHour}:${displayMinute}${ampm}`;
             };
-            
+
             const displayTime = `${formatTime(startHour, startMinute)} - ${formatTime(endHour, endMinute)}`;
+
+            // Determine if task is in a multi-column layout
+            const isOverlapping = styledTask.columns > 1;
+            const columnWidth = styledTask.width;
+            const columnLeft = styledTask.left;
 
             return (
               <div
-                key={task.id}
-                className="absolute left-12 transition-all duration-150 z-20"
+                key={styledTask.id}
+                className="absolute transition-all duration-150 z-20"
                 style={{
                   top: `${position}px`,
-                  height: `${Math.max(heightPx, 24)}px`, // Minimum 24px for usability (18 minutes)
-                  width: 'calc(100% - 4rem)', // Leave margin on right
-                  maxWidth: '320px', // Reasonable max width
+                  height: `${Math.max(heightPx, 24)}px`, // Minimum 24px for usability
+                  left: isOverlapping ? `calc(3rem + ${columnLeft}%)` : '3rem', // 3rem = 48px left margin
+                  width: isOverlapping
+                    ? `${columnWidth}%` // Use full calculated column width (no gap)
+                    : 'calc(100% - 4rem)', // Full width when not overlapping
+                  maxWidth: 'none', // Remove max width constraint
                 }}
-                onMouseEnter={() => onTaskHover(task.id)}
+                onMouseEnter={() => onTaskHover(styledTask.id)}
                 onMouseLeave={() => onTaskHover(null)}
               >
                 <TimelineTaskCard
-                  task={task}
+                  task={styledTask}
                   project={project}
-                  isSelected={selectedTaskId === task.id}
-                  isHovered={hoveredTaskId === task.id}
-                  onClick={() => onTaskClick(task.id)}
+                  allProjects={projects}
+                  isSelected={selectedTaskId === styledTask.id}
+                  isHovered={hoveredTaskId === styledTask.id}
+                  onClick={() => onTaskClick(styledTask.id)}
                   onEdit={onEdit}
                   onUnschedule={onUnschedule}
+                  onStartNow={onStartNow}
+                  onStartPomodoro={onStartPomodoro}
+                  onProjectChange={async (taskId, projectId) => {
+                    // Update task project inline
+                    const response = await fetch(`/api/tasks/${taskId}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ projectId }),
+                    });
+                    if (response.ok) {
+                      // Refresh would be handled by parent component's state management
+                      window.location.reload(); // Temp solution - ideally use parent's refresh callback
+                    }
+                  }}
+                  onDurationChange={async (taskId, newMinutes) => {
+                    // Update task duration inline
+                    const response = await fetch(`/api/tasks/${taskId}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ estimatedMinutes: newMinutes }),
+                    });
+                    if (response.ok) {
+                      window.location.reload(); // Temp solution
+                    }
+                  }}
                   onDragStart={(e) => {
                     e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/plain', task.id);
-                    e.dataTransfer.setData('taskId', task.id);
-                    onTaskDragStart(task, e);
+                    e.dataTransfer.setData('text/plain', styledTask.id);
+                    e.dataTransfer.setData('taskId', styledTask.id);
+                    onTaskDragStart(styledTask, e);
                   }}
                   displayTime={displayTime}
+                  compact={isOverlapping} // Pass compact flag for narrower cards
                 />
               </div>
             );

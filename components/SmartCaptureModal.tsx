@@ -40,6 +40,28 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
       // Create each task
       const createdTasks = [];
       for (const task of tasks) {
+        // Use parsed scheduledHour/Minute if available, otherwise set defaults
+        let scheduledHour = task.scheduledHour ?? null;
+        let scheduledMinute = task.scheduledMinute ?? 0;
+
+        // If no specific time was parsed, but we have a date and timeBlock, set default times
+        if (scheduledHour === null && task.date && task.timeBlock) {
+          switch (task.timeBlock) {
+            case 'morning':
+              scheduledHour = 9; // 9:00 AM
+              break;
+            case 'afternoon':
+              scheduledHour = 13; // 1:00 PM
+              break;
+            case 'evening':
+              scheduledHour = 18; // 6:00 PM
+              break;
+            case 'anytime':
+              scheduledHour = 9; // Default to morning
+              break;
+          }
+        }
+
         const response = await fetch('/api/tasks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -50,6 +72,8 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
             // Use parsed date/timeBlock if available, otherwise inbox
             date: task.date || null,
             timeBlock: task.timeBlock || 'anytime',
+            scheduledHour,
+            scheduledMinute,
           }),
         });
 

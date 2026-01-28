@@ -192,7 +192,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
 
             {/* Tasks list */}
             {!(block.id === 'anytime' && isCollapsed) && (
-                <div className={`${compact ? 'p-0.5 space-y-0.5' : 'p-1 space-y-1'}`}>
+                <div className="p-0.5 space-y-0.5">
                 {tasks.map(task => {
                     const project = projects.find(p => p.id === task.projectId) || { id: 'default', name: 'No Project', color: '#6b7280', bgColor: '#f3f4f6', icon: 'folder' };
                     return (
