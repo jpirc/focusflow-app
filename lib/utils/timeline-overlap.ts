@@ -39,7 +39,7 @@ function toMinutes(hour: number, minute: number = 0): number {
  * Check if two tasks overlap in time
  */
 function tasksOverlap(a: Task, b: Task): boolean {
-  if (a.scheduledHour === null || b.scheduledHour === null) return false;
+  if (typeof a.scheduledHour !== 'number' || typeof b.scheduledHour !== 'number') return false;
 
   const aStart = toMinutes(a.scheduledHour, a.scheduledMinute || 0);
   const aEnd = aStart + (a.estimatedMinutes || 30);
@@ -259,7 +259,7 @@ export function canScheduleAt(
   // Count how many tasks already overlap at this time
   const overlappingTasks = existingTasks.filter(t => {
     if (t.id === taskId) return false; // Don't count self
-    if (t.scheduledHour === null) return false;
+    if (typeof t.scheduledHour !== 'number') return false;
 
     const taskStart = toMinutes(t.scheduledHour, t.scheduledMinute || 0);
     const taskEnd = taskStart + (t.estimatedMinutes || 30);
