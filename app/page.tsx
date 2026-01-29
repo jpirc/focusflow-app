@@ -42,7 +42,7 @@ import TimelinePanel from '@/components/TimelinePanel';
 import { TimeBudget } from '@/components/ui/TimeBudget';
 
 // Utilities & Constants
-import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeekend } from '@/lib/utils/date';
+import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeekend, getRelativeDayLabel } from '@/lib/utils/date';
 import { TIME_BLOCKS } from '@/lib/constants';
 import { smartReschedule, saveRestartNote } from '@/lib/utils/reschedule';
 
@@ -369,8 +369,9 @@ export default function FocusFlowApp() {
                 saveRestartNote(note);
             }
 
-            // Run smart reschedule algorithm
-            const rescheduleResults = smartReschedule(incompleteTasks, today);
+            // Run smart reschedule algorithm (use current time, NOT midnight)
+            const now = new Date(); // Current time with actual hours/minutes
+            const rescheduleResults = smartReschedule(incompleteTasks, now);
 
             console.log(`[RestartDay] Algorithm returned ${rescheduleResults.length} scheduled tasks`);
 
@@ -763,13 +764,31 @@ export default function FocusFlowApp() {
                                         <div className={`flex items-center justify-between ${
                                             day.isToday ? 'text-blue-600' : day.isWeekend ? 'text-amber-600' : 'text-gray-500'
                                         }`}>
-                                            <div className="min-w-0">
-                                                <h3 className={`font-bold truncate ${viewDays === 7 ? 'text-xs sm:text-sm' : viewDays === 1 ? 'text-lg sm:text-xl' : 'text-sm sm:text-lg'}`}>
-                                                    {viewDays === 7 ? day.date.toLocaleDateString('en-US', { weekday: 'short' }) : day.display}
-                                                </h3>
-                                                <p className={`opacity-70 truncate ${viewDays === 7 ? 'text-[9px]' : 'text-[10px] sm:text-xs'}`}>
-                                                    {day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                                </p>
+                                            <div className="min-w-0 flex-1">
+                                                {viewDays === 7 ? (
+                                                    <>
+                                                        <h3 className="font-bold truncate text-xs sm:text-sm">
+                                                            {day.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                                        </h3>
+                                                        <p className="opacity-70 truncate text-[9px]">
+                                                            {day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                        </p>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <h3 className={`font-bold truncate ${viewDays === 1 ? 'text-lg sm:text-xl' : 'text-sm sm:text-lg'}`}>
+                                                            {getRelativeDayLabel(day.date)}
+                                                        </h3>
+                                                        <p className={`opacity-70 ${viewDays === 1 ? 'text-xs sm:text-sm' : 'text-[10px] sm:text-xs'}`}>
+                                                            {day.date.toLocaleDateString('en-US', {
+                                                                weekday: 'long',
+                                                                month: 'long',
+                                                                day: 'numeric',
+                                                                year: 'numeric'
+                                                            })}
+                                                        </p>
+                                                    </>
+                                                )}
                                             </div>
                         <div className="flex items-center gap-2">
                             {/* View Toggle (only show in 1-day view) */}

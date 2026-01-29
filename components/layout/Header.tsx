@@ -4,8 +4,8 @@
 
 'use client';
 
-import React from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Plus, Flame, Pause, CheckCircle2, ChevronDown, ChevronUp, Zap, RotateCcw } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, Calendar, Plus, Flame, Pause, CheckCircle2, ChevronDown, ChevronUp, Zap, RotateCcw, MoreVertical } from 'lucide-react';
 import { addDays, getWeekStart } from '@/lib/utils/date';
 import { VIEW_DAY_OPTIONS } from '@/lib/constants';
 import { Theme } from '@/lib/themes';
@@ -59,6 +59,8 @@ export function Header({
     onToggleSubtasksExpandedAll,
     theme,
 }: HeaderProps) {
+    const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+
     return (
         <>
         {/* Active Task Banner - PROMINENT NUDGE */}
@@ -193,41 +195,72 @@ export function Header({
                     ))}
                 </div>
 
-                {/* Expand/Collapse All Subtasks */}
-                {onToggleSubtasksExpandedAll && (
+                {/* Quick Actions Dropdown */}
+                <div className="relative">
                     <button
-                        onClick={onToggleSubtasksExpandedAll}
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all"
-                        title={subtasksExpandedAll ? 'Collapse all subtasks' : 'Expand all subtasks'}
+                        onClick={() => setQuickActionsOpen(!quickActionsOpen)}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all"
+                        title="Quick Actions"
                     >
-                        {subtasksExpandedAll ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                        {subtasksExpandedAll ? 'Collapse' : 'Expand'}
+                        <MoreVertical size={14} />
+                        <span className="hidden sm:inline">Actions</span>
                     </button>
-                )}
 
-                {/* Restart My Day Button */}
-                {onRestartDay && (
-                    <button
-                        onClick={onRestartDay}
-                        className="bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all"
-                        title="Mid-day reset: reschedule incomplete tasks"
-                    >
-                        <RotateCcw size={14} />
-                        Restart
-                    </button>
-                )}
+                    {quickActionsOpen && (
+                        <>
+                            {/* Backdrop to close dropdown */}
+                            <div
+                                className="fixed inset-0 z-10"
+                                onClick={() => setQuickActionsOpen(false)}
+                            />
 
-                {/* Quick Win Button */}
-                {onQuickWin && (
-                    <button
-                        onClick={onQuickWin}
-                        className="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all"
-                        title="Quick Win Suggestions (Cmd+W)"
-                    >
-                        <Zap size={14} />
-                        Quick Win
-                    </button>
-                )}
+                            {/* Dropdown Menu */}
+                            <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 min-w-[160px]">
+                                {/* Restart My Day */}
+                                {onRestartDay && (
+                                    <button
+                                        onClick={() => {
+                                            onRestartDay();
+                                            setQuickActionsOpen(false);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs hover:bg-amber-50 flex items-center gap-2 text-gray-700"
+                                    >
+                                        <RotateCcw size={14} className="text-amber-600" />
+                                        <span>Restart My Day</span>
+                                    </button>
+                                )}
+
+                                {/* Quick Win */}
+                                {onQuickWin && (
+                                    <button
+                                        onClick={() => {
+                                            onQuickWin();
+                                            setQuickActionsOpen(false);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs hover:bg-purple-50 flex items-center gap-2 text-gray-700"
+                                    >
+                                        <Zap size={14} className="text-purple-600" />
+                                        <span>Quick Win</span>
+                                    </button>
+                                )}
+
+                                {/* Expand/Collapse All */}
+                                {onToggleSubtasksExpandedAll && (
+                                    <button
+                                        onClick={() => {
+                                            onToggleSubtasksExpandedAll();
+                                            setQuickActionsOpen(false);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                                    >
+                                        {subtasksExpandedAll ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                        <span>{subtasksExpandedAll ? 'Collapse All' : 'Expand All'}</span>
+                                    </button>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
 
                 {/* Add Task Button */}
                 <button

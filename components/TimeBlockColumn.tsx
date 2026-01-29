@@ -148,7 +148,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
                             <span className={`${style.icon} ${isCollapsed ? 'text-sm' : ''}`}>
                                 {block.icon}
                             </span>
-                            <span className={`font-medium text-gray-700 ${compact ? 'text-[10px]' : isCollapsed ? 'text-[11px]' : 'text-xs'}`}>{compact ? block.label.slice(0, 4) : block.label}</span>
+                            <span className={`font-medium text-gray-700 ${compact ? 'text-[10px]' : isCollapsed ? 'text-[11px]' : 'text-xs'}`}>{compact ? (block.shortLabel || block.label) : block.label}</span>
                             {!compact && !isCollapsed && <span className="text-[10px] text-gray-400">({block.hours})</span>}
                         </div>
                         <div className="flex items-center gap-1 ml-auto text-gray-400">
@@ -174,7 +174,7 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
                             <span className={style.icon}>
                                 {block.icon}
                             </span>
-                            <span className={`font-medium text-gray-700 ${compact ? 'text-[10px]' : 'text-xs'}`}>{compact ? block.label.slice(0, 4) : block.label}</span>
+                            <span className={`font-medium text-gray-700 ${compact ? 'text-[10px]' : 'text-xs'}`}>{compact ? (block.shortLabel || block.label) : block.label}</span>
                             {!compact && <span className="text-[10px] text-gray-400">({block.hours})</span>}
                         </div>
                         <div className={`flex items-center gap-1 text-gray-400 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>

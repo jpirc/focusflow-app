@@ -262,7 +262,7 @@ export function getNextTimeBlock(currentBlock: string): 'morning' | 'afternoon' 
  */
 export function isPastTimeBlock(timeBlock: string): boolean {
     const hour = new Date().getHours();
-    
+
     if (timeBlock === 'morning') {
         return hour >= 12; // Past morning if it's noon or later
     }
@@ -272,7 +272,29 @@ export function isPastTimeBlock(timeBlock: string): boolean {
     if (timeBlock === 'evening') {
         return hour >= 22; // Past evening if it's 10 PM or later
     }
-    
+
     return false; // 'anytime' is never past
+}
+
+/**
+ * Get relative day description (e.g., "2 days from now", "Yesterday")
+ */
+export function getRelativeDayLabel(date: Date): string {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const targetDate = new Date(date);
+    targetDate.setHours(0, 0, 0, 0);
+
+    const diffTime = targetDate.getTime() - today.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'TODAY';
+    if (diffDays === 1) return 'TOMORROW';
+    if (diffDays === -1) return 'YESTERDAY';
+    if (diffDays > 1) return `${diffDays} days from now`;
+    if (diffDays < -1) return `${Math.abs(diffDays)} days ago`;
+
+    return 'TODAY';
 }
 

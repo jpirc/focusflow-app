@@ -8,6 +8,7 @@ export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 export interface TimeBlockConfig {
     id: TimeBlock;
     label: string;
+    shortLabel?: string; // Short label for compact views (e.g., "AM", "PM", "Eve")
     icon: React.ReactNode;
     hours: string;
     energyMatch: EnergyLevel;

@@ -14,6 +14,7 @@ export const TIME_BLOCKS: TimeBlockConfig[] = [
     {
         id: 'anytime',
         label: 'Anytime',
+        shortLabel: 'Any',
         icon: React.createElement(Clock, { size: 16 }),
         hours: 'Flexible',
         energyMatch: 'medium',
@@ -21,6 +22,7 @@ export const TIME_BLOCKS: TimeBlockConfig[] = [
     {
         id: 'morning',
         label: 'Morning',
+        shortLabel: 'AM',
         icon: React.createElement(Sunrise, { size: 16 }),
         hours: '6 AM - 12 PM',
         energyMatch: 'high',
@@ -28,6 +30,7 @@ export const TIME_BLOCKS: TimeBlockConfig[] = [
     {
         id: 'afternoon',
         label: 'Afternoon',
+        shortLabel: 'PM',
         icon: React.createElement(Sun, { size: 16 }),
         hours: '12 PM - 5 PM',
         energyMatch: 'medium',
@@ -35,6 +38,7 @@ export const TIME_BLOCKS: TimeBlockConfig[] = [
     {
         id: 'evening',
         label: 'Evening',
+        shortLabel: 'Eve',
         icon: React.createElement(Sunset, { size: 16 }),
         hours: '5 PM - 10 PM',
         energyMatch: 'low',
