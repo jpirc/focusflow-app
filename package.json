@@ -13,6 +13,7 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
     "@prisma/client": "^5.22.0",
+    "@tanstack/react-virtual": "^3.13.18",
     "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.0",
@@ -23,7 +24,9 @@
     "openai": "^6.14.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-responsive": "^10.0.1",
     "tailwind-merge": "^2.2.0",
+    "vaul": "^1.1.2",
     "zod": "^4.1.13"
   },
   "devDependencies": {

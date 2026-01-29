@@ -1,0 +1,198 @@
+/**
+ * Mobile Task Card
+ * Touch-optimized task card for mobile devices
+ * Minimum 44x44px touch targets, clear hierarchy, swipe support
+ */
+
+'use client';
+
+import { useState } from 'react';
+import { CheckCircle2, Circle, Play, Clock, ChevronRight, MoreHorizontal } from 'lucide-react';
+import type { Task, Project } from '@prisma/client';
+
+interface MobileTaskCardProps {
+  task: Task & {
+    project?: Project | null;
+    subtasks?: Task[];
+  };
+  onTap?: () => void;
+  onStart?: () => void;
+  onComplete?: () => void;
+  onToggleComplete?: () => void;
+  showProject?: boolean;
+  showTime?: boolean;
+}
+
+export function MobileTaskCard({
+  task,
+  onTap,
+  onStart,
+  onComplete,
+  onToggleComplete,
+  showProject = true,
+  showTime = true,
+}: MobileTaskCardProps) {
+  const [pressing, setPressing] = useState(false);
+
+  const isCompleted = task.completed || task.status === 'completed';
+  const completedSubtasks = task.subtasks?.filter(s => s.completed).length || 0;
+  const totalSubtasks = task.subtasks?.length || 0;
+  const hasSubtasks = totalSubtasks > 0;
+
+  // Format time
+  const formatTime = (hour: number | null, minute: number | null) => {
+    if (hour === null) return null;
+    const h = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const m = minute ? `:${minute.toString().padStart(2, '0')}` : '';
+    return `${h}${m} ${ampm}`;
+  };
+
+  const timeString = formatTime(task.scheduledHour, task.scheduledMinute);
+
+  return (
+    <div
+      onClick={onTap}
+      onTouchStart={() => setPressing(true)}
+      onTouchEnd={() => setPressing(false)}
+      onTouchCancel={() => setPressing(false)}
+      className={`
+        bg-white rounded-lg border-l-4 shadow-sm
+        transition-all touch-manipulation
+        ${pressing ? 'scale-[0.98] bg-gray-50' : 'active:scale-[0.98] active:bg-gray-50'}
+        ${isCompleted ? 'opacity-60' : ''}
+      `}
+      style={{
+        borderLeftColor: task.project?.color || '#9333ea',
+      }}
+    >
+      {/* Main Content */}
+      <div className="p-3">
+        {/* Top Row: Checkbox + Title + Menu */}
+        <div className="flex items-start gap-3 mb-2">
+          {/* Checkbox */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleComplete?.() || onComplete?.();
+            }}
+            className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2 -mt-2 text-gray-400 hover:text-green-600 active:scale-95 transition-all touch-manipulation"
+          >
+            {isCompleted ? (
+              <CheckCircle2 size={28} className="text-green-600 fill-current" />
+            ) : (
+              <Circle size={28} />
+            )}
+          </button>
+
+          {/* Title & Time */}
+          <div className="flex-1 min-w-0 pt-1">
+            <h3 className={`text-base font-medium text-gray-900 line-clamp-2 leading-snug ${isCompleted ? 'line-through text-gray-500' : ''}`}>
+              {task.title}
+            </h3>
+            {showTime && timeString && (
+              <p className="text-sm text-gray-600 mt-0.5 flex items-center gap-1">
+                <Clock size={12} />
+                {timeString}
+              </p>
+            )}
+          </div>
+
+          {/* Menu Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onTap?.();
+            }}
+            className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2 -mt-2 text-gray-400 active:text-gray-600 active:bg-gray-100 rounded-lg transition-all touch-manipulation"
+          >
+            <MoreHorizontal size={20} />
+          </button>
+        </div>
+
+        {/* Metadata Row */}
+        <div className="flex items-center gap-2 flex-wrap mb-3 pl-11">
+          {/* Project */}
+          {showProject && task.project && (
+            <span
+              className="px-2 py-1 rounded text-xs font-medium"
+              style={{
+                backgroundColor: `${task.project.color}20`,
+                color: task.project.color,
+              }}
+            >
+              {task.project.name}
+            </span>
+          )}
+
+          {/* Time Estimate */}
+          {task.estimatedMinutes && task.estimatedMinutes > 0 && (
+            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs flex items-center gap-1">
+              <Clock size={12} />
+              {task.estimatedMinutes}m
+            </span>
+          )}
+
+          {/* Priority */}
+          {task.priority && task.priority !== 'medium' && (
+            <span
+              className={`px-2 py-1 rounded text-xs font-medium ${
+                task.priority === 'urgent'
+                  ? 'bg-red-100 text-red-700'
+                  : task.priority === 'high'
+                  ? 'bg-orange-100 text-orange-700'
+                  : 'bg-blue-100 text-blue-700'
+              }`}
+            >
+              {task.priority}
+            </span>
+          )}
+        </div>
+
+        {/* Subtasks Progress */}
+        {hasSubtasks && (
+          <div className="pl-11 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all duration-500"
+                  style={{ width: `${(completedSubtasks / totalSubtasks) * 100}%` }}
+                />
+              </div>
+              <span className="text-xs text-gray-600 font-medium whitespace-nowrap">
+                {completedSubtasks}/{totalSubtasks}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        {!isCompleted && (
+          <div className="flex gap-2 pl-11">
+            {onStart && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStart();
+                }}
+                className="flex-1 min-h-[44px] bg-blue-500 text-white rounded-lg font-medium text-sm active:bg-blue-600 flex items-center justify-center gap-2 transition-colors touch-manipulation"
+              >
+                <Play size={16} fill="currentColor" />
+                Start
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onTap?.();
+              }}
+              className="px-4 min-h-[44px] bg-gray-100 text-gray-700 rounded-lg font-medium text-sm active:bg-gray-200 flex items-center justify-center gap-2 transition-colors touch-manipulation"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

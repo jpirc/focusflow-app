@@ -17,6 +17,7 @@ import { useViewState } from '@/hooks/useViewState';
 import { useModalState } from '@/hooks/useModalState';
 import { useTaskFilters } from '@/hooks/useTaskFilters';
 import { useLocalStorageMigration } from '@/hooks/useLocalStorageMigration';
+import { useMobileBreakpoint } from '@/hooks/useBreakpoint';
 
 // Components
 import { Sidebar, Header } from '@/components/layout';
@@ -42,6 +43,13 @@ import DualPanelLayout from '@/components/DualPanelLayout';
 import TimelinePanel from '@/components/TimelinePanel';
 import { TimeBudget } from '@/components/ui/TimeBudget';
 
+// Mobile Components
+import { MobileBottomNav } from '@/components/mobile/MobileBottomNav';
+import { MobileHeader } from '@/components/mobile/MobileHeader';
+import { MobileTimeBlocksView } from '@/components/mobile/MobileTimeBlocksView';
+import { MobileTimelineView } from '@/components/mobile/MobileTimelineView';
+import { MobileFAB } from '@/components/mobile/MobileFAB';
+
 // Utilities & Constants
 import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeekend, getRelativeDayLabel } from '@/lib/utils/date';
 import { TIME_BLOCKS } from '@/lib/constants';
@@ -60,6 +68,11 @@ export default function DopatikaApp() {
 
     // Run localStorage migration from FocusFlow to Dopatika (one-time)
     useLocalStorageMigration();
+
+    // Mobile responsiveness
+    const isMobile = useMobileBreakpoint();
+    const [mobileTab, setMobileTab] = useState<'today' | 'timeline' | 'inbox' | 'projects' | 'more'>('today');
+    const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
     // ============================================
     // Custom Hooks for State Management
@@ -654,6 +667,194 @@ export default function DopatikaApp() {
     // Render
     // ============================================
 
+    // Mobile Layout
+    if (isMobile) {
+        return (
+            <div className="flex flex-col h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
+                {/* Mobile Header */}
+                <MobileHeader
+                    title={mobileTab === 'today' ? 'Today' : mobileTab === 'timeline' ? 'Timeline' : mobileTab === 'inbox' ? 'Inbox' : mobileTab === 'projects' ? 'Projects' : 'More'}
+                    date={currentDate}
+                    onMenuClick={() => setMobileDrawerOpen(true)}
+                    onSettingsClick={() => window.location.href = '/settings'}
+                />
+
+                {/* Main Content - Scrollable */}
+                <main className="flex-1 overflow-auto pb-20">
+                    {/* Today Tab */}
+                    {mobileTab === 'today' && (
+                        <>
+                            {/* Top 3 Section */}
+                            <div className="bg-white border-b border-gray-200 p-4">
+                                <Top3Section
+                                    tasks={tasks}
+                                    currentDate={formatDate(currentDate)}
+                                    onTogglePriority={handleTogglePriority}
+                                    onDismiss={(date) => console.log('Dismiss top 3', date)}
+                                />
+                            </div>
+
+                            {/* Time Budget */}
+                            <div className="bg-white border-b border-gray-200 p-4">
+                                <TimeBudget
+                                    tasks={todayTasks}
+                                    overloadedBlocks={Object.keys(overloadedBlocks)}
+                                />
+                            </div>
+
+                            {/* Time Blocks */}
+                            <MobileTimeBlocksView
+                                tasks={todayTasks}
+                                onTaskTap={(task) => {
+                                    setEditingTask(task);
+                                    setTaskModalOpen(true);
+                                }}
+                                onTaskStart={(task) => {
+                                    handleStartTask(task.id);
+                                    pomodoro.startPomodoro(task);
+                                }}
+                                onTaskComplete={(taskId) => updateStatus(taskId, 'completed')}
+                            />
+                        </>
+                    )}
+
+                    {/* Timeline Tab */}
+                    {mobileTab === 'timeline' && (
+                        <MobileTimelineView
+                            tasks={todayTasks}
+                            onTaskTap={(task) => {
+                                setEditingTask(task);
+                                setTaskModalOpen(true);
+                            }}
+                            onTaskStart={(task) => {
+                                handleStartTask(task.id);
+                                pomodoro.startPomodoro(task);
+                            }}
+                            onTaskComplete={(taskId) => updateStatus(taskId, 'completed')}
+                        />
+                    )}
+
+                    {/* Inbox Tab */}
+                    {mobileTab === 'inbox' && (
+                        <div className="p-4 space-y-3">
+                            <h2 className="text-lg font-semibold text-gray-900">Inbox</h2>
+                            {inboxTasks.length === 0 ? (
+                                <div className="py-20 text-center">
+                                    <div className="text-gray-300 text-5xl mb-3">📭</div>
+                                    <p className="text-gray-500 font-medium">Inbox is empty</p>
+                                    <p className="text-gray-400 text-sm mt-1">You're all caught up!</p>
+                                </div>
+                            ) : (
+                                inboxTasks.map((task) => (
+                                    <div key={task.id}>
+                                        <MobileTaskCard
+                                            task={task}
+                                            onTap={() => {
+                                                setEditingTask(task);
+                                                setTaskModalOpen(true);
+                                            }}
+                                            onStart={() => {
+                                                handleStartTask(task.id);
+                                                pomodoro.startPomodoro(task);
+                                            }}
+                                            onToggleComplete={() => updateStatus(task.id, task.completed ? 'pending' : 'completed')}
+                                        />
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+
+                    {/* Projects Tab */}
+                    {mobileTab === 'projects' && (
+                        <div className="p-4 space-y-4">
+                            <h2 className="text-lg font-semibold text-gray-900">Projects</h2>
+                            {projects.map((project) => {
+                                const projectTasks = tasks.filter(t => t.projectId === project.id);
+                                return (
+                                    <div key={project.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }} />
+                                            <h3 className="font-semibold text-base">{project.name}</h3>
+                                        </div>
+                                        <p className="text-sm text-gray-600">{projectTasks.length} tasks</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* More Tab */}
+                    {mobileTab === 'more' && (
+                        <div className="p-4 space-y-2">
+                            <button
+                                onClick={() => window.location.href = '/analytics'}
+                                className="w-full min-h-[56px] bg-white rounded-lg p-4 text-left border border-gray-200 active:bg-gray-50"
+                            >
+                                <div className="font-medium">Analytics</div>
+                                <div className="text-sm text-gray-600">View your productivity stats</div>
+                            </button>
+                            <button
+                                onClick={() => window.location.href = '/settings'}
+                                className="w-full min-h-[56px] bg-white rounded-lg p-4 text-left border border-gray-200 active:bg-gray-50"
+                            >
+                                <div className="font-medium">Settings</div>
+                                <div className="text-sm text-gray-600">Manage your preferences</div>
+                            </button>
+                        </div>
+                    )}
+                </main>
+
+                {/* Bottom Navigation */}
+                <MobileBottomNav
+                    activeTab={mobileTab}
+                    onTabChange={setMobileTab}
+                    inboxCount={inboxTasks.length}
+                />
+
+                {/* FAB */}
+                <MobileFAB onClick={() => setSmartCaptureModalOpen(true)} />
+
+                {/* Modals (shared with desktop) */}
+                {taskModalOpen && editingTask && (
+                    <EditTaskModal
+                        task={editingTask}
+                        onClose={() => {
+                            setTaskModalOpen(false);
+                            setEditingTask(null);
+                        }}
+                        onUpdate={(updates) => {
+                            updateTask(editingTask.id, updates);
+                            setTaskModalOpen(false);
+                            setEditingTask(null);
+                        }}
+                        onDelete={() => {
+                            deleteTask(editingTask.id);
+                            setTaskModalOpen(false);
+                            setEditingTask(null);
+                        }}
+                        projects={projects}
+                    />
+                )}
+
+                {smartCaptureModalOpen && (
+                    <SmartCaptureModal
+                        isOpen={smartCaptureModalOpen}
+                        onClose={() => setSmartCaptureModalOpen(false)}
+                        onTaskCreated={createTask}
+                        currentDate={formatDate(currentDate)}
+                    />
+                )}
+
+                {/* Pomodoro Timer */}
+                {pomodoro.isRunning && (
+                    <PomodoroTimer pomodoro={pomodoro} />
+                )}
+            </div>
+        );
+    }
+
+    // Desktop Layout
     return (
         <div className="flex h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
             {/* Sidebar */}
