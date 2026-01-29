@@ -37,6 +37,8 @@
   "exclude": [
     "node_modules",
     "dopatika",
-    "dopatika-app"
+    "dopatika-app",
+    "focusflow",
+    "focusflow-app"
   ]
 }
