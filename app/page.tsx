@@ -669,6 +669,11 @@ export default function DopatikaApp() {
 
     // Mobile Layout
     if (isMobile) {
+        // Filter today's tasks for mobile views
+        const todayTasks = tasks.filter(t =>
+            t.date === todayDateStr && t.parentTaskId === null
+        );
+
         return (
             <div className="flex flex-col h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
                 {/* Mobile Header */}
@@ -700,8 +705,17 @@ export default function DopatikaApp() {
                             {/* Time Budget */}
                             <div className="bg-white border-b border-gray-200 p-4">
                                 <TimeBudget
-                                    tasks={todayTasks}
-                                    overloadedBlocks={Object.keys(overloadedBlocks)}
+                                    scheduledMinutes={todayTasks
+                                        .filter(t => !t.completed && t.status !== 'completed')
+                                        .reduce((total, task) => total + (task.estimatedMinutes || task.estimatedDuration || 30), 0)
+                                    }
+                                    completedMinutes={todayTasks
+                                        .filter(t => t.completed || t.status === 'completed')
+                                        .reduce((total, task) => total + (task.estimatedMinutes || task.estimatedDuration || 30), 0)
+                                    }
+                                    mode="full"
+                                    startHour={6}
+                                    endHour={22}
                                 />
                             </div>
 
