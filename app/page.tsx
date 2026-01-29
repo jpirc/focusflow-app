@@ -32,6 +32,7 @@ import { CreateProjectModal } from '@/components/CreateProjectModal';
 import { SmartCaptureModal } from '@/components/SmartCaptureModal';
 import { CelebrationMessage } from '@/components/CelebrationMessage';
 import { DailyPrioritiesModal } from '@/components/DailyPrioritiesModal';
+import { RestartMyDayModal } from '@/components/RestartMyDayModal';
 import { Top3Section } from '@/components/Top3Section';
 import { RolloverNotification } from '@/components/RolloverNotification';
 import { UnblockedTasksNotification } from '@/components/UnblockedTasksNotification';
@@ -43,6 +44,7 @@ import { TimeBudget } from '@/components/ui/TimeBudget';
 // Utilities & Constants
 import { formatDate, formatDisplayDate, addDays, isToday, getWeekStart, isWeekend } from '@/lib/utils/date';
 import { TIME_BLOCKS } from '@/lib/constants';
+import { smartReschedule, saveRestartNote } from '@/lib/utils/reschedule';
 
 // Types
 import { Task, Subtask, TimeBlock, DragItem, TaskStatus, Project } from '@/types';
@@ -181,6 +183,9 @@ export default function FocusFlowApp() {
         openProjectModal,
         closeProjectModal,
     } = modalState;
+
+    // Restart My Day modal state
+    const [restartDayModalOpen, setRestartDayModalOpen] = useState(false);
 
     // Task selection state (local to page)
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -343,6 +348,53 @@ export default function FocusFlowApp() {
         await setTopPriorities(taskIds, todayDateStr);
         setDailyPrioritiesModalOpen(false);
     }, [setTopPriorities, todayDateStr]);
+
+    const handleRestartDay = useCallback(async (note?: string) => {
+        try {
+            // Get today's incomplete tasks
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStr = formatDate(today);
+
+            const incompleteTasks = tasks.filter(t =>
+                t.date === todayStr &&
+                t.status !== 'completed' &&
+                t.timeBlock !== 'inbox'
+            );
+
+            console.log(`[RestartDay] Rescheduling ${incompleteTasks.length} incomplete tasks`);
+
+            // Save note if provided
+            if (note) {
+                saveRestartNote(note);
+            }
+
+            // Run smart reschedule algorithm
+            const rescheduleResults = smartReschedule(incompleteTasks, today);
+
+            console.log(`[RestartDay] Algorithm returned ${rescheduleResults.length} scheduled tasks`);
+
+            // Apply updates to each task
+            const updatePromises = rescheduleResults.map(result => {
+                return updateTask(result.taskId, {
+                    scheduledHour: result.scheduledHour,
+                    scheduledMinute: result.scheduledMinute,
+                    timeBlock: result.timeBlock,
+                });
+            });
+
+            await Promise.all(updatePromises);
+
+            console.log('[RestartDay] All tasks rescheduled successfully');
+
+            // Refresh to show updated schedule
+            await refreshTasks();
+
+        } catch (error) {
+            console.error('[RestartDay] Failed to restart day:', error);
+            throw error;
+        }
+    }, [tasks, updateTask, refreshTasks]);
 
     // Timeline panel handlers
     const handleTimelineTaskClick = useCallback((taskId: string) => {
@@ -651,6 +703,7 @@ export default function FocusFlowApp() {
                         setQuickWinTrigger('manual');
                         setQuickWinModalOpen(true);
                     }}
+                    onRestartDay={() => setRestartDayModalOpen(true)}
                     todayStreak={todayStreak}
                     activeTask={activeTask}
                     onPauseActiveTask={activeTask ? () => pauseTask(activeTask.id) : undefined}
@@ -1170,6 +1223,15 @@ export default function FocusFlowApp() {
                     handleStatusChange(taskId, 'in-progress');
                 }}
                 trigger={quickWinTrigger}
+                theme={theme}
+            />
+
+            <RestartMyDayModal
+                isOpen={restartDayModalOpen}
+                onClose={() => setRestartDayModalOpen(false)}
+                tasks={tasks}
+                projects={projects}
+                onRestart={handleRestartDay}
                 theme={theme}
             />
 

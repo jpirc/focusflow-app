@@ -5,7 +5,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Plus, Flame, Pause, CheckCircle2, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Plus, Flame, Pause, CheckCircle2, ChevronDown, ChevronUp, Zap, RotateCcw } from 'lucide-react';
 import { addDays, getWeekStart } from '@/lib/utils/date';
 import { VIEW_DAY_OPTIONS } from '@/lib/constants';
 import { Theme } from '@/lib/themes';
@@ -26,6 +26,7 @@ interface HeaderProps {
     onViewDaysChange: (days: number) => void;
     onAddTask: () => void;
     onQuickWin?: () => void;
+    onRestartDay?: () => void;
     /** Today's completed task streak count */
     todayStreak?: number;
     /** Currently active task (in-progress) */
@@ -49,6 +50,7 @@ export function Header({
     onViewDaysChange,
     onAddTask,
     onQuickWin,
+    onRestartDay,
     todayStreak = 0,
     activeTask,
     onPauseActiveTask,
@@ -200,6 +202,18 @@ export function Header({
                     >
                         {subtasksExpandedAll ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         {subtasksExpandedAll ? 'Collapse' : 'Expand'}
+                    </button>
+                )}
+
+                {/* Restart My Day Button */}
+                {onRestartDay && (
+                    <button
+                        onClick={onRestartDay}
+                        className="bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all"
+                        title="Mid-day reset: reschedule incomplete tasks"
+                    >
+                        <RotateCcw size={14} />
+                        Restart
                     </button>
                 )}
 

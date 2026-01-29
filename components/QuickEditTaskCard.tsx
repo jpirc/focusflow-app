@@ -27,6 +27,7 @@ import { Task, Project, Subtask, TaskStatus, Priority, EnergyLevel, DragItem, Ti
 import { RolloverWarning } from './RolloverWarning';
 import { RolloverBadge, TaskAgeBadge } from './ui/badges';
 import { StartNowButton } from './ui/StartNowButton';
+import { getTaskUrgency, getUrgencyClasses, getUrgencyStyles } from '../lib/utils/urgency';
 
 // BADGES & UTILS
 // ============================================
@@ -635,11 +636,14 @@ const QuickEditTaskCardComponent: React.FC<QuickEditTaskCardProps> = (props) => 
     const [showTimePrompt, setShowTimePrompt] = useState(false);
     const [loggedMinutes, setLoggedMinutes] = useState('');
 
+    // Urgency detection for ADHD visual scanning
+    const urgency = getTaskUrgency(task);
+
     // Dependency blocking logic
     const dependencyTasks = (task.dependencies || []).map(dep => dep.dependsOn).filter(Boolean);
     const blockingDependencies = dependencyTasks.filter(dep => dep.status !== 'completed' && dep.status !== 'skipped');
     const isBlocked = blockingDependencies.length > 0 && task.status !== 'completed';
-    
+
     const completedSubtasks = (task.subtasks || []).filter(s => s.completed).length;
     const totalSubtasks = (task.subtasks || []).length;
     const hasSubtasks = totalSubtasks > 0;
@@ -827,10 +831,19 @@ const QuickEditTaskCardComponent: React.FC<QuickEditTaskCardProps> = (props) => 
                 isBlocked ? 'opacity-60 bg-red-50/30 ring-2 ring-red-200' : '',
                 isDragging ? 'opacity-50 scale-95' : '',
                 isDragOver ? 'border-t-2 border-t-purple-500' : '',
+                // Urgency pulse for critical tasks (overdue or due in <1hr)
+                !isCompleted && !isBlocked && task.status !== 'in-progress' && urgency.shouldPulse ? 'urgency-pulse' : '',
             ].filter(Boolean).join(' ')}
-            style={{ 
-                borderLeftColor: project.color,
+            style={{
+                // Use urgency border color if task is not completed/blocked/in-progress
+                borderLeftColor: !isCompleted && !isBlocked && task.status !== 'in-progress'
+                    ? urgency.borderColorValue
+                    : project.color,
                 borderLeftWidth: '4px',
+                // Apply urgency glow effect
+                ...(!isCompleted && (urgency.level === 'critical' || urgency.level === 'urgent')
+                    ? { boxShadow: `0 0 0 2px ${urgency.glowColor}, 0 1px 3px 0 rgb(0 0 0 / 0.1)` }
+                    : {}),
                 // In timeline view, use lighter project color background (like Sunsama)
                 // When compact (overlapping tasks), use OPAQUE white background to prevent see-through
                 backgroundColor: timelineHeight 

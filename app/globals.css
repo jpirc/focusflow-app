@@ -192,6 +192,58 @@ kbd {
   animation: streak-glow 2s ease-in-out infinite;
 }
 
+/* Urgency pulse for critical/overdue tasks */
+@keyframes urgency-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+  }
+}
+
+.urgency-pulse {
+  animation: urgency-pulse 2s ease-in-out infinite;
+}
+
+/* Task slide-in animation (for new tasks) */
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.task-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+/* Smooth progress bar fill */
+.progress-bar-fill {
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Checkmark animation */
+@keyframes checkmark-pop {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.checkmark-pop {
+  animation: checkmark-pop 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
