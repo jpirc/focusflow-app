@@ -1,5 +1,5 @@
 /**
- * Theme System for FocusFlow
+ * Theme System for Dopatika
  * Allows users to customize the app's color scheme
  */
 
@@ -106,11 +106,11 @@ export function getTheme(themeId: ThemeId = DEFAULT_THEME): Theme {
 
 export function getStoredTheme(): ThemeId {
     if (typeof window === 'undefined') return DEFAULT_THEME;
-    const stored = localStorage.getItem('focusflow_theme');
+    const stored = localStorage.getItem('dopatika_theme');
     return (stored as ThemeId) || DEFAULT_THEME;
 }
 
 export function setStoredTheme(themeId: ThemeId): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem('focusflow_theme', themeId);
+    localStorage.setItem('dopatika_theme', themeId);
 }

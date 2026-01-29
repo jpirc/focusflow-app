@@ -1,7 +1,7 @@
-# FocusFlow App — Session Notes (Dec 9, 2025)
+# Dopatika App — Session Notes (Dec 9, 2025)
 
 ## Overview
-This session focused on stabilizing the FocusFlow app by implementing server-side authentication enforcement, fixing UI/UX bugs, and tightening TypeScript types. All work was conducted on the `fix/ui-investigation-1765316458` branch and pushed to GitHub.
+This session focused on stabilizing the Dopatika app by implementing server-side authentication enforcement, fixing UI/UX bugs, and tightening TypeScript types. All work was conducted on the `fix/ui-investigation-1765316458` branch and pushed to GitHub.
 
 ## Key Changes Made
 

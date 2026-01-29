@@ -281,7 +281,7 @@ export default function SettingsPage() {
                 ))}
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Choose how many days to show when you open FocusFlow
+                Choose how many days to show when you open Dopatika
               </p>
             </div>
           </div>
@@ -306,7 +306,7 @@ export default function SettingsPage() {
 
         {/* Info Section */}
         <div className="mt-8 text-center text-sm text-gray-600">
-          <p>FocusFlow v1.0.0</p>
+          <p>Dopatika v1.0.0</p>
           <p className="mt-2">
             Questions? Check the{' '}
             <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">

@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Custom FocusFlow colors
+        // Custom Dopatika colors
         focus: {
           50: '#f0f7ff',
           100: '#e0efff',

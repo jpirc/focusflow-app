@@ -1,6 +1,6 @@
-# FocusFlow Feature Roadmap
+# Dopatika Feature Roadmap
 
-This document tracks future features and enhancements for FocusFlow, organized by priority and theme.
+This document tracks future features and enhancements for Dopatika, organized by priority and theme.
 
 ---
 
@@ -9,7 +9,7 @@ This document tracks future features and enhancements for FocusFlow, organized b
 **Branch**: main
 **Status**: In Progress (Timeline View 83% complete)
 
-Transform FocusFlow from abstract time blocks into a concrete, visual timeline that helps ADHD brains understand time, capacity, and progress at a glance.
+Transform Dopatika from abstract time blocks into a concrete, visual timeline that helps ADHD brains understand time, capacity, and progress at a glance.
 
 **✅ Major accomplishments:**
 - Timeline view with hour grid and current time marker
@@ -323,7 +323,7 @@ Transform FocusFlow from abstract time blocks into a concrete, visual timeline t
 
 - [ ] **Apple Calendar / Outlook**: Cross-platform support
   - Same features as Google Calendar
-  - Unified calendar view in FocusFlow
+  - Unified calendar view in Dopatika
 
 ### External Tools
 - [ ] **Notion Integration**: Sync tasks with Notion databases

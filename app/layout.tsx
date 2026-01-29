@@ -6,12 +6,12 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'FocusFlow - Visual Planning for Your Brain',
+  title: 'Dopatika - Visual Planning for Your Brain',
   description: 'A visual planning app designed for ADHD, autism, and anyone who needs flexible structure. Manage routines, stay on track, and follow through.',
-  keywords: ['ADHD planner', 'visual schedule', 'task management', 'neurodivergent', 'productivity'],
-  authors: [{ name: 'FocusFlow' }],
+  keywords: ['ADHD planner', 'visual schedule', 'task management', 'neurodivergent', 'productivity', 'dopamine', 'time management'],
+  authors: [{ name: 'Dopatika' }],
   openGraph: {
-    title: 'FocusFlow - Visual Planning for Your Brain',
+    title: 'Dopatika - Visual Planning for Your Brain',
     description: 'A visual planning app designed for ADHD and neurodivergent minds',
     type: 'website',
   },

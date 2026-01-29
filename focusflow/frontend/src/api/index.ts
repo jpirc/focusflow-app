@@ -12,7 +12,7 @@ const api = axios.create({
 
 // Request interceptor for auth token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('focusflow_token');
+  const token = localStorage.getItem('dopatika_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

@@ -1,4 +1,4 @@
-# FocusFlow Visual Redesign Specification
+# Dopatika Visual Redesign Specification
 
 **Status**: Design & Planning Phase  
 **Priority**: High - Core UX improvement for ADHD users  
@@ -8,7 +8,7 @@
 
 ## 🎯 Design Philosophy
 
-FocusFlow's current design uses abstract time blocks (morning/afternoon/evening). While flexible, this creates **temporal disorientation** for ADHD users who struggle with:
+Dopatika's current design uses abstract time blocks (morning/afternoon/evening). While flexible, this creates **temporal disorientation** for ADHD users who struggle with:
 
 1. **Time blindness**: Can't visualize when things happen
 2. **Capacity estimation**: Schedule 14 hours of work in 8-hour days
@@ -579,7 +579,7 @@ After redesign, measure:
 
 ## 🎨 Design Mockups
 
-See Figma: [FocusFlow Timeline View](link-to-mockups)
+See Figma: [Dopatika Timeline View](link-to-mockups)
 
 - Daily timeline view (hour grid)
 - Capacity visualization

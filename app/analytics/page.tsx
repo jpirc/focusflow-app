@@ -384,7 +384,7 @@ export default function AnalyticsPage() {
                                 No patterns discovered yet
                             </h3>
                             <p className="text-sm text-gray-500 mb-4">
-                                Complete more tasks to help FocusFlow learn your productivity patterns.
+                                Complete more tasks to help Dopatika learn your productivity patterns.
                                 We need at least 5 completed tasks to start finding patterns.
                             </p>
                             <button
@@ -400,7 +400,7 @@ export default function AnalyticsPage() {
                 {/* How It Works */}
                 <section className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-100">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                        How FocusFlow Learns
+                        How Dopatika Learns
                     </h2>
                     <div className="grid md:grid-cols-3 gap-6">
                         <div className="flex gap-3">

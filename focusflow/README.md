@@ -1,10 +1,10 @@
-# FocusFlow 🎯
+# Dopatika 🎯
 
 **Visual Planning for ADHD/Neurodivergent Brains**
 
 A Tiimo-inspired visual planning web app with multi-day timelines, drag-and-drop scheduling, AI task breakdown, and time-block organization.
 
-![FocusFlow Screenshot](screenshot.png)
+![Dopatika Screenshot](screenshot.png)
 
 ## ✨ Features
 

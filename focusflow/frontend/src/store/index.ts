@@ -500,7 +500,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: 'focusflow-storage',
+      name: 'dopatika-storage',
       partialize: (state) => ({
         preferences: state.preferences,
         visibleDays: state.visibleDays,

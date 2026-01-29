@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FocusFlow is an ADHD-friendly visual task planner built with **Next.js 14 App Router**, **TypeScript**, **Prisma/PostgreSQL**, and **NextAuth**. The app focuses on time-block scheduling (morning/afternoon/evening) with multi-day views, subtasks, dependencies, Pomodoro timer integration, and intelligent learning features.
+Dopatika is an ADHD-friendly visual task planner built with **Next.js 14 App Router**, **TypeScript**, **Prisma/PostgreSQL**, and **NextAuth**. The app focuses on time-block scheduling (morning/afternoon/evening) with multi-day views, subtasks, dependencies, Pomodoro timer integration, and intelligent learning features.
 
 ## Development Commands
 

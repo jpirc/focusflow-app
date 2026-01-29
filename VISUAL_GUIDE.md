@@ -1,15 +1,15 @@
-# FocusFlow Visual Guide
+# Dopatika Visual Guide
 ## Understanding Visual Cues & ADHD-Friendly Features
 
 **Last Updated:** January 28, 2026
 
-This guide explains all the visual cues, color coding, and indicators used in FocusFlow to help ADHD users quickly understand their tasks at a glance.
+This guide explains all the visual cues, color coding, and indicators used in Dopatika to help ADHD users quickly understand their tasks at a glance.
 
 ---
 
 ## 🎨 Visual Time Urgency System
 
-FocusFlow uses **color-coded borders** and **animations** to help you instantly identify which tasks need attention NOW. This fights time blindness by making urgency visual, not just textual.
+Dopatika uses **color-coded borders** and **animations** to help you instantly identify which tasks need attention NOW. This fights time blindness by making urgency visual, not just textual.
 
 ### Color Meanings
 

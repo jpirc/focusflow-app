@@ -83,14 +83,14 @@ export function useCelebration(options: CelebrationOptions = {}): UseCelebration
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const today = new Date().toISOString().split('T')[0];
-            const stored = localStorage.getItem('focusflow_daily_streak');
+            const stored = localStorage.getItem('dopatika_daily_streak');
             if (stored) {
                 const { date, count } = JSON.parse(stored);
                 if (date === today) {
                     setTodayStreak(count);
                 } else {
                     // New day, reset streak
-                    localStorage.setItem('focusflow_daily_streak', JSON.stringify({ date: today, count: 0 }));
+                    localStorage.setItem('dopatika_daily_streak', JSON.stringify({ date: today, count: 0 }));
                 }
             }
         }
@@ -103,7 +103,7 @@ export function useCelebration(options: CelebrationOptions = {}): UseCelebration
         // Persist to localStorage
         if (typeof window !== 'undefined') {
             const today = new Date().toISOString().split('T')[0];
-            localStorage.setItem('focusflow_daily_streak', JSON.stringify({ date: today, count: newCount }));
+            localStorage.setItem('dopatika_daily_streak', JSON.stringify({ date: today, count: newCount }));
         }
 
         return newCount;
@@ -113,7 +113,7 @@ export function useCelebration(options: CelebrationOptions = {}): UseCelebration
         setTodayStreak(0);
         if (typeof window !== 'undefined') {
             const today = new Date().toISOString().split('T')[0];
-            localStorage.setItem('focusflow_daily_streak', JSON.stringify({ date: today, count: 0 }));
+            localStorage.setItem('dopatika_daily_streak', JSON.stringify({ date: today, count: 0 }));
         }
     }, []);
 

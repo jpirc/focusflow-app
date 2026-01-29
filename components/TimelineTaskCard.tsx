@@ -341,6 +341,13 @@ function TimelineTaskCardComponent({
             {task.title}
           </span>
 
+          {/* Subtask indicator */}
+          {task.subtasks && task.subtasks.length > 0 && (
+            <span className="flex-shrink-0 text-[7px] px-0.5 py-0 rounded bg-purple-100 text-purple-700 font-semibold" title={`${task.subtasks.filter(s => s.completed).length}/${task.subtasks.length} steps`}>
+              {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
+            </span>
+          )}
+
           {/* Metadata - smaller, secondary */}
           <div className="flex items-center gap-0.5 flex-shrink-0 text-[8px] text-gray-500">
             {/* Project dot */}
@@ -368,8 +375,16 @@ function TimelineTaskCardComponent({
       {isMediumTask && (
         <div className="space-y-0.5">
           {/* Line 1: Title - LEAD with this, larger and bold */}
-          <div className={`text-[11px] font-semibold truncate leading-tight ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-            {task.title}
+          <div className="flex items-center gap-1">
+            <div className={`text-[11px] font-semibold truncate leading-tight ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+              {task.title}
+            </div>
+            {/* Subtask indicator */}
+            {task.subtasks && task.subtasks.length > 0 && (
+              <span className="flex-shrink-0 text-[7px] px-0.5 py-0 rounded bg-purple-100 text-purple-700 font-semibold" title={`${task.subtasks.filter(s => s.completed).length}/${task.subtasks.length} steps`}>
+                {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
+              </span>
+            )}
           </div>
 
           {/* Line 2: Time + Project - smaller, secondary */}
@@ -398,8 +413,16 @@ function TimelineTaskCardComponent({
       {isLongTask && (
         <>
           {/* Title - LEAD with this, largest and bold */}
-          <div className={`text-xs font-semibold leading-tight ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-            {task.title}
+          <div className="flex items-center gap-1">
+            <div className={`text-xs font-semibold leading-tight ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+              {task.title}
+            </div>
+            {/* Subtask indicator */}
+            {task.subtasks && task.subtasks.length > 0 && (
+              <span className="flex-shrink-0 text-[8px] px-1 py-0 rounded bg-purple-100 text-purple-700 font-semibold" title={`${task.subtasks.filter(s => s.completed).length}/${task.subtasks.length} steps`}>
+                {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
+              </span>
+            )}
           </div>
 
           {/* Time - secondary info */}

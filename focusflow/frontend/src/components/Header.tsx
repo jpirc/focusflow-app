@@ -27,7 +27,7 @@ export default function Header() {
             {/* Logo */}
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                FocusFlow
+                Dopatika
               </h1>
               <p className="text-xs text-gray-500">Visual Planning for Your Brain</p>
             </div>

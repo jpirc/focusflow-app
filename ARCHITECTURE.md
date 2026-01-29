@@ -1,8 +1,8 @@
-# FocusFlow Production Architecture
+# Dopatika Production Architecture
 
 ## Overview
 
-This document outlines the complete architecture for transforming FocusFlow from a frontend prototype into a full production application with user accounts, cloud sync, and AI-powered features.
+This document outlines the complete architecture for transforming Dopatika from a frontend prototype into a full production application with user accounts, cloud sync, and AI-powered features.
 
 ---
 

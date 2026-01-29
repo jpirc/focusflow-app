@@ -43,14 +43,14 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
     const [isCollapsed, setIsCollapsed] = useState(() => {
         if (block.id !== 'anytime') return false;
         if (typeof window === 'undefined') return false;
-        const saved = localStorage.getItem('focusflow_anytime_collapsed');
+        const saved = localStorage.getItem('dopatika_anytime_collapsed');
         return saved === 'true';
     });
 
     // Save collapse preference for anytime block
     useEffect(() => {
         if (block.id === 'anytime') {
-            localStorage.setItem('focusflow_anytime_collapsed', String(isCollapsed));
+            localStorage.setItem('dopatika_anytime_collapsed', String(isCollapsed));
         }
     }, [isCollapsed, block.id]);
 

@@ -7,7 +7,7 @@
 
 ## 🎯 Overview
 
-Integrate a full-featured Pomodoro timer system into FocusFlow, seamlessly connecting with existing task tracking infrastructure.
+Integrate a full-featured Pomodoro timer system into Dopatika, seamlessly connecting with existing task tracking infrastructure.
 
 ---
 

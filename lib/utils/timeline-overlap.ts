@@ -2,7 +2,7 @@
  * Timeline Overlap Detection & Multi-Lane Rendering
  *
  * Algorithm inspired by react-big-calendar's overlap detection
- * Adapted for FocusFlow's ADHD-friendly timeline view
+ * Adapted for Dopatika's ADHD-friendly timeline view
  *
  * Key concepts:
  * - Events that overlap in time are placed in separate "columns" (lanes)

@@ -35,13 +35,13 @@ export function Top3Section({
 }: Top3SectionProps) {
     const [isExpanded, setIsExpanded] = useState(() => {
         // Load saved preference from localStorage
-        const saved = localStorage.getItem('focusflow_top3_expanded');
+        const saved = localStorage.getItem('dopatika_top3_expanded');
         return saved !== null ? saved === 'true' : true; // Default to expanded
     });
 
     // Save preference when changed
     useEffect(() => {
-        localStorage.setItem('focusflow_top3_expanded', String(isExpanded));
+        localStorage.setItem('dopatika_top3_expanded', String(isExpanded));
     }, [isExpanded]);
 
     const getProject = (projectId?: string) => projects.find(p => p.id === projectId);

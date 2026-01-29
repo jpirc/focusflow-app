@@ -1,7 +1,7 @@
-# FocusFlow Copilot Instructions
+# Dopatika Copilot Instructions
 
 ## Project Overview
-FocusFlow is an ADHD-friendly visual task planner built with **Next.js 14 App Router**, **TypeScript**, **Prisma/PostgreSQL**, and **NextAuth**. The app focuses on time-block scheduling (morning/afternoon/evening/anytime) with multi-day views, subtasks, task dependencies, and **intelligent learning features**.
+Dopatika is an ADHD-friendly visual task planner built with **Next.js 14 App Router**, **TypeScript**, **Prisma/PostgreSQL**, and **NextAuth**. The app focuses on time-block scheduling (morning/afternoon/evening/anytime) with multi-day views, subtasks, task dependencies, and **intelligent learning features**.
 
 ## Architecture
 

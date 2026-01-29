@@ -1,4 +1,4 @@
-# FocusFlow Performance & Efficiency Audit
+# Dopatika Performance & Efficiency Audit
 **Date**: January 5, 2026  
 **Branch**: `optimize/performance-audit`
 

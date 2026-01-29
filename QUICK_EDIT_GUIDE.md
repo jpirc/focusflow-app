@@ -1,6 +1,6 @@
 # Quick Edit Guide - ADHD-Friendly Task Editing
 
-FocusFlow now features **ultra-fast inline editing** designed specifically for ADHD users. Update tasks in **1-2 clicks** instead of 4+.
+Dopatika now features **ultra-fast inline editing** designed specifically for ADHD users. Update tasks in **1-2 clicks** instead of 4+.
 
 ## 🎯 Design Philosophy
 

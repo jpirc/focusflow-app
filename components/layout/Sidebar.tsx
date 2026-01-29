@@ -143,7 +143,7 @@ export function Sidebar({
                                 backgroundImage: `linear-gradient(to right, ${theme?.colors.primaryFrom || '#2563eb'}, ${theme?.colors.primaryTo || '#0891b2'})`
                             }}
                         >
-                            FocusFlow
+                            Dopatika
                         </h1>
                     ) : (
                         <div 

@@ -28,7 +28,7 @@ export function useViewState() {
     // View mode: time blocks or timeline
     const [viewMode, setViewMode] = useState<'blocks' | 'timeline'>(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('focusflow_view_mode');
+            const saved = localStorage.getItem('dopatika_view_mode');
             return (saved as 'blocks' | 'timeline') || 'timeline';
         }
         return 'timeline';
@@ -47,7 +47,7 @@ export function useViewState() {
     // Persist viewMode to localStorage
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            localStorage.setItem('focusflow_view_mode', viewMode);
+            localStorage.setItem('dopatika_view_mode', viewMode);
         }
     }, [viewMode]);
 

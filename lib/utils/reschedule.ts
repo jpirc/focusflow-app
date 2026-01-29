@@ -191,7 +191,7 @@ export function smartReschedule(
  */
 export function saveRestartNote(note: string, date: Date = new Date()) {
     const dateStr = date.toISOString().split('T')[0];
-    const key = `focusflow_restart_note_${dateStr}`;
+    const key = `dopatika_restart_note_${dateStr}`;
 
     const existing = localStorage.getItem(key);
     const notes = existing ? JSON.parse(existing) : [];
@@ -210,7 +210,7 @@ export function saveRestartNote(note: string, date: Date = new Date()) {
  */
 export function getRestartNotes(date: Date = new Date()): Array<{ timestamp: string; note: string }> {
     const dateStr = date.toISOString().split('T')[0];
-    const key = `focusflow_restart_note_${dateStr}`;
+    const key = `dopatika_restart_note_${dateStr}`;
 
     const existing = localStorage.getItem(key);
     return existing ? JSON.parse(existing) : [];

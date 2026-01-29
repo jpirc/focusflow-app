@@ -1,5 +1,5 @@
 /**
- * FocusFlow - Main Application Page
+ * Dopatika - Main Application Page
  * 
  * This page composes the app from hooks and components.
  * All business logic lives in hooks, all UI in components.
@@ -16,6 +16,7 @@ import { useTasks, useProjects, useCelebration, useTheme, usePomodoro } from '@/
 import { useViewState } from '@/hooks/useViewState';
 import { useModalState } from '@/hooks/useModalState';
 import { useTaskFilters } from '@/hooks/useTaskFilters';
+import { useLocalStorageMigration } from '@/hooks/useLocalStorageMigration';
 
 // Components
 import { Sidebar, Header } from '@/components/layout';
@@ -53,9 +54,12 @@ import { Task, Subtask, TimeBlock, DragItem, TaskStatus, Project } from '@/types
 // Main Component
 // ============================================
 
-export default function FocusFlowApp() {
+export default function DopatikaApp() {
     const { data: session } = useSession();
     const isAuthenticated = !!session?.user?.id;
+
+    // Run localStorage migration from FocusFlow to Dopatika (one-time)
+    useLocalStorageMigration();
 
     // ============================================
     // Custom Hooks for State Management
@@ -298,7 +302,7 @@ export default function FocusFlowApp() {
             if (todayTopPriorities.length > 0) return;
 
             // Check if user has already dismissed the prompt today
-            const dismissedKey = `focusflow_top3_dismissed_${todayDateStr}`;
+            const dismissedKey = `dopatika_top3_dismissed_${todayDateStr}`;
             if (localStorage.getItem(dismissedKey)) return;
 
             // Check if there are any tasks to prioritize
@@ -340,7 +344,7 @@ export default function FocusFlowApp() {
     const handleCloseDailyPriorities = useCallback(() => {
         setDailyPrioritiesModalOpen(false);
         // Mark as dismissed for today
-        const dismissedKey = `focusflow_top3_dismissed_${todayDateStr}`;
+        const dismissedKey = `dopatika_top3_dismissed_${todayDateStr}`;
         localStorage.setItem(dismissedKey, 'true');
     }, [todayDateStr]);
 
@@ -640,7 +644,7 @@ export default function FocusFlowApp() {
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white mx-auto mb-4">
                         <Brain size={24} />
                     </div>
-                    <p className="text-gray-600 font-medium">Loading FocusFlow...</p>
+                    <p className="text-gray-600 font-medium">Loading Dopatika...</p>
                 </div>
             </div>
         );
@@ -797,7 +801,7 @@ export default function FocusFlowApp() {
                                     <button
                                         onClick={() => {
                                             setViewMode('blocks');
-                                            localStorage.setItem('focusflow_view_mode', 'blocks');
+                                            localStorage.setItem('dopatika_view_mode', 'blocks');
                                         }}
                                         className={`px-2 py-1 text-xs font-medium rounded transition-all ${
                                             viewMode === 'blocks'
@@ -811,7 +815,7 @@ export default function FocusFlowApp() {
                                     <button
                                         onClick={() => {
                                             setViewMode('timeline');
-                                            localStorage.setItem('focusflow_view_mode', 'timeline');
+                                            localStorage.setItem('dopatika_view_mode', 'timeline');
                                         }}
                                         className={`px-2 py-1 text-xs font-medium rounded transition-all ${
                                             viewMode === 'timeline'

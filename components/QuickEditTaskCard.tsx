@@ -1061,27 +1061,29 @@ const QuickEditTaskCardComponent: React.FC<QuickEditTaskCardProps> = (props) => 
                     </div>
 
                     {/* Quick actions - show on hover */}
-                    {!compact && !isCompleted && (
+                    {!isCompleted && (
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm('Delete this task?')) {
-                                    onDelete(task.id);
-                                }
-                            }}
-                            className="p-1 hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors"
-                            title="Delete task"
-                        >
-                            <Trash2 size={14} />
-                        </button>
+                        {!compact && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm('Delete this task?')) {
+                                        onDelete(task.id);
+                                    }
+                                }}
+                                className="p-1 hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors"
+                                title="Delete task"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        )}
                         <button
                             ref={menuButtonRef}
                             onClick={onMenuToggle}
-                            className="p-1 hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+                            className={`${compact ? 'p-0.5' : 'p-1'} hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors`}
                             title="More actions"
                         >
-                            <MoreHorizontal size={14} />
+                            <MoreHorizontal size={compact ? 12 : 14} />
                         </button>
                     </div>
                     )}
@@ -1245,22 +1247,22 @@ const QuickEditTaskCardComponent: React.FC<QuickEditTaskCardProps> = (props) => 
                 )}
 
                 {/* Subtasks - Visual & ADHD-Friendly - Collapsible with next action always visible */}
-                {hasSubtasks && !compact && (
-                    <div className="mt-2 space-y-1">
+                {hasSubtasks && (
+                    <div className={`${compact ? 'mt-0.5' : 'mt-2'} space-y-1`}>
                         {/* Progress header - clickable */}
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setSubtasksExpanded(!subtasksExpanded);
                             }}
-                            className="w-full flex items-center justify-between text-[10px] hover:bg-gray-50 rounded px-1 py-0.5 transition-colors"
+                            className={`w-full flex items-center justify-between ${compact ? 'text-[9px]' : 'text-[10px]'} hover:bg-gray-50 rounded ${compact ? 'px-0.5 py-0' : 'px-1 py-0.5'} transition-colors`}
                         >
                             <span className="text-gray-500 font-medium flex items-center gap-1">
-                                <CheckCircle2 size={10} />
+                                <CheckCircle2 size={compact ? 8 : 10} />
                                 {completedSubtasks}/{totalSubtasks} steps
                             </span>
                             <div className="flex items-center gap-2 flex-1 ml-2">
-                                <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                <div className={`flex-1 ${compact ? 'h-1' : 'h-1.5'} bg-gray-200 rounded-full overflow-hidden`}>
                                     <div
                                         className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all duration-500"
                                         style={{ width: `${(completedSubtasks / totalSubtasks) * 100}%` }}
@@ -1272,27 +1274,27 @@ const QuickEditTaskCardComponent: React.FC<QuickEditTaskCardProps> = (props) => 
                             </div>
                         </button>
 
-                        {/* Next action - Always visible */}
-                        {(() => {
+                        {/* Next action - Always visible (unless collapsed in compact mode) */}
+                        {(!compact || subtasksExpanded) && (() => {
                             const nextSubtask = task.subtasks?.find(s => !s.completed);
                             const nextIndex = task.subtasks?.findIndex(s => s.id === nextSubtask?.id);
                             if (!nextSubtask) return null;
-                            
+
                             return (
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onToggleSubtask(task.id, nextSubtask.id);
                                     }}
-                                    className="w-full flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-all text-left bg-gradient-to-r from-purple-50 to-blue-50 border-l-2 border-purple-400 text-gray-800 font-medium hover:from-purple-100 hover:to-blue-100"
+                                    className={`w-full flex items-center ${compact ? 'gap-1 px-1 py-0.5 text-[10px]' : 'gap-1.5 px-2 py-1 text-xs'} rounded transition-all text-left bg-gradient-to-r from-purple-50 to-blue-50 ${compact ? 'border-l' : 'border-l-2'} border-purple-400 text-gray-800 font-medium hover:from-purple-100 hover:to-blue-100`}
                                 >
-                                    <span className="flex-shrink-0 w-4 h-4 rounded-full bg-purple-500 text-white text-[9px] font-bold flex items-center justify-center">
+                                    <span className={`flex-shrink-0 ${compact ? 'w-3 h-3 text-[8px]' : 'w-4 h-4 text-[9px]'} rounded-full bg-purple-500 text-white font-bold flex items-center justify-center`}>
                                         {(nextIndex ?? 0) + 1}
                                     </span>
-                                    <span className="flex-1 leading-tight">
+                                    <span className="flex-1 leading-tight truncate">
                                         {nextSubtask.title}
                                     </span>
-                                    {nextSubtask.estimatedMinutes && (
+                                    {nextSubtask.estimatedMinutes && !compact && (
                                         <span className="text-[10px] flex-shrink-0 px-1 rounded text-purple-600 bg-purple-100 font-medium">
                                             {nextSubtask.estimatedMinutes}m
                                         </span>
@@ -1303,12 +1305,12 @@ const QuickEditTaskCardComponent: React.FC<QuickEditTaskCardProps> = (props) => 
 
                         {/* Remaining subtasks - Only when expanded */}
                         {subtasksExpanded && task.subtasks && task.subtasks.length > 1 && (
-                            <div className="space-y-0.5">
+                            <div className={compact ? 'space-y-0' : 'space-y-0.5'}>
                             {task.subtasks?.map((subtask, idx) => {
                                 const isNext = !subtask.completed && task.subtasks?.slice(0, idx).every(s => s.completed);
                                 // Skip next action (already shown above)
                                 if (isNext) return null;
-                                
+
                                 return (
                                     <button
                                         key={subtask.id}
@@ -1316,23 +1318,23 @@ const QuickEditTaskCardComponent: React.FC<QuickEditTaskCardProps> = (props) => 
                                             e.stopPropagation();
                                             onToggleSubtask(task.id, subtask.id);
                                         }}
-                                        className={`w-full flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-all text-left ${
+                                        className={`w-full flex items-center ${compact ? 'gap-1 px-1 py-0.5 text-[10px]' : 'gap-1.5 px-2 py-1 text-xs'} rounded transition-all text-left ${
                                             subtask.completed
                                                 ? 'bg-green-50/50 text-green-700 opacity-60'
                                                 : 'bg-gray-50/50 text-gray-600 hover:bg-gray-100'
                                         }`}
                                     >
-                                        <span className={`flex-shrink-0 w-4 h-4 rounded-full text-[9px] font-semibold flex items-center justify-center ${
-                                            subtask.completed 
-                                                ? 'bg-green-500 text-white' 
+                                        <span className={`flex-shrink-0 ${compact ? 'w-3 h-3 text-[8px]' : 'w-4 h-4 text-[9px]'} rounded-full font-semibold flex items-center justify-center ${
+                                            subtask.completed
+                                                ? 'bg-green-500 text-white'
                                                 : 'bg-gray-300 text-gray-600'
                                         }`}>
                                             {subtask.completed ? '✓' : idx + 1}
                                         </span>
-                                        <span className={`flex-1 leading-tight ${subtask.completed ? 'line-through' : ''}`}>
+                                        <span className={`flex-1 leading-tight truncate ${subtask.completed ? 'line-through' : ''}`}>
                                             {subtask.title}
                                         </span>
-                                        {subtask.estimatedMinutes && (
+                                        {subtask.estimatedMinutes && !compact && (
                                             <span className="text-[10px] flex-shrink-0 px-1 text-gray-500">
                                                 {subtask.estimatedMinutes}m
                                             </span>

@@ -1,8 +1,8 @@
-# FocusFlow 🎯
+# Dopatika 🎯
 
 A visual planning app designed for ADHD, autism, and anyone who needs flexible structure. Built with Next.js 14, TypeScript, and Tailwind CSS.
 
-![FocusFlow Screenshot](screenshot.png)
+![Dopatika Screenshot](screenshot.png)
 
 ## ✨ Features
 

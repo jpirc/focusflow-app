@@ -25,7 +25,7 @@ import {
 /**
  * The main intelligence service implementation
  */
-class FocusFlowIntelligence implements IntelligenceService {
+class DopatikaIntelligence implements IntelligenceService {
     // ============================================
     // EVENT TRACKING
     // ============================================
@@ -80,7 +80,7 @@ class FocusFlowIntelligence implements IntelligenceService {
 }
 
 // Export singleton instance
-export const intelligence = new FocusFlowIntelligence();
+export const intelligence = new DopatikaIntelligence();
 
 // Re-export types and utilities
 export * from './types';

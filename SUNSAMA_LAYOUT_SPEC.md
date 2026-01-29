@@ -1,7 +1,7 @@
 # Sunsama-Style Layout Specification
 
 ## Overview
-Transform FocusFlow's main interface from a pure time-block layout to a dual-panel design inspired by Sunsama: **67% time blocks (left)** + **33% timeline (right)**. This creates a hybrid view combining the contextual richness of time blocks with the precise scheduling of a timeline.
+Transform Dopatika's main interface from a pure time-block layout to a dual-panel design inspired by Sunsama: **67% time blocks (left)** + **33% timeline (right)**. This creates a hybrid view combining the contextual richness of time blocks with the precise scheduling of a timeline.
 
 ## Goals
 - **Hybrid Context**: Time blocks show full task details; timeline shows scheduled time positions

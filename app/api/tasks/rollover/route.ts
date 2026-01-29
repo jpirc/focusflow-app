@@ -59,11 +59,13 @@ export async function POST(req: NextRequest) {
           userId,
           date: today,
           status: { notIn: ['completed'] },
+          parentTaskId: null, // Only get parent tasks
         },
         select: { id: true, title: true, date: true, timeBlock: true },
       });
 
       for (const task of fridayTasks) {
+        // Update parent task
         await prisma.task.update({
           where: { id: task.id },
           data: {
@@ -75,6 +77,18 @@ export async function POST(req: NextRequest) {
             status: 'pending', // Reset to pending from in-progress if needed
           },
         });
+
+        // Also roll over all subtasks of this parent task
+        await prisma.task.updateMany({
+          where: { parentTaskId: task.id },
+          data: {
+            date: mondayStr,
+            timeBlock: 'anytime',
+            scheduledHour: null,
+            scheduledMinute: null,
+          },
+        });
+
         rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
       }
     } else if (dayOfWeek !== 5) { // Not Friday - handle normal weekday rollover
@@ -101,11 +115,13 @@ export async function POST(req: NextRequest) {
             userId,
             date: { in: [fridayStr, saturdayStr, sundayStr] },
             status: { notIn: ['completed'] },
+            parentTaskId: null, // Only get parent tasks
           },
           select: { id: true, title: true, date: true, timeBlock: true },
         });
 
         for (const task of weekendTasks) {
+          // Update parent task
           await prisma.task.update({
             where: { id: task.id },
             data: {
@@ -117,6 +133,18 @@ export async function POST(req: NextRequest) {
               status: 'pending', // Reset to pending from in-progress if needed
             },
           });
+
+          // Also roll over all subtasks of this parent task
+          await prisma.task.updateMany({
+            where: { parentTaskId: task.id },
+            data: {
+              date: today,
+              timeBlock: 'anytime',
+              scheduledHour: null,
+              scheduledMinute: null,
+            },
+          });
+
           rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
         }
       } else {
@@ -130,11 +158,13 @@ export async function POST(req: NextRequest) {
             userId,
             date: yesterdayStr,
             status: { notIn: ['completed'] },
+            parentTaskId: null, // Only get parent tasks
           },
           select: { id: true, title: true, date: true, timeBlock: true },
         });
 
         for (const task of yesterdayTasks) {
+          // Update parent task
           await prisma.task.update({
             where: { id: task.id },
             data: {
@@ -146,6 +176,18 @@ export async function POST(req: NextRequest) {
               status: 'pending', // Reset to pending from in-progress if needed
             },
           });
+
+          // Also roll over all subtasks of this parent task
+          await prisma.task.updateMany({
+            where: { parentTaskId: task.id },
+            data: {
+              date: today,
+              timeBlock: 'anytime',
+              scheduledHour: null,
+              scheduledMinute: null,
+            },
+          });
+
           rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
         }
       }
