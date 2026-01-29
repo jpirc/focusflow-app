@@ -1094,7 +1094,7 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ projects, tasks, select
             className={`w-full text-left px-3 py-2 rounded-lg transition-colors
               ${selectedProject === project.id ? 'ring-2 ring-offset-1' : 'hover:bg-gray-50'}
             `}
-            style={selectedProject === project.id ? { backgroundColor: project.bgColor, ringColor: project.color } : {}}
+            style={selectedProject === project.id ? { backgroundColor: project.bgColor, ['--tw-ring-color' as any]: project.color } : {}}
           >
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }} />
