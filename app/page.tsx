@@ -687,10 +687,13 @@ export default function DopatikaApp() {
                             {/* Top 3 Section */}
                             <div className="bg-white border-b border-gray-200 p-4">
                                 <Top3Section
-                                    tasks={tasks}
-                                    currentDate={formatDate(currentDate)}
-                                    onTogglePriority={handleTogglePriority}
-                                    onDismiss={(date) => console.log('Dismiss top 3', date)}
+                                    topPriorities={tasks.filter(t => t.isTopPriority && t.topPriorityDate === todayDateStr)}
+                                    projects={projects}
+                                    onEdit={handleEditTask}
+                                    onSetPriorities={() => setDailyPrioritiesModalOpen(true)}
+                                    onStatusChange={handleStatusChange}
+                                    onStartNow={handleStartNow}
+                                    mode="full"
                                 />
                             </div>
 
