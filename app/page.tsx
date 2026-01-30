@@ -858,6 +858,18 @@ export default function DopatikaApp() {
                     />
                 )}
 
+                {/* Daily Priorities Modal */}
+                {dailyPrioritiesModalOpen && (
+                    <DailyPrioritiesModal
+                        isOpen={dailyPrioritiesModalOpen}
+                        onClose={handleCloseDailyPriorities}
+                        tasks={tasks}
+                        projects={projects}
+                        onSetTopPriorities={handleSetTopPriorities}
+                        existingTopPriorities={todayTopPriorities}
+                    />
+                )}
+
                 {/* Pomodoro Timer */}
                 {pomodoro.timerState !== 'idle' && (
                     <PomodoroTimer
