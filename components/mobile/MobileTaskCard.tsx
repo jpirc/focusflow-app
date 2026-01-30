@@ -8,13 +8,10 @@
 
 import { useState } from 'react';
 import { CheckCircle2, Circle, Play, Clock, ChevronRight, MoreHorizontal } from 'lucide-react';
-import type { Task, Project } from '@prisma/client';
+import type { Task } from '@/types';
 
 interface MobileTaskCardProps {
-  task: Task & {
-    project?: Project | null;
-    subtasks?: Task[];
-  };
+  task: Task;
   onTap?: () => void;
   onStart?: () => void;
   onComplete?: () => void;
@@ -40,8 +37,8 @@ export function MobileTaskCard({
   const hasSubtasks = totalSubtasks > 0;
 
   // Format time
-  const formatTime = (hour: number | null, minute: number | null) => {
-    if (hour === null) return null;
+  const formatTime = (hour?: number | null, minute?: number | null) => {
+    if (hour === null || hour === undefined) return null;
     const h = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const m = minute ? `:${minute.toString().padStart(2, '0')}` : '';
@@ -49,6 +46,14 @@ export function MobileTaskCard({
   };
 
   const timeString = formatTime(task.scheduledHour, task.scheduledMinute);
+
+  // Simple color mapping based on priority for border
+  const getBorderColor = () => {
+    if (task.priority === 'urgent') return '#ef4444';
+    if (task.priority === 'high') return '#f97316';
+    if (task.priority === 'medium') return '#3b82f6';
+    return '#9333ea'; // low or default
+  };
 
   return (
     <div
@@ -63,7 +68,7 @@ export function MobileTaskCard({
         ${isCompleted ? 'opacity-60' : ''}
       `}
       style={{
-        borderLeftColor: task.project?.color || '#9333ea',
+        borderLeftColor: getBorderColor(),
       }}
     >
       {/* Main Content */}
@@ -112,18 +117,6 @@ export function MobileTaskCard({
 
         {/* Metadata Row */}
         <div className="flex items-center gap-2 flex-wrap mb-3 pl-11">
-          {/* Project */}
-          {showProject && task.project && (
-            <span
-              className="px-2 py-1 rounded text-xs font-medium"
-              style={{
-                backgroundColor: `${task.project.color}20`,
-                color: task.project.color,
-              }}
-            >
-              {task.project.name}
-            </span>
-          )}
 
           {/* Time Estimate */}
           {task.estimatedMinutes && task.estimatedMinutes > 0 && (

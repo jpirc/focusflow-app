@@ -46,6 +46,7 @@ import { TimeBudget } from '@/components/ui/TimeBudget';
 // Mobile Components
 import { MobileBottomNav } from '@/components/mobile/MobileBottomNav';
 import { MobileHeader } from '@/components/mobile/MobileHeader';
+import { MobileTaskCard } from '@/components/mobile/MobileTaskCard';
 import { MobileTimeBlocksView } from '@/components/mobile/MobileTimeBlocksView';
 import { MobileTimelineView } from '@/components/mobile/MobileTimelineView';
 import { MobileFAB } from '@/components/mobile/MobileFAB';
@@ -73,6 +74,8 @@ export default function DopatikaApp() {
     const isMobile = useMobileBreakpoint();
     const [mobileTab, setMobileTab] = useState<'today' | 'timeline' | 'inbox' | 'projects' | 'more'>('today');
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+    const [taskModalOpen, setTaskModalOpen] = useState(false);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
 
     // ============================================
     // Custom Hooks for State Management
@@ -670,9 +673,7 @@ export default function DopatikaApp() {
     // Mobile Layout
     if (isMobile) {
         // Filter today's tasks for mobile views
-        const todayTasks = tasks.filter(t =>
-            t.date === todayDateStr && t.parentTaskId === null
-        );
+        const todayTasks = tasks.filter(t => t.date === todayDateStr);
 
         return (
             <div className="flex flex-col h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
@@ -727,8 +728,7 @@ export default function DopatikaApp() {
                                     setTaskModalOpen(true);
                                 }}
                                 onTaskStart={(task) => {
-                                    handleStartTask(task.id);
-                                    pomodoro.startPomodoro(task);
+                                    startTaskNow(task.id);
                                 }}
                                 onTaskComplete={(taskId) => updateStatus(taskId, 'completed')}
                             />
@@ -744,8 +744,7 @@ export default function DopatikaApp() {
                                 setTaskModalOpen(true);
                             }}
                             onTaskStart={(task) => {
-                                handleStartTask(task.id);
-                                pomodoro.startPomodoro(task);
+                                startTaskNow(task.id);
                             }}
                             onTaskComplete={(taskId) => updateStatus(taskId, 'completed')}
                         />
@@ -763,20 +762,18 @@ export default function DopatikaApp() {
                                 </div>
                             ) : (
                                 inboxTasks.map((task) => (
-                                    <div key={task.id}>
-                                        <MobileTaskCard
-                                            task={task}
-                                            onTap={() => {
-                                                setEditingTask(task);
-                                                setTaskModalOpen(true);
-                                            }}
-                                            onStart={() => {
-                                                handleStartTask(task.id);
-                                                pomodoro.startPomodoro(task);
-                                            }}
-                                            onToggleComplete={() => updateStatus(task.id, task.completed ? 'pending' : 'completed')}
-                                        />
-                                    </div>
+                                    <MobileTaskCard
+                                        key={task.id}
+                                        task={task}
+                                        onTap={() => {
+                                            setEditingTask(task);
+                                            setTaskModalOpen(true);
+                                        }}
+                                        onStart={() => {
+                                            startTaskNow(task.id);
+                                        }}
+                                        onToggleComplete={() => updateStatus(task.id, task.completed ? 'pending' : 'completed')}
+                                    />
                                 ))
                             )}
                         </div>
@@ -835,22 +832,21 @@ export default function DopatikaApp() {
                 {/* Modals (shared with desktop) */}
                 {taskModalOpen && editingTask && (
                     <EditTaskModal
+                        isOpen={taskModalOpen}
                         task={editingTask}
                         onClose={() => {
                             setTaskModalOpen(false);
                             setEditingTask(null);
                         }}
-                        onUpdate={(updates) => {
-                            updateTask(editingTask.id, updates);
-                            setTaskModalOpen(false);
-                            setEditingTask(null);
-                        }}
-                        onDelete={() => {
-                            deleteTask(editingTask.id);
-                            setTaskModalOpen(false);
-                            setEditingTask(null);
-                        }}
+                        onUpdate={updateTask}
                         projects={projects}
+                        allTasks={tasks}
+                        onAddSubtask={addSubtask}
+                        onToggleSubtask={toggleSubtask}
+                        onDeleteSubtask={deleteSubtask}
+                        onUpdateSubtask={updateSubtask}
+                        onAddDependency={addDependency}
+                        onRemoveDependency={removeDependency}
                     />
                 )}
 
@@ -858,14 +854,27 @@ export default function DopatikaApp() {
                     <SmartCaptureModal
                         isOpen={smartCaptureModalOpen}
                         onClose={() => setSmartCaptureModalOpen(false)}
-                        onTaskCreated={createTask}
-                        currentDate={formatDate(currentDate)}
+                        onTasksCreated={refreshTasks}
                     />
                 )}
 
                 {/* Pomodoro Timer */}
-                {pomodoro.isRunning && (
-                    <PomodoroTimer pomodoro={pomodoro} />
+                {pomodoro.timerState !== 'idle' && (
+                    <PomodoroTimer
+                        timerState={pomodoro.timerState}
+                        isActive={pomodoro.isActive}
+                        isPaused={pomodoro.isPaused}
+                        timeRemaining={pomodoro.timeRemaining}
+                        currentTask={pomodoro.currentTask}
+                        sessionNumber={pomodoro.sessionNumber}
+                        onPause={pomodoro.pausePomodoro}
+                        onResume={pomodoro.resumePomodoro}
+                        onStop={() => pomodoro.stopPomodoro(true)}
+                        onCompleteTask={(taskId) => handleStatusChange(taskId, 'completed')}
+                        settings={pomodoro.settings}
+                        updateSettings={pomodoro.updateSettings}
+                        theme={theme}
+                    />
                 )}
             </div>
         );

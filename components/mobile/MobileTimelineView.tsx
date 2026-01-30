@@ -7,15 +7,12 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { Task, Project } from '@prisma/client';
+import type { Task } from '@/types';
 import { MobileTaskCard } from './MobileTaskCard';
 import { Clock } from 'lucide-react';
 
 interface MobileTimelineViewProps {
-  tasks: (Task & {
-    project?: Project | null;
-    subtasks?: Task[];
-  })[];
+  tasks: Task[];
   onTaskTap?: (task: Task) => void;
   onTaskStart?: (task: Task) => void;
   onTaskComplete?: (taskId: string) => void;

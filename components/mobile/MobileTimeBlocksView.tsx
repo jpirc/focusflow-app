@@ -8,7 +8,7 @@
 
 import { useState, useMemo } from 'react';
 import { ChevronDown, Sunrise, Sun, Sunset, Moon } from 'lucide-react';
-import type { Task, Project } from '@prisma/client';
+import type { Task } from '@/types';
 import { MobileTaskCard } from './MobileTaskCard';
 
 const TIME_BLOCKS = [
@@ -19,10 +19,7 @@ const TIME_BLOCKS = [
 ];
 
 interface MobileTimeBlocksViewProps {
-  tasks: (Task & {
-    project?: Project | null;
-    subtasks?: Task[];
-  })[];
+  tasks: Task[];
   onTaskTap?: (task: Task) => void;
   onTaskStart?: (task: Task) => void;
   onTaskComplete?: (taskId: string) => void;
