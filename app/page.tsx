@@ -686,12 +686,12 @@ export default function DopatikaApp() {
                 />
 
                 {/* Main Content - Scrollable */}
-                <main className="flex-1 overflow-auto pb-20">
+                <main className="flex-1 overflow-auto pb-16">
                     {/* Today Tab */}
                     {mobileTab === 'today' && (
                         <>
                             {/* Top 3 Section */}
-                            <div className="bg-white border-b border-gray-200 p-4">
+                            <div className="bg-white border-b border-gray-200 p-3">
                                 <Top3Section
                                     topPriorities={tasks.filter(t => t.isTopPriority && t.topPriorityDate === todayDateStr)}
                                     projects={projects}
@@ -704,7 +704,7 @@ export default function DopatikaApp() {
                             </div>
 
                             {/* Time Budget */}
-                            <div className="bg-white border-b border-gray-200 p-4">
+                            <div className="bg-white border-b border-gray-200 p-3">
                                 <TimeBudget
                                     scheduledMinutes={todayTasks
                                         .filter(t => !t.completed && t.status !== 'completed')
@@ -752,13 +752,13 @@ export default function DopatikaApp() {
 
                     {/* Inbox Tab */}
                     {mobileTab === 'inbox' && (
-                        <div className="p-4 space-y-3">
-                            <h2 className="text-lg font-semibold text-gray-900">Inbox</h2>
+                        <div className="p-3 space-y-2">
+                            <h2 className="text-base font-semibold text-gray-900 mb-2">Inbox</h2>
                             {inboxTasks.length === 0 ? (
-                                <div className="py-20 text-center">
-                                    <div className="text-gray-300 text-5xl mb-3">📭</div>
-                                    <p className="text-gray-500 font-medium">Inbox is empty</p>
-                                    <p className="text-gray-400 text-sm mt-1">You're all caught up!</p>
+                                <div className="py-16 text-center">
+                                    <div className="text-gray-300 text-4xl mb-2">📭</div>
+                                    <p className="text-gray-500 font-medium text-sm">Inbox is empty</p>
+                                    <p className="text-gray-400 text-xs mt-0.5">You're all caught up!</p>
                                 </div>
                             ) : (
                                 inboxTasks.map((task) => (
@@ -781,17 +781,17 @@ export default function DopatikaApp() {
 
                     {/* Projects Tab */}
                     {mobileTab === 'projects' && (
-                        <div className="p-4 space-y-4">
-                            <h2 className="text-lg font-semibold text-gray-900">Projects</h2>
+                        <div className="p-3 space-y-2">
+                            <h2 className="text-base font-semibold text-gray-900 mb-2">Projects</h2>
                             {projects.map((project) => {
                                 const projectTasks = tasks.filter(t => t.projectId === project.id);
                                 return (
-                                    <div key={project.id} className="bg-white rounded-lg p-4 border border-gray-200">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }} />
-                                            <h3 className="font-semibold text-base">{project.name}</h3>
+                                    <div key={project.id} className="bg-white rounded-lg p-3 border border-gray-200">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: project.color }} />
+                                            <h3 className="font-semibold text-sm">{project.name}</h3>
                                         </div>
-                                        <p className="text-sm text-gray-600">{projectTasks.length} tasks</p>
+                                        <p className="text-xs text-gray-600">{projectTasks.length} tasks</p>
                                     </div>
                                 );
                             })}
@@ -800,20 +800,20 @@ export default function DopatikaApp() {
 
                     {/* More Tab */}
                     {mobileTab === 'more' && (
-                        <div className="p-4 space-y-2">
+                        <div className="p-3 space-y-2">
                             <button
                                 onClick={() => window.location.href = '/analytics'}
-                                className="w-full min-h-[56px] bg-white rounded-lg p-4 text-left border border-gray-200 active:bg-gray-50"
+                                className="w-full min-h-[48px] bg-white rounded-lg p-3 text-left border border-gray-200 active:bg-gray-50 touch-manipulation"
                             >
-                                <div className="font-medium">Analytics</div>
-                                <div className="text-sm text-gray-600">View your productivity stats</div>
+                                <div className="font-medium text-sm">Analytics</div>
+                                <div className="text-xs text-gray-600">View your productivity stats</div>
                             </button>
                             <button
                                 onClick={() => window.location.href = '/settings'}
-                                className="w-full min-h-[56px] bg-white rounded-lg p-4 text-left border border-gray-200 active:bg-gray-50"
+                                className="w-full min-h-[48px] bg-white rounded-lg p-3 text-left border border-gray-200 active:bg-gray-50 touch-manipulation"
                             >
-                                <div className="font-medium">Settings</div>
-                                <div className="text-sm text-gray-600">Manage your preferences</div>
+                                <div className="font-medium text-sm">Settings</div>
+                                <div className="text-xs text-gray-600">Manage your preferences</div>
                             </button>
                         </div>
                     )}

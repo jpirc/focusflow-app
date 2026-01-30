@@ -72,32 +72,32 @@ export function MobileTaskCard({
       }}
     >
       {/* Main Content */}
-      <div className="p-3">
+      <div className="p-2.5">
         {/* Top Row: Checkbox + Title + Menu */}
-        <div className="flex items-start gap-3 mb-2">
+        <div className="flex items-start gap-2 mb-1.5">
           {/* Checkbox */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               onToggleComplete?.() || onComplete?.();
             }}
-            className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2 -mt-2 text-gray-400 hover:text-green-600 active:scale-95 transition-all touch-manipulation"
+            className="flex-shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center -ml-1.5 -mt-1.5 text-gray-400 hover:text-green-600 active:scale-95 transition-all touch-manipulation"
           >
             {isCompleted ? (
-              <CheckCircle2 size={28} className="text-green-600 fill-current" />
+              <CheckCircle2 size={24} className="text-green-600 fill-current" />
             ) : (
-              <Circle size={28} />
+              <Circle size={24} />
             )}
           </button>
 
           {/* Title & Time */}
-          <div className="flex-1 min-w-0 pt-1">
-            <h3 className={`text-base font-medium text-gray-900 line-clamp-2 leading-snug ${isCompleted ? 'line-through text-gray-500' : ''}`}>
+          <div className="flex-1 min-w-0 pt-0.5">
+            <h3 className={`text-sm font-medium text-gray-900 line-clamp-2 leading-snug ${isCompleted ? 'line-through text-gray-500' : ''}`}>
               {task.title}
             </h3>
             {showTime && timeString && (
-              <p className="text-sm text-gray-600 mt-0.5 flex items-center gap-1">
-                <Clock size={12} />
+              <p className="text-xs text-gray-600 mt-0.5 flex items-center gap-1">
+                <Clock size={11} />
                 {timeString}
               </p>
             )}
@@ -109,19 +109,19 @@ export function MobileTaskCard({
               e.stopPropagation();
               onTap?.();
             }}
-            className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2 -mt-2 text-gray-400 active:text-gray-600 active:bg-gray-100 rounded-lg transition-all touch-manipulation"
+            className="flex-shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center -mr-1.5 -mt-1.5 text-gray-400 active:text-gray-600 active:bg-gray-100 rounded-lg transition-all touch-manipulation"
           >
-            <MoreHorizontal size={20} />
+            <MoreHorizontal size={18} />
           </button>
         </div>
 
         {/* Metadata Row */}
-        <div className="flex items-center gap-2 flex-wrap mb-3 pl-11">
+        <div className="flex items-center gap-1.5 flex-wrap mb-2 pl-9">
 
           {/* Time Estimate */}
           {task.estimatedMinutes && task.estimatedMinutes > 0 && (
-            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs flex items-center gap-1">
-              <Clock size={12} />
+            <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-[11px] flex items-center gap-0.5">
+              <Clock size={10} />
               {task.estimatedMinutes}m
             </span>
           )}
@@ -129,7 +129,7 @@ export function MobileTaskCard({
           {/* Priority */}
           {task.priority && task.priority !== 'medium' && (
             <span
-              className={`px-2 py-1 rounded text-xs font-medium ${
+              className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${
                 task.priority === 'urgent'
                   ? 'bg-red-100 text-red-700'
                   : task.priority === 'high'
@@ -144,15 +144,15 @@ export function MobileTaskCard({
 
         {/* Subtasks Progress */}
         {hasSubtasks && (
-          <div className="pl-11 mb-3">
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+          <div className="pl-9 mb-2">
+            <div className="flex items-center gap-1.5">
+              <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all duration-500"
                   style={{ width: `${(completedSubtasks / totalSubtasks) * 100}%` }}
                 />
               </div>
-              <span className="text-xs text-gray-600 font-medium whitespace-nowrap">
+              <span className="text-[10px] text-gray-600 font-medium whitespace-nowrap">
                 {completedSubtasks}/{totalSubtasks}
               </span>
             </div>
@@ -161,16 +161,16 @@ export function MobileTaskCard({
 
         {/* Action Buttons */}
         {!isCompleted && (
-          <div className="flex gap-2 pl-11">
+          <div className="flex gap-1.5 pl-9">
             {onStart && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onStart();
                 }}
-                className="flex-1 min-h-[44px] bg-blue-500 text-white rounded-lg font-medium text-sm active:bg-blue-600 flex items-center justify-center gap-2 transition-colors touch-manipulation"
+                className="flex-1 min-h-[38px] bg-blue-500 text-white rounded-lg font-medium text-xs active:bg-blue-600 flex items-center justify-center gap-1.5 transition-colors touch-manipulation"
               >
-                <Play size={16} fill="currentColor" />
+                <Play size={14} fill="currentColor" />
                 Start
               </button>
             )}
@@ -179,9 +179,9 @@ export function MobileTaskCard({
                 e.stopPropagation();
                 onTap?.();
               }}
-              className="px-4 min-h-[44px] bg-gray-100 text-gray-700 rounded-lg font-medium text-sm active:bg-gray-200 flex items-center justify-center gap-2 transition-colors touch-manipulation"
+              className="px-3 min-h-[38px] bg-gray-100 text-gray-700 rounded-lg font-medium text-xs active:bg-gray-200 flex items-center justify-center gap-1 transition-colors touch-manipulation"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={14} />
             </button>
           </div>
         )}

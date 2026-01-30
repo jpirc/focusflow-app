@@ -80,16 +80,16 @@ export function MobileTimeBlocksView({
             <button
               onClick={() => toggleBlock(block.id)}
               className={`
-                w-full p-4 flex items-center justify-between
+                w-full p-3 flex items-center justify-between
                 active:bg-gray-50 transition-colors
                 touch-manipulation
                 ${isCurrentBlock ? 'bg-blue-50/50' : ''}
               `}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 {/* Icon */}
                 <div className={`
-                  w-12 h-12 rounded-xl flex items-center justify-center text-2xl
+                  w-10 h-10 rounded-lg flex items-center justify-center text-xl
                   bg-gradient-to-br ${block.color}
                   shadow-sm
                 `}>
@@ -98,34 +98,34 @@ export function MobileTimeBlocksView({
 
                 {/* Label & Time */}
                 <div className="text-left">
-                  <h3 className="font-semibold text-base text-gray-900 flex items-center gap-2">
+                  <h3 className="font-semibold text-sm text-gray-900 flex items-center gap-1.5">
                     {block.label}
                     {isCurrentBlock && (
-                      <span className="text-xs font-medium px-1.5 py-0.5 bg-blue-500 text-white rounded">
+                      <span className="text-[10px] font-medium px-1 py-0.5 bg-blue-500 text-white rounded">
                         Now
                       </span>
                     )}
                   </h3>
-                  <p className="text-sm text-gray-600">{block.timeRange}</p>
+                  <p className="text-xs text-gray-600">{block.timeRange}</p>
                 </div>
               </div>
 
               {/* Task Count & Chevron */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 {totalCount > 0 && (
-                  <div className="text-right mr-2">
-                    <div className="text-sm font-semibold text-gray-900">
+                  <div className="text-right mr-1">
+                    <div className="text-xs font-semibold text-gray-900">
                       {totalCount} {totalCount === 1 ? 'task' : 'tasks'}
                     </div>
                     {completedCount > 0 && (
-                      <div className="text-xs text-green-600 font-medium">
+                      <div className="text-[10px] text-green-600 font-medium">
                         {completedCount} done
                       </div>
                     )}
                   </div>
                 )}
                 <ChevronDown
-                  size={20}
+                  size={18}
                   className={`text-gray-400 transition-transform duration-200 ${
                     isExpanded ? 'rotate-180' : ''
                   }`}
@@ -135,14 +135,14 @@ export function MobileTimeBlocksView({
 
             {/* Block Content - Collapsible */}
             {isExpanded && (
-              <div className="px-4 pb-4 space-y-3 bg-gray-50">
+              <div className="px-3 pb-3 space-y-2 bg-gray-50">
                 {totalCount === 0 ? (
-                  <div className="py-12 text-center">
-                    <div className="text-gray-400 text-4xl mb-2">📭</div>
-                    <p className="text-gray-500 text-sm">
+                  <div className="py-8 text-center">
+                    <div className="text-gray-400 text-3xl mb-1.5">📭</div>
+                    <p className="text-gray-500 text-xs">
                       No tasks scheduled
                     </p>
-                    <p className="text-gray-400 text-xs mt-1">
+                    <p className="text-gray-400 text-[10px] mt-0.5">
                       Tap + to add a task
                     </p>
                   </div>

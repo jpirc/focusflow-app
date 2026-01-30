@@ -89,10 +89,10 @@ export function MobileTimelineView({
   return (
     <div className="bg-white">
       {/* Current Time Indicator */}
-      <div className="sticky top-0 z-10 bg-blue-50 border-b border-blue-200 px-4 py-2">
-        <div className="flex items-center gap-2 text-blue-700">
-          <Clock size={16} />
-          <span className="text-sm font-medium">
+      <div className="sticky top-0 z-10 bg-blue-50 border-b border-blue-200 px-3 py-1.5">
+        <div className="flex items-center gap-1.5 text-blue-700">
+          <Clock size={14} />
+          <span className="text-xs font-medium">
             {formatHour(currentHour)} - Now
           </span>
         </div>
@@ -101,10 +101,10 @@ export function MobileTimelineView({
       {/* Unscheduled Tasks Section */}
       {tasksByHour.unscheduled.length > 0 && (
         <div className="border-b border-gray-200">
-          <div className="px-4 py-3 bg-gray-50">
-            <h4 className="text-sm font-semibold text-gray-700">Unscheduled</h4>
+          <div className="px-3 py-2 bg-gray-50">
+            <h4 className="text-xs font-semibold text-gray-700">Unscheduled</h4>
           </div>
-          <div className="px-4 py-3 space-y-3">
+          <div className="px-3 py-2 space-y-2">
             {tasksByHour.unscheduled.map(task => (
               <MobileTaskCard
                 key={task.id}
@@ -122,7 +122,7 @@ export function MobileTimelineView({
       {/* Timeline by Hour */}
       <div className="relative">
         {/* Timeline Line */}
-        <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gray-200" />
+        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200" />
 
         {relevantHours.map((hour, index) => {
           const hourTasks = tasksByHour.grouped[hour] || [];
@@ -135,11 +135,11 @@ export function MobileTimelineView({
               className={`relative ${index !== relevantHours.length - 1 ? 'border-b border-gray-100' : ''}`}
             >
               {/* Hour Header */}
-              <div className={`flex items-start gap-4 px-4 py-3 ${isCurrentHour ? 'bg-blue-50/30' : ''}`}>
+              <div className={`flex items-start gap-3 px-3 py-2 ${isCurrentHour ? 'bg-blue-50/30' : ''}`}>
                 {/* Time Label */}
-                <div className="flex-shrink-0 w-16 pt-1">
+                <div className="flex-shrink-0 w-12 pt-0.5">
                   <div
-                    className={`text-sm font-semibold ${
+                    className={`text-xs font-semibold ${
                       isCurrentHour ? 'text-blue-600' : isPastHour ? 'text-gray-400' : 'text-gray-700'
                     }`}
                   >
@@ -148,9 +148,9 @@ export function MobileTimelineView({
                 </div>
 
                 {/* Tasks or Empty State */}
-                <div className="flex-1 space-y-3 pb-2">
+                <div className="flex-1 space-y-2 pb-1">
                   {hourTasks.length === 0 ? (
-                    <div className={`text-xs ${isPastHour ? 'text-gray-300' : 'text-gray-400'} italic py-2`}>
+                    <div className={`text-[11px] ${isPastHour ? 'text-gray-300' : 'text-gray-400'} italic py-1`}>
                       No tasks scheduled
                     </div>
                   ) : (
@@ -170,7 +170,7 @@ export function MobileTimelineView({
 
               {/* Current Time Marker */}
               {isCurrentHour && (
-                <div className="absolute left-4 top-3 w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-sm" />
+                <div className="absolute left-3 top-2 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white shadow-sm" />
               )}
             </div>
           );
@@ -179,10 +179,10 @@ export function MobileTimelineView({
 
       {/* Empty State */}
       {relevantHours.length === 0 && tasksByHour.unscheduled.length === 0 && (
-        <div className="py-20 text-center">
-          <div className="text-gray-300 text-5xl mb-3">📅</div>
-          <p className="text-gray-500 font-medium">No tasks scheduled today</p>
-          <p className="text-gray-400 text-sm mt-1">Tap + to add your first task</p>
+        <div className="py-16 text-center">
+          <div className="text-gray-300 text-4xl mb-2">📅</div>
+          <p className="text-gray-500 font-medium text-sm">No tasks scheduled today</p>
+          <p className="text-gray-400 text-xs mt-0.5">Tap + to add your first task</p>
         </div>
       )}
     </div>
