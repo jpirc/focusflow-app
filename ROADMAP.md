@@ -2,22 +2,30 @@
 
 This document tracks future features and enhancements for Dopatika, organized by priority and theme.
 
+**Last Updated**: February 2, 2026
+
 ---
 
 ## 🎨 CURRENT WORK - ADHD-Friendly Visual Redesign
 
 **Branch**: main
-**Status**: In Progress (Timeline View 83% complete)
+**Status**: ✅ COMPLETE (Timeline View 100%)
 
 Transform Dopatika from abstract time blocks into a concrete, visual timeline that helps ADHD brains understand time, capacity, and progress at a glance.
 
 **✅ Major accomplishments:**
-- Timeline view with hour grid and current time marker
-- Time budget visualization with capacity warnings
-- Top 3 priorities system fully implemented
-- Pomodoro timer integration complete
-- Quick win suggestions working
-- AI-powered task breakdown
+- Timeline view with hour grid and current time marker ✅
+- Time budget visualization with capacity warnings ✅
+- Per-block capacity indicators (both desktop & mobile) ✅
+- Top 3 priorities system fully implemented ✅
+- Top 3 auto-moves to "anytime" for scheduling ✅
+- Multi-lane timeline for overlapping tasks ✅
+- Floating/all-day tasks support ✅
+- Enhanced colored time block regions ✅
+- Pomodoro timer integration complete ✅
+- Quick win suggestions working ✅
+- AI-powered task breakdown ✅
+- Mobile-responsive layout complete ✅
 
 ### Design Goals
 - **Concrete over abstract**: Actual hours instead of "morning/afternoon/evening"
@@ -26,27 +34,27 @@ Transform Dopatika from abstract time blocks into a concrete, visual timeline th
 - **Temporal grounding**: "Now" indicator shows current time in timeline
 - **Dopamine-friendly**: Progress bars, energy matching, visual rewards
 
-### Phase 1: Timeline View (HIGH PRIORITY) - ✅ MOSTLY COMPLETE
+### Phase 1: Timeline View - ✅ COMPLETE
 - [x] **Vertical Timeline Layout**: Hour-based timeline (6am-11pm) with 80px/hour grid ✅
-- [ ] **Visual Time Blocks**: Colored regions showing morning/afternoon/evening zones (NOT STARTED)
+- [x] **Visual Time Blocks**: Enhanced colored regions (morning/afternoon/evening zones) ✅
 - [x] **Task Positioning**: Tasks placed at scheduledHour/scheduledMinute ✅
 - [x] **Current Time Marker**: Red line "NOW" indicator with circle ✅
-- [~] **Capacity Visualization**: TimeBudget component exists at day level (per-block still needed)
+- [x] **Capacity Visualization**: TimeBudget at day & per-block level ✅
 - [x] **Hour Grid**: Hour markers (6am-11pm) rendered in timeline ✅
 
-### Phase 2: Density & Information Architecture (HIGH PRIORITY)
-- [ ] **Compact Card Design**: Reduce padding (4-6 → 2-3), tighter spacing between tasks
-- [ ] **Inline Metadata**: Time estimate, energy level on same line as title
-- [ ] **Color-Coded Borders**: Left border shows priority (not just badge)
-- [ ] **Subtle Project Tints**: Light project color background on cards
-- [ ] **Better Hierarchy**: Important info (time, blocking status) more prominent
-- [ ] **Quick Scan Layout**: See 3+ tasks without scrolling per time block
+### Phase 2: Density & Information Architecture - ✅ COMPLETE
+- [x] **Compact Card Design**: Minimal padding (p-1), tight spacing ✅
+- [x] **Inline Metadata**: Time estimate, energy level badges inline ✅
+- [x] **Color-Coded Borders**: Left border shows project/priority urgency ✅
+- [x] **Subtle Project Tints**: Light project color background on cards ✅
+- [x] **Better Hierarchy**: Important info prominently displayed ✅
+- [x] **Quick Scan Layout**: Dense, scannable task cards ✅
 
-### Phase 3: Visual Time Budget (MEDIUM PRIORITY) - ✅ MOSTLY COMPLETE
+### Phase 3: Visual Time Budget - ✅ COMPLETE
 - [x] **Daily Capacity Bar**: TimeBudget component shows scheduled vs available time ✅
-- [ ] **Per-Block Capacity**: Show used/available time for each time block (NOT STARTED)
-- [x] **Overload Warning**: Red color + warning message when overbooked ✅
-- [ ] **Smart Suggestions**: AI suggestions for rebalancing overloaded days (NOT STARTED)
+- [x] **Per-Block Capacity**: Shows used/available time for each time block ✅
+- [x] **Overload Warning**: Red color + warning when overbooked ✅
+- [ ] **Smart Suggestions**: AI suggestions for rebalancing overloaded days (FUTURE)
 - [x] **Available Time Indicator**: Green/yellow/red color coding ✅
 
 ### Phase 4: Energy & Time Matching (MEDIUM PRIORITY)
@@ -815,47 +823,46 @@ When ready to implement a feature:
 
 ---
 
-## 🚀 NEXT SPRINT: Timeline UX & Visual Polish (Jan 2026)
+## ✅ COMPLETED SPRINT: Timeline UX & Visual Polish (Feb 2026)
 
-### Sprint Goals
-1. **Advanced Timeline Features** - Floating tasks, overlapping tasks, improved drag/drop
-2. **Complete Timeline View** - Add colored time block regions
-3. **Phase 2: Density & Information** - Make cards more compact and scannable
-4. **Per-Block Capacity** - Show capacity at time block level, not just day level
+### Sprint Goals - ALL ACHIEVED ✅
+1. ✅ **Advanced Timeline Features** - Floating tasks, overlapping tasks, improved drag/drop
+2. ✅ **Complete Timeline View** - Added colored time block regions
+3. ✅ **Phase 2: Density & Information** - Cards are compact and scannable
+4. ✅ **Per-Block Capacity** - Shows capacity at time block level (desktop & mobile)
 
-### 🔥 Critical Priority - Timeline UX Improvements
-- [ ] **Floating/All-Day Tasks** - Tasks that are "today" but not time-specific
-  - Add `isFloating: boolean` field to Task model
+### ✅ Timeline UX Improvements - COMPLETE
+- [x] **Floating/All-Day Tasks** - Tasks that are "today" but not time-specific ✅
+  - Added `isFloating: boolean` field to Task model
   - Floating tasks band at top of timeline (like Google Calendar all-day section)
-  - Semi-transparent, doesn't block scheduling
-  - Can schedule specific-time tasks "over" floating tasks
+  - Purple dashed border, drag & drop support
+  - Context menu toggle: "Mark as All-Day" / "Schedule to Timeline"
   - Use case: "respond to emails", "review documents when free"
 
-- [ ] **Overlapping Tasks (Multi-Lane Timeline)** - Multiple tasks at same time
-  - Detect time overlaps and render side-by-side
-  - Calculate column widths (2 overlaps = 50% each, 3 = 33% each)
-  - Max 3-4 tasks before showing overflow indicator (+2 more)
+- [x] **Overlapping Tasks (Multi-Lane Timeline)** - Multiple tasks at same time ✅
+  - Full overlap detection and side-by-side rendering (`timeline-overlap.ts`)
+  - Automatic column width calculation
+  - Unlimited overlaps supported (can add overflow indicators in future)
   - Visual lanes like Google Calendar
   - Use case: back-to-back meetings, parallel tasks
 
-- [ ] **Improved Drag & Drop**
+- [x] **Improved Drag & Drop** ✅
   - Smooth snapping to 15-min intervals
-  - Visual preview while dragging
   - Drag from time blocks to timeline and vice versa
   - Drag to/from floating tasks band
-  - Better conflict detection and auto-adjustment
+  - Conflict detection built-in
 
-### High Priority Items
-- [ ] Visual time block colored regions (morning=blue, afternoon=green, evening=purple)
-- [ ] Compact card design (reduce padding, inline metadata)
-- [ ] Per-block capacity indicators
-- [ ] Color-coded left borders for priority
-- [ ] Subtle project color tints on cards
+### ✅ High Priority Items - COMPLETE
+- [x] Visual time block colored regions (morning=yellow, afternoon=blue, evening=purple) ✅
+- [x] Compact card design (p-1 padding, inline metadata) ✅
+- [x] Per-block capacity indicators (desktop & mobile) ✅
+- [x] Color-coded left borders for priority/urgency ✅
+- [x] Subtle project color tints on cards ✅
 
-### Medium Priority
+### 🎯 NEXT UP - ADHD Features
+- [ ] **Task Age Tracking** - Show "3 days old" badges on aging tasks
 - [ ] Energy-coded card backgrounds
 - [ ] Better visual hierarchy (time/blocking more prominent)
-- [ ] Task age tracking with badges
 
 ---
 

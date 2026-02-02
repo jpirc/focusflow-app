@@ -188,18 +188,27 @@ const TimelineViewComponent: React.FC<TimelineViewProps> = ({
         }, 100);
     }, [date, hourStart, hourEnd, hasScrolledToNow]);
 
-    // Group tasks by hour and minute interval
+    // Separate floating tasks from scheduled tasks
+    const floatingTasks = useMemo(() => {
+        return tasks.filter(task => task.isFloating);
+    }, [tasks]);
+
+    const scheduledTasks = useMemo(() => {
+        return tasks.filter(task => !task.isFloating);
+    }, [tasks]);
+
+    // Group scheduled tasks by hour and minute interval
     const tasksByHour = useMemo(() => {
         const grouped: Record<number, Task[]> = {};
-        
-        tasks.forEach(task => {
+
+        scheduledTasks.forEach(task => {
             const hour = getScheduledHour(task);
             if (!grouped[hour]) {
                 grouped[hour] = [];
             }
             grouped[hour].push(task);
         });
-        
+
         // Sort tasks within each hour by minute, then order
         Object.keys(grouped).forEach(hour => {
             grouped[parseInt(hour)].sort((a, b) => {
@@ -209,17 +218,17 @@ const TimelineViewComponent: React.FC<TimelineViewProps> = ({
                 return (a.order ?? 0) - (b.order ?? 0);
             });
         });
-        
+
         return grouped;
-    }, [tasks]);
+    }, [scheduledTasks]);
 
     // Detect overlapping tasks and assign columns for horizontal positioning
     // Uses DISPLAY heights (with minimum) to detect VISUAL overlaps
     const taskPositions = useMemo(() => {
         const positions: Record<string, { column: number; totalColumns: number }> = {};
-        
-        // Convert tasks to intervals with start/end positions in PIXELS
-        const intervals = tasks.map(task => {
+
+        // Convert scheduled tasks to intervals with start/end positions in PIXELS
+        const intervals = scheduledTasks.map(task => {
             const startMinutes = getScheduledHour(task) * 60 + getScheduledMinute(task);
             const startPx = startMinutes * PIXELS_PER_MINUTE;
             const durationMinutes = task.estimatedMinutes || 30;
@@ -314,9 +323,9 @@ const TimelineViewComponent: React.FC<TimelineViewProps> = ({
                 }
             });
         });
-        
+
         return positions;
-    }, [tasks]);
+    }, [scheduledTasks]);
 
     // Calculate capacity per time block
     const blockCapacity = useMemo(() => {
@@ -530,12 +539,30 @@ const TimelineViewComponent: React.FC<TimelineViewProps> = ({
         const task = tasks.find(t => t.id === taskId);
         if (task) {
             console.log(`Dropping task at ${finalHour}:${finalMinute.toString().padStart(2, '0')}`);
-            onUpdate(taskId, { 
+            onUpdate(taskId, {
                 timeBlock: targetBlock,
                 scheduledHour: finalHour,
                 scheduledMinute: finalMinute,
+                isFloating: false, // Not floating when scheduled to timeline
             });
         }
+    };
+
+    // Handle drop on floating tasks band
+    const handleFloatingDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const taskId = e.dataTransfer.getData('text/plain');
+        if (!taskId) return;
+
+        // Mark task as floating (all-day, no specific time)
+        onUpdate(taskId, {
+            isFloating: true,
+            scheduledHour: undefined,
+            scheduledMinute: undefined,
+            timeBlock: 'anytime',
+        });
     };
 
     return (
@@ -579,6 +606,78 @@ const TimelineViewComponent: React.FC<TimelineViewProps> = ({
                         );
                     })}
                 </div>
+            </div>
+
+            {/* Floating tasks band (all-day tasks) */}
+            <div
+                className={`mx-4 mb-4 border-2 border-dashed rounded-lg p-3 transition-colors ${
+                    floatingTasks.length > 0
+                        ? 'border-purple-300 bg-purple-50/30'
+                        : 'border-gray-300 bg-gray-50/30'
+                }`}
+                onDragOver={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('border-purple-500', 'bg-purple-100/50');
+                }}
+                onDragLeave={(e) => {
+                    e.currentTarget.classList.remove('border-purple-500', 'bg-purple-100/50');
+                }}
+                onDrop={(e) => {
+                    e.currentTarget.classList.remove('border-purple-500', 'bg-purple-100/50');
+                    handleFloatingDrop(e);
+                }}
+            >
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-semibold text-purple-700 uppercase tracking-wide">
+                        All-Day Tasks
+                    </span>
+                    {floatingTasks.length > 0 && (
+                        <span className="text-xs text-purple-600">
+                            ({floatingTasks.length})
+                        </span>
+                    )}
+                </div>
+                {floatingTasks.length === 0 ? (
+                    <p className="text-xs text-gray-500 italic">
+                        Drag tasks here to mark them as all-day (no specific time)
+                    </p>
+                ) : (
+                    <div className="space-y-2">
+                        {floatingTasks.map(task => {
+                            const project = projects.find(p => p.id === task.projectId) || {
+                                id: 'default',
+                                name: 'No Project',
+                                color: '#6b7280',
+                                bgColor: '#f3f4f6',
+                                icon: 'folder'
+                            };
+                            return (
+                                <QuickEditTaskCard
+                                    key={task.id}
+                                    task={task}
+                                    project={project}
+                                    allTasks={allTasks}
+                                    allProjects={projects}
+                                    onUpdate={onUpdate}
+                                    onStatusChange={onStatusChange}
+                                    onPause={onPause}
+                                    onDelete={onDelete}
+                                    onToggleSubtask={onToggleSubtask}
+                                    onUpdateSubtasks={onUpdateSubtasks}
+                                    onAIBreakdown={onAIBreakdown}
+                                    onEdit={onEdit}
+                                    onStartPomodoro={onStartPomodoro}
+                                    onStartNow={onStartNow}
+                                    isSelected={selectedTaskId === task.id}
+                                    onSelect={onSelectTask}
+                                    onStartDrag={onStartDrag}
+                                    subtasksExpandedAll={subtasksExpandedAll}
+                                    compact={true}
+                                />
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* Timeline grid */}

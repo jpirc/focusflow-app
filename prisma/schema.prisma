@@ -99,6 +99,7 @@ model Task {
   // Scheduling
   date             String?   // ISO date string YYYY-MM-DD
   timeBlock        String    @default("anytime") // morning, afternoon, evening, anytime
+  isFloating       Boolean   @default(false) // All-day task without specific time (like Google Calendar all-day)
   scheduledHour    Int?      // Specific hour (0-23) for timeline view, null = use timeBlock default
   scheduledMinute  Int?      // Specific minute (0, 15, 30, 45) for 15-min intervals within hour
   startTime        DateTime? // Precise scheduled datetime for timeline panel

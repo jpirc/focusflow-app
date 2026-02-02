@@ -1384,6 +1384,19 @@ const QuickEditTaskCardComponent: React.FC<QuickEditTaskCardProps> = (props) => 
                     <button
                         onClick={() => {
                             setShowMenu(false);
+                            onUpdate(task.id, {
+                                isFloating: !task.isFloating,
+                                ...(task.isFloating ? {} : { scheduledHour: undefined, scheduledMinute: undefined }),
+                            });
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center gap-2 text-blue-600"
+                    >
+                        <Clock size={14} />
+                        {task.isFloating ? 'Schedule to Timeline' : 'Mark as All-Day'}
+                    </button>
+                    <button
+                        onClick={() => {
+                            setShowMenu(false);
                             navigator.clipboard.writeText(task.title);
                         }}
                         className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center gap-2 text-gray-900"

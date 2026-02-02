@@ -46,6 +46,7 @@ export interface Task {
     projectId?: string;
     date: string | null;
     timeBlock: TimeBlock;
+    isFloating?: boolean; // All-day task without specific time (like Google Calendar all-day events)
     scheduledHour?: number; // Specific hour (0-23) for timeline view
     scheduledMinute?: number; // Specific minute within hour (0, 15, 30, 45) for 15-min intervals
     startTime?: string | null; // Precise scheduled datetime for timeline panel
