@@ -52,7 +52,13 @@ export const RolloverBadge: React.FC<{ count: number }> = ({ count }) => {
     );
 };
 
-export const TaskAgeBadge: React.FC<{ createdAt: string }> = ({ createdAt }) => {
+export const TaskAgeBadge: React.FC<{
+    createdAt: string;
+    status?: string;
+}> = ({ createdAt, status }) => {
+    // Don't show age for completed or skipped tasks
+    if (status === 'completed' || status === 'skipped') return null;
+
     const daysOld = Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24));
 
     if (daysOld < 3) return null;
@@ -66,10 +72,14 @@ export const TaskAgeBadge: React.FC<{ createdAt: string }> = ({ createdAt }) => 
     const level = daysOld < 7 ? 'aging' : daysOld < 14 ? 'stale' : 'stuck';
     const style = config[level];
 
+    const label = daysOld >= 7
+        ? `${Math.floor(daysOld / 7)}w${daysOld % 7 > 0 ? ` ${daysOld % 7}d` : ''}`
+        : `${daysOld}d`;
+
     return (
         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${style.bg} ${style.text} ${style.border} flex items-center gap-0.5`} title={`Created ${daysOld} days ago`}>
             <Clock size={10} />
-            {daysOld}d
+            {label}
         </span>
     );
 };

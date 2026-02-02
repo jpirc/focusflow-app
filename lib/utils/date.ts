@@ -298,3 +298,39 @@ export function getRelativeDayLabel(date: Date): string {
     return 'TODAY';
 }
 
+/**
+ * Calculate task age and return display info
+ * Returns null if task is too young to show age badge (< 3 days)
+ */
+export function getTaskAge(createdAt: string): {
+    days: number;
+    label: string;
+    severity: 'low' | 'medium' | 'high';
+} | null {
+    const created = new Date(createdAt);
+    const now = new Date();
+    const diffMs = now.getTime() - created.getTime();
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    // Don't show age badge for tasks less than 3 days old
+    if (days < 3) return null;
+
+    // Determine severity and label
+    let severity: 'low' | 'medium' | 'high';
+    let label: string;
+
+    if (days >= 14) {
+        severity = 'high';
+        const weeks = Math.floor(days / 7);
+        label = weeks === 1 ? '1 week old' : `${weeks} weeks old`;
+    } else if (days >= 6) {
+        severity = 'medium';
+        label = `${days} days old`;
+    } else {
+        severity = 'low';
+        label = `${days} days old`;
+    }
+
+    return { days, label, severity };
+}
+

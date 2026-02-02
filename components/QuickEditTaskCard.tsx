@@ -1190,7 +1190,7 @@ const QuickEditTaskCardComponent: React.FC<QuickEditTaskCardProps> = (props) => 
                     ) : (
                         <RolloverBadge count={task.rolloverCount || 0} />
                     )}
-                    <TaskAgeBadge createdAt={task.createdAt} />
+                    <TaskAgeBadge createdAt={task.createdAt} status={task.status} />
                     <DependencyBadge 
                         task={task} 
                         allTasks={allTasks}
