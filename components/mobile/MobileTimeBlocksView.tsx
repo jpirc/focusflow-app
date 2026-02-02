@@ -61,6 +61,24 @@ export function MobileTimeBlocksView({
     return grouped;
   }, [tasks]);
 
+  // Calculate capacity per time block
+  const blockCapacity: Record<string, number> = {
+    morning: 360,    // 6 AM - 12 PM = 6 hours
+    afternoon: 300,  // 12 PM - 5 PM = 5 hours
+    evening: 300,    // 5 PM - 10 PM = 5 hours
+    anytime: 0,      // No time limit
+  };
+
+  const getBlockUtilization = (blockId: string) => {
+    const blockTasks = tasksByBlock[blockId] || [];
+    const totalMinutes = blockTasks.reduce((sum, t) => sum + (t.estimatedMinutes || 0), 0);
+    const availableMinutes = blockCapacity[blockId] || 0;
+    const utilizationPercent = availableMinutes > 0 ? Math.min(100, (totalMinutes / availableMinutes) * 100) : 0;
+    const isOverbooked = totalMinutes > availableMinutes && availableMinutes > 0;
+
+    return { totalMinutes, availableMinutes, utilizationPercent, isOverbooked };
+  };
+
   const toggleBlock = (blockId: string) => {
     setExpandedBlock(expandedBlock === blockId ? '' : blockId);
   };
@@ -73,6 +91,7 @@ export function MobileTimeBlocksView({
         const completedCount = blockTasks.filter(t => t.completed || t.status === 'completed').length;
         const totalCount = blockTasks.length;
         const isCurrentBlock = getCurrentTimeBlock() === block.id;
+        const { totalMinutes, availableMinutes, utilizationPercent, isOverbooked } = getBlockUtilization(block.id);
 
         return (
           <div key={block.id} className="bg-white">
@@ -132,6 +151,31 @@ export function MobileTimeBlocksView({
                 />
               </div>
             </button>
+
+            {/* Capacity indicator - show for timed blocks */}
+            {availableMinutes > 0 && totalCount > 0 && (
+              <div className="px-3 pb-2 pt-1">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        isOverbooked
+                          ? 'bg-red-500'
+                          : utilizationPercent > 75
+                          ? 'bg-amber-400'
+                          : 'bg-emerald-400'
+                      }`}
+                      style={{ width: `${Math.min(100, utilizationPercent)}%` }}
+                    />
+                  </div>
+                  <span className={`text-[10px] font-semibold whitespace-nowrap ${
+                    isOverbooked ? 'text-red-600' : utilizationPercent > 75 ? 'text-amber-600' : 'text-gray-600'
+                  }`}>
+                    {totalMinutes}/{availableMinutes}m
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Block Content - Collapsible */}
             {isExpanded && (

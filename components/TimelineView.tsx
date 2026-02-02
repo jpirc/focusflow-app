@@ -71,22 +71,22 @@ const TIME_BLOCK_REGIONS = {
         label: 'Morning',
         start: 6,
         end: 12,
-        color: 'rgba(251, 191, 36, 0.08)', // Warm yellow tint
-        borderColor: 'rgba(251, 191, 36, 0.2)',
+        color: 'rgba(251, 191, 36, 0.15)', // Warm yellow tint (increased visibility)
+        borderColor: 'rgba(251, 191, 36, 0.3)',
     },
     afternoon: {
         label: 'Afternoon',
         start: 12,
         end: 18,
-        color: 'rgba(59, 130, 246, 0.08)', // Blue tint
-        borderColor: 'rgba(59, 130, 246, 0.2)',
+        color: 'rgba(59, 130, 246, 0.15)', // Blue tint (increased visibility)
+        borderColor: 'rgba(59, 130, 246, 0.3)',
     },
     evening: {
         label: 'Evening',
         start: 18,
         end: 22,
-        color: 'rgba(139, 92, 246, 0.08)', // Purple tint
-        borderColor: 'rgba(139, 92, 246, 0.2)',
+        color: 'rgba(139, 92, 246, 0.15)', // Purple tint (increased visibility)
+        borderColor: 'rgba(139, 92, 246, 0.3)',
     },
 };
 

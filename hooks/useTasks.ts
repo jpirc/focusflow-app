@@ -537,10 +537,13 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
         setTasks(prev => prev.map(t => {
             // If task should be a top priority, set it
             if (taskIds.includes(t.id)) {
-                return { 
-                    ...t, 
-                    isTopPriority: true, 
+                return {
+                    ...t,
+                    isTopPriority: true,
                     topPriorityDate: dateStr,
+                    // Move to today (anytime) so they can be scheduled
+                    date: dateStr,
+                    timeBlock: 'anytime' as TimeBlock,
                 };
             }
             // If task was a top priority for this date but is no longer selected, clear it
@@ -558,11 +561,13 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
             taskApi.update(t.id, { isTopPriority: false, topPriorityDate: null })
         );
 
-        // Set new priorities
+        // Set new priorities and move to today (anytime)
         const setPromises = taskIds.map(id =>
-            taskApi.update(id, { 
-                isTopPriority: true, 
+            taskApi.update(id, {
+                isTopPriority: true,
                 topPriorityDate: dateStr,
+                date: dateStr,
+                timeBlock: 'anytime',
             })
         );
 

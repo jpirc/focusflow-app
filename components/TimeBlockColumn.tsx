@@ -98,8 +98,21 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
         }
     };
 
-    const totalMinutes = tasks.reduce((sum, t) => sum + t.estimatedMinutes, 0);
+    const totalMinutes = tasks.reduce((sum, t) => sum + (t.estimatedMinutes || 0), 0);
     const completedCount = tasks.filter(t => t.status === 'completed').length;
+
+    // Time capacity per block (in minutes)
+    const blockCapacity: Record<string, number> = {
+        morning: 360,    // 6 AM - 12 PM = 6 hours
+        afternoon: 300,  // 12 PM - 5 PM = 5 hours
+        evening: 300,    // 5 PM - 10 PM = 5 hours
+        anytime: 0,      // No time limit
+        inbox: 0,        // No time limit
+    };
+
+    const availableMinutes = blockCapacity[block.id] || 0;
+    const utilizationPercent = availableMinutes > 0 ? Math.min(100, (totalMinutes / availableMinutes) * 100) : 0;
+    const isOverbooked = totalMinutes > availableMinutes && availableMinutes > 0;
 
     // Clean outlined style with subtle color accents
     const blockStyles = {
@@ -189,6 +202,31 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
                     </>
                 )}
             </div>
+
+            {/* Capacity bar - show for timed blocks (not anytime/inbox) */}
+            {availableMinutes > 0 && !compact && !(block.id === 'anytime' && isCollapsed) && (
+                <div className="px-2 pb-1">
+                    <div className="flex items-center gap-1.5 text-[9px]">
+                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full transition-all duration-300 ${
+                                    isOverbooked
+                                        ? 'bg-red-500'
+                                        : utilizationPercent > 75
+                                        ? 'bg-amber-400'
+                                        : 'bg-emerald-400'
+                                }`}
+                                style={{ width: `${Math.min(100, utilizationPercent)}%` }}
+                            />
+                        </div>
+                        <span className={`font-medium whitespace-nowrap ${
+                            isOverbooked ? 'text-red-600' : utilizationPercent > 75 ? 'text-amber-600' : 'text-gray-500'
+                        }`}>
+                            {totalMinutes}/{availableMinutes}m
+                        </span>
+                    </div>
+                </div>
+            )}
 
             {/* Tasks list */}
             {!(block.id === 'anytime' && isCollapsed) && (
