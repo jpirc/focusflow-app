@@ -9,7 +9,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { Brain, CheckCircle2, RotateCcw, Pencil, Trash2 } from 'lucide-react';
+import { Brain, CheckCircle2, RotateCcw, Pencil, Trash2, AlertTriangle } from 'lucide-react';
 
 // Hooks
 import { useTasks, useProjects, useCelebration, useTheme, usePomodoro } from '@/hooks';
@@ -18,6 +18,8 @@ import { useModalState } from '@/hooks/useModalState';
 import { useTaskFilters } from '@/hooks/useTaskFilters';
 import { useLocalStorageMigration } from '@/hooks/useLocalStorageMigration';
 import { useMobileBreakpoint } from '@/hooks/useBreakpoint';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useScheduledTaskReminders } from '@/hooks/useScheduledTaskReminders';
 
 // Components
 import { Sidebar, Header } from '@/components/layout';
@@ -39,6 +41,7 @@ import { Top3Section } from '@/components/Top3Section';
 import { RolloverNotification } from '@/components/RolloverNotification';
 import { UnblockedTasksNotification } from '@/components/UnblockedTasksNotification';
 import { QuickWinSuggestions } from '@/components/QuickWinSuggestions';
+import { NotificationPermissionPrompt } from '@/components/NotificationPermissionPrompt';
 import DualPanelLayout from '@/components/DualPanelLayout';
 import TimelinePanel from '@/components/TimelinePanel';
 import { TimeBudget } from '@/components/ui/TimeBudget';
@@ -85,6 +88,57 @@ export default function DopatikaApp() {
 
     // Theme system
     const { theme, changeTheme } = useTheme();
+
+    // Notification system
+    const {
+        needsPermission,
+        requestPermission,
+        updateSettings: updateNotificationSettings,
+    } = useNotifications();
+
+    const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+    const [notificationPromptDismissed, setNotificationPromptDismissed] = useState(false);
+
+    // Show notification prompt after user has been using the app for a bit (only once)
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const dismissed = localStorage.getItem('notificationPromptDismissed');
+        if (dismissed) {
+            setNotificationPromptDismissed(true);
+            return;
+        }
+
+        // Show prompt after 30 seconds if permission not granted and not dismissed
+        const timer = setTimeout(() => {
+            if (needsPermission && !notificationPromptDismissed) {
+                setShowNotificationPrompt(true);
+            }
+        }, 30000); // 30 seconds
+
+        return () => clearTimeout(timer);
+    }, [isAuthenticated, needsPermission, notificationPromptDismissed]);
+
+    const handleNotificationPermissionRequest = async (enabledTypes: Array<'pomodoro' | 'rollover' | 'dependency'>) => {
+        const result = await requestPermission();
+        if (result === 'granted') {
+            // Update settings to enable selected notification types
+            await updateNotificationSettings({
+                pomodoroEnabled: enabledTypes.includes('pomodoro'),
+                rolloverEnabled: enabledTypes.includes('rollover'),
+                dependencyEnabled: enabledTypes.includes('dependency'),
+            });
+        }
+        setShowNotificationPrompt(false);
+    };
+
+    const handleNotificationPromptDismiss = (dontAskAgain: boolean) => {
+        setShowNotificationPrompt(false);
+        if (dontAskAgain) {
+            localStorage.setItem('notificationPromptDismissed', 'true');
+            setNotificationPromptDismissed(true);
+        }
+    };
 
     // Celebration system for task completion (must be before useTasks)
     const {
@@ -145,6 +199,13 @@ export default function DopatikaApp() {
             celebrate();
             incrementStreak();
         }
+    });
+
+    // Scheduled task reminders - monitors for tasks due to start
+    useScheduledTaskReminders({
+        tasks,
+        isAuthenticated,
+        enabled: true,
     });
 
     const {
@@ -971,6 +1032,13 @@ export default function DopatikaApp() {
                     onMoveToToday={(taskId) => moveTask(taskId, formatDate(new Date()), 'anytime')}
                 />
 
+                {/* Notification Permission Prompt */}
+                <NotificationPermissionPrompt
+                    isOpen={showNotificationPrompt}
+                    onRequestPermission={handleNotificationPermissionRequest}
+                    onDismiss={handleNotificationPromptDismiss}
+                />
+
                 {/* View Content */}
                 {viewDays === 30 ? (
                     <CalendarView
@@ -1116,27 +1184,109 @@ export default function DopatikaApp() {
                             <DualPanelLayout
                                 timeBlocksPanel={
                                     <div className="h-full overflow-y-auto pr-0.5 pb-2 space-y-2 px-2">
-                                        {TIME_BLOCKS
-                                            .filter(block => {
-                                                // Hide anytime block
-                                                if (block.id === 'anytime') return false;
-                                                
-                                                // For today, hide past time blocks
-                                                if (!day.isToday) return true;
-                                                
-                                                const now = new Date();
-                                                const currentHour = now.getHours();
-                                                
-                                                // Hide morning (6-12) if it's past noon
-                                                if (block.id === 'morning' && currentHour >= 12) return false;
-                                                // Hide afternoon (12-17) if it's past 5pm
-                                                if (block.id === 'afternoon' && currentHour >= 17) return false;
-                                                // Hide evening (17-22) if it's past 10pm
-                                                if (block.id === 'evening' && currentHour >= 22) return false;
-                                                
-                                                return true;
-                                            })
-                                            .map(block => (
+                                        {(() => {
+                                            // Calculate current time for filtering
+                                            const now = new Date();
+                                            const currentHour = now.getHours();
+
+                                            // Collect unstarted tasks from hidden (past) time blocks
+                                            const unstartedTasks = day.isToday ? day.tasks.filter(t => {
+                                                // Only show pending tasks (not started, not completed)
+                                                if (t.status !== 'pending') return false;
+
+                                                // Check if task's time block is now hidden
+                                                if (t.timeBlock === 'morning' && currentHour >= 12) return true;
+                                                if (t.timeBlock === 'afternoon' && currentHour >= 17) return true;
+                                                if (t.timeBlock === 'evening' && currentHour >= 22) return true;
+
+                                                return false;
+                                            }) : [];
+
+                                            return (
+                                                <>
+                                                    {/* Unstarted Tasks from Hidden Time Blocks */}
+                                                    {unstartedTasks.length > 0 && (
+                                                        <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-2">
+                                                            <div className="flex items-center gap-1.5 text-amber-700 mb-1.5">
+                                                                <AlertTriangle size={12} />
+                                                                <span className="font-medium text-[10px]">
+                                                                    Unstarted Tasks ({unstartedTasks.length})
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[9px] text-amber-600 mb-2">
+                                                                These tasks were scheduled earlier but haven't been started yet
+                                                            </p>
+                                                            <div className="space-y-1">
+                                                                {unstartedTasks.map(task => {
+                                                                    const project = projects.find(p => p.id === task.projectId);
+                                                                    const timeBlockLabel =
+                                                                        task.timeBlock === 'morning' ? 'Morning' :
+                                                                        task.timeBlock === 'afternoon' ? 'Afternoon' :
+                                                                        task.timeBlock === 'evening' ? 'Evening' : '';
+
+                                                                    return (
+                                                                        <div
+                                                                            key={task.id}
+                                                                            className="group relative flex items-center gap-1.5 py-1.5 px-2 bg-white rounded border border-amber-100 hover:border-amber-300 hover:shadow-sm transition-all cursor-pointer"
+                                                                            onClick={() => handleEditTask(task)}
+                                                                        >
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleStartNow(task.id);
+                                                                                }}
+                                                                                className="flex-shrink-0 px-1.5 py-0.5 bg-blue-500 hover:bg-blue-600 text-white text-[9px] font-medium rounded transition-colors"
+                                                                            >
+                                                                                Start
+                                                                            </button>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    <span className="text-xs text-gray-900 truncate">
+                                                                                        {task.title}
+                                                                                    </span>
+                                                                                    <span className="flex-shrink-0 text-[9px] px-1 py-0.5 bg-amber-100 text-amber-700 rounded">
+                                                                                        {timeBlockLabel}
+                                                                                    </span>
+                                                                                </div>
+                                                                                {task.estimatedMinutes && (
+                                                                                    <span className="text-[9px] text-gray-500">
+                                                                                        {task.estimatedMinutes}m
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                            {project && (
+                                                                                <div
+                                                                                    className="flex-shrink-0 w-2 h-2 rounded-full"
+                                                                                    style={{ backgroundColor: project.color }}
+                                                                                    title={project.name}
+                                                                                />
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Current Time Block Columns */}
+                                                    {TIME_BLOCKS
+                                                        .filter(block => {
+                                                            // Hide anytime block
+                                                            if (block.id === 'anytime') return false;
+
+                                                            // For today, hide past time blocks
+                                                            if (!day.isToday) return true;
+
+                                                            // Hide morning (6-12) if it's past noon
+                                                            if (block.id === 'morning' && currentHour >= 12) return false;
+                                                            // Hide afternoon (12-17) if it's past 5pm
+                                                            if (block.id === 'afternoon' && currentHour >= 17) return false;
+                                                            // Hide evening (17-22) if it's past 10pm
+                                                            if (block.id === 'evening' && currentHour >= 22) return false;
+
+                                                            return true;
+                                                        })
+                                                        .map(block => (
                                                 <TimeBlockColumn
                                                     key={`${day.dateStr}-${block.id}`}
                                                     block={block}
@@ -1184,7 +1334,10 @@ export default function DopatikaApp() {
                                                     theme={theme}
                                                 />
                                             ))}
-                                        
+                                                </>
+                                            );
+                                        })()}
+
                                         {/* Completed Tasks for this day */}
                                         {day.completedTasks.length > 0 && (
                                             <div className="rounded-lg border border-green-200 bg-green-50/50 p-2">

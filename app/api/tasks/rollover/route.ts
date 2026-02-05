@@ -6,9 +6,11 @@ import { getTodayInTimezone, getCurrentHourInTimezone, formatDateInTimezone } fr
 
 /**
  * POST /api/tasks/rollover
- * Rolls tasks forward through time blocks and days:
- * - Within same day: morning → afternoon → evening
- * - End of day: move incomplete tasks to next day's first available block
+ * Rolls incomplete tasks from previous days to today (after midnight):
+ * - Monday: roll Friday/Saturday/Sunday tasks to today
+ * - Tuesday-Thursday: roll yesterday's tasks to today
+ * - Friday after 10pm: roll tasks to Monday
+ * - Preserves original time block but clears specific scheduled time
  */
 export async function POST(req: NextRequest) {
   try {
@@ -65,12 +67,12 @@ export async function POST(req: NextRequest) {
       });
 
       for (const task of fridayTasks) {
-        // Update parent task
+        // Update parent task - preserve time block but clear specific scheduled time
         await prisma.task.update({
           where: { id: task.id },
           data: {
             date: mondayStr,
-            timeBlock: 'anytime', // Put in anytime bucket to be rescheduled
+            // Keep original time block so task appears in same column
             scheduledHour: null, // Clear specific time, let user reschedule
             scheduledMinute: null,
             rolloverCount: { increment: 1 },
@@ -83,7 +85,7 @@ export async function POST(req: NextRequest) {
           where: { parentTaskId: task.id },
           data: {
             date: mondayStr,
-            timeBlock: 'anytime',
+            // Keep original time block
             scheduledHour: null,
             scheduledMinute: null,
           },
@@ -121,12 +123,12 @@ export async function POST(req: NextRequest) {
         });
 
         for (const task of weekendTasks) {
-          // Update parent task
+          // Update parent task - preserve time block but clear specific scheduled time
           await prisma.task.update({
             where: { id: task.id },
             data: {
               date: today,
-              timeBlock: 'anytime', // Put in anytime bucket to be rescheduled
+              // Keep original time block so task appears in same column
               scheduledHour: null, // Clear specific time, let user reschedule
               scheduledMinute: null,
               rolloverCount: { increment: 1 },
@@ -139,7 +141,7 @@ export async function POST(req: NextRequest) {
             where: { parentTaskId: task.id },
             data: {
               date: today,
-              timeBlock: 'anytime',
+              // Keep original time block
               scheduledHour: null,
               scheduledMinute: null,
             },
@@ -164,12 +166,12 @@ export async function POST(req: NextRequest) {
         });
 
         for (const task of yesterdayTasks) {
-          // Update parent task
+          // Update parent task - preserve time block but clear specific scheduled time
           await prisma.task.update({
             where: { id: task.id },
             data: {
               date: today,
-              timeBlock: 'anytime', // Put in anytime bucket to be rescheduled
+              // Keep original time block so task appears in same column
               scheduledHour: null, // Clear specific time, let user reschedule
               scheduledMinute: null,
               rolloverCount: { increment: 1 },
@@ -182,7 +184,7 @@ export async function POST(req: NextRequest) {
             where: { parentTaskId: task.id },
             data: {
               date: today,
-              timeBlock: 'anytime',
+              // Keep original time block
               scheduledHour: null,
               scheduledMinute: null,
             },
@@ -193,46 +195,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Roll tasks forward through time blocks within today
-    const todayTasks = await prisma.task.findMany({
-      where: {
-        userId,
-        date: today,
-        status: { notIn: ['completed'] },
-        timeBlock: { not: 'anytime' }, // Don't roll over anytime tasks
-      },
-      select: { id: true, title: true, date: true, timeBlock: true },
-    });
-
-    for (const task of todayTasks) {
-      let newTimeBlock = task.timeBlock;
-      
-      // Morning (6-12) → Afternoon if it's past noon
-      if (task.timeBlock === 'morning' && currentHour >= 12) {
-        newTimeBlock = 'afternoon';
-      }
-      // Afternoon (12-17) → Evening if it's past 5pm
-      else if (task.timeBlock === 'afternoon' && currentHour >= 17) {
-        newTimeBlock = 'evening';
-      }
-      // Evening tasks stay in evening until end of day (handled by yesterday rollover)
-
-      if (newTimeBlock !== task.timeBlock) {
-        await prisma.task.update({
-          where: { id: task.id },
-          data: { timeBlock: newTimeBlock },
-        });
-        rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
-      }
-    }
-
-    if (rolledOverTasks.length === 0) {
-      return NextResponse.json({
-        message: 'No tasks to roll over',
-        count: 0,
-        tasks: [],
-      });
-    }
+    // Note: We don't roll tasks forward through time blocks within the same day.
+    // Time block shifting (morning → afternoon → evening) is handled by the auto-bump
+    // feature in useTasks.ts which only moves pending tasks to the current time block.
 
     if (rolledOverTasks.length === 0) {
       return NextResponse.json({

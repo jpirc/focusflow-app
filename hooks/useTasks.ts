@@ -9,6 +9,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Task, Subtask, TaskStatus, TimeBlock, TaskDependency } from '@/types';
 import { taskApi, dependencyApi, CreateTaskInput, UpdateTaskInput } from '@/lib/api/client';
 import { formatDate, getCurrentTimeBlock, isPastTimeBlock, getNextTimeBlock } from '@/lib/utils/date';
+import { useNotifications } from './useNotifications';
 
 interface UseTasksOptions {
     /** Whether user is authenticated */
@@ -67,6 +68,9 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
     const [rolledOverTasks, setRolledOverTasks] = useState<Array<{ id: string; title: string; originalDate: string | null }>>([]);
     const [unblockedTasks, setUnblockedTasks] = useState<Array<{ task: Task; completedDependency: string }>>([]);
 
+    // Notification system
+    const { showNotification } = useNotifications();
+
     // ============================================
     // Fetch & Refresh
     // ============================================
@@ -97,6 +101,14 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
             const rolloverResult = await taskApi.rollover();
             if (rolloverResult.data && rolloverResult.data.count > 0) {
                 setRolledOverTasks(rolloverResult.data.tasks);
+
+                // Send rollover notification
+                const count = rolloverResult.data.count;
+                showNotification({
+                    title: 'Tasks Rolled Over',
+                    body: `${count} task${count > 1 ? 's' : ''} moved to today from previous days`,
+                    type: 'rollover',
+                });
             }
             // Then fetch all tasks
             await refreshTasks();
@@ -106,47 +118,16 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
     }, [isAuthenticated, refreshTasks]);
 
     // ============================================
-    // Smart Auto-Bump: Move past time blocks to current
+    // Smart Auto-Bump: DISABLED
     // ============================================
-
-    useEffect(() => {
-        if (!isAuthenticated || loading || tasks.length === 0) return;
-
-        const autoBumpTasks = async () => {
-            const todayStr = formatDate(new Date());
-            const currentBlock = getCurrentTimeBlock();
-            
-            // Skip if it's too early or too late (outside 6am-10pm)
-            if (currentBlock === 'anytime') return;
-
-            // Find today's tasks that are in past time blocks
-            const tasksToBump = tasks.filter(t => 
-                t.date === todayStr &&
-                t.status === 'pending' &&
-                t.timeBlock !== 'anytime' &&
-                isPastTimeBlock(t.timeBlock)
-            );
-
-            if (tasksToBump.length === 0) return;
-
-            console.log(`Auto-bumping ${tasksToBump.length} tasks to ${currentBlock}`);
-
-            // Bump tasks to current time block
-            for (const task of tasksToBump) {
-                await taskApi.update(task.id, { timeBlock: currentBlock });
-            }
-
-            // Refresh to show updated tasks
-            await refreshTasks();
-        };
-
-        // Run once on load after tasks are fetched
-        autoBumpTasks();
-
-        // Optional: Re-check every 30 minutes
-        const interval = setInterval(autoBumpTasks, 30 * 60 * 1000);
-        return () => clearInterval(interval);
-    }, [isAuthenticated, loading, tasks, refreshTasks]);
+    // Note: Auto-bump feature has been disabled because we now have an "Unstarted Tasks"
+    // bucket that shows pending tasks from past time blocks. This gives users visibility
+    // without automatically changing their schedule. Users can manually start/reschedule
+    // tasks from the Unstarted Tasks bucket.
+    //
+    // Previously, this would automatically move pending tasks from past time blocks
+    // (e.g., morning tasks when it's now afternoon) to the current time block.
+    // This was removed because it was moving tasks without user intent.
 
     // ============================================
     // Task CRUD
@@ -235,6 +216,21 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
                             completedDependency: completedTask.title
                         }))
                     ]);
+
+                    // Send notification for unblocked tasks
+                    if (newlyUnblocked.length === 1) {
+                        showNotification({
+                            title: 'Task Unlocked!',
+                            body: `"${newlyUnblocked[0].title}" is now ready to work on`,
+                            type: 'dependency',
+                        });
+                    } else {
+                        showNotification({
+                            title: 'Tasks Unlocked!',
+                            body: `${newlyUnblocked.length} tasks are now ready to work on`,
+                            type: 'dependency',
+                        });
+                    }
                 }
             }
         }
