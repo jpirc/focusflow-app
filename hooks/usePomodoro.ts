@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Task } from '@/types';
+import { useNotifications } from './useNotifications';
 
 // ============================================
 // TYPES
@@ -155,7 +156,10 @@ export function usePomodoro({
     });
     const [loadingStats, setLoadingStats] = useState(true);
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-    
+
+    // Notification system
+    const { showNotification: sendNotification } = useNotifications();
+
     // Refs for accurate timing
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const endTimeRef = useRef<number | null>(null);
@@ -313,9 +317,11 @@ export function usePomodoro({
             }
             
             // Show notification
-            if (settings.desktopNotifications) {
-                showNotification('🍅 Pomodoro Complete!', 'Great work! Time for a break.');
-            }
+            sendNotification({
+                title: '🍅 Pomodoro Complete!',
+                body: 'Great work! Time for a break.',
+                type: 'pomodoro',
+            });
             
             // Update stats
             setTodayStats(prev => ({
@@ -365,9 +371,11 @@ export function usePomodoro({
                 playBreakEndSound();
             }
             
-            if (settings.desktopNotifications) {
-                showNotification('☕ Break Over!', 'Ready to focus again?');
-            }
+            sendNotification({
+                title: '☕ Break Over!',
+                body: 'Ready to focus again?',
+                type: 'pomodoro',
+            });
             
             if (onBreakComplete) {
                 onBreakComplete();
@@ -643,11 +651,6 @@ export function usePomodoro({
         }
     };
     
-    const showNotification = (title: string, body: string) => {
-        if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification(title, { body, icon: '/favicon.ico' });
-        }
-    };
     
     // ============================================
     // CLEANUP

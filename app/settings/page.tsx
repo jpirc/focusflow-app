@@ -4,9 +4,10 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Brain, LogOut, ArrowLeft, Mail, Clock, Palette } from 'lucide-react';
+import { Brain, LogOut, ArrowLeft, Mail, Clock, Palette, Bell } from 'lucide-react';
 import { VIEW_DAY_OPTIONS } from '@/lib/constants';
 import { THEMES, ThemeId, getStoredTheme, setStoredTheme } from '@/lib/themes';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const COMMON_TIMEZONES = [
   { value: 'America/New_York', label: 'Eastern Time (ET)' },
@@ -31,6 +32,17 @@ export default function SettingsPage() {
   const [timezone, setTimezone] = useState('America/Chicago');
   const [savingTimezone, setSavingTimezone] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<ThemeId>(() => getStoredTheme());
+
+  // Notification settings
+  const {
+    permission,
+    isSupported,
+    settings: notificationSettings,
+    isLoadingSettings: loadingNotifications,
+    requestPermission,
+    updateSettings: updateNotificationSettings,
+    testNotification,
+  } = useNotifications();
 
   // Load default view preference
   useEffect(() => {
@@ -114,6 +126,41 @@ export default function SettingsPage() {
     } finally {
       setSavingTimezone(false);
     }
+  };
+
+  const handleEnableNotifications = async () => {
+    const result = await requestPermission();
+    if (result === 'granted') {
+      // Settings are automatically updated in the hook
+    } else if (result === 'denied') {
+      alert('Notification permission denied. Please enable notifications in your browser settings.');
+    }
+  };
+
+  const handleNotificationToggle = async (key: keyof typeof notificationSettings) => {
+    await updateNotificationSettings({
+      [key]: !notificationSettings[key],
+    });
+  };
+
+  const handleTestNotification = async () => {
+    console.log('[Settings] Test notification button clicked');
+
+    // Show helper message
+    alert('💡 Tip: Browsers usually hide notifications when the tab is in focus.\n\nAfter clicking OK, switch to another tab or minimize the browser to see the notification!');
+
+    const result = await testNotification();
+    console.log('[Settings] Test notification completed, result:', result);
+
+    if (!result) {
+      alert('Notification failed to show. Check the browser console for details.');
+    }
+  };
+
+  const handleReminderMinutesChange = async (minutes: number) => {
+    await updateNotificationSettings({
+      reminderMinutesBefore: minutes,
+    });
   };
 
   return (
@@ -286,6 +333,213 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+
+        {/* Notifications Section */}
+        {isSupported && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">
+              <div className="flex items-center gap-2">
+                <Bell size={20} />
+                Browser Notifications
+              </div>
+            </h2>
+
+            <div className="space-y-6">
+              {/* Permission Status */}
+              <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    Permission Status
+                  </span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      permission === 'granted'
+                        ? 'bg-green-100 text-green-700'
+                        : permission === 'denied'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}
+                  >
+                    {permission === 'granted'
+                      ? 'Enabled'
+                      : permission === 'denied'
+                      ? 'Denied'
+                      : 'Not Requested'}
+                  </span>
+                </div>
+
+                {permission === 'default' && (
+                  <button
+                    onClick={handleEnableNotifications}
+                    className="w-full mt-3 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm transition-colors"
+                  >
+                    Enable Notifications
+                  </button>
+                )}
+
+                {permission === 'denied' && (
+                  <p className="text-xs text-gray-600 mt-2">
+                    Notifications are blocked. Please enable them in your browser settings.
+                  </p>
+                )}
+
+                {permission === 'granted' && (
+                  <>
+                    <button
+                      onClick={handleTestNotification}
+                      className="w-full mt-3 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition-colors"
+                    >
+                      Send Test Notification
+                    </button>
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      💡 Switch to another tab after clicking to see the notification
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* Global Toggle */}
+              {permission === 'granted' && (
+                <>
+                  <div className="flex items-center justify-between py-2">
+                    <div>
+                      <div className="font-medium text-gray-900">Browser Notifications</div>
+                      <div className="text-sm text-gray-600 mt-0.5">
+                        Receive notifications when app is in background
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleNotificationToggle('browserEnabled')}
+                      disabled={loadingNotifications}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        notificationSettings.browserEnabled ? 'bg-blue-500' : 'bg-gray-300'
+                      } ${loadingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          notificationSettings.browserEnabled ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Individual Notification Types */}
+                  {notificationSettings.browserEnabled && (
+                    <div className="space-y-4 pl-4 border-l-2 border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">Pomodoro Timer</div>
+                          <div className="text-xs text-gray-600 mt-0.5">
+                            Session and break completion alerts
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleNotificationToggle('pomodoroEnabled')}
+                          disabled={loadingNotifications}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            notificationSettings.pomodoroEnabled ? 'bg-blue-500' : 'bg-gray-300'
+                          } ${loadingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              notificationSettings.pomodoroEnabled ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">Daily Rollover</div>
+                          <div className="text-xs text-gray-600 mt-0.5">
+                            Tasks moved from previous days
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleNotificationToggle('rolloverEnabled')}
+                          disabled={loadingNotifications}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            notificationSettings.rolloverEnabled ? 'bg-blue-500' : 'bg-gray-300'
+                          } ${loadingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              notificationSettings.rolloverEnabled ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">Task Unlocked</div>
+                          <div className="text-xs text-gray-600 mt-0.5">
+                            When blocked tasks become available
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleNotificationToggle('dependencyEnabled')}
+                          disabled={loadingNotifications}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            notificationSettings.dependencyEnabled ? 'bg-blue-500' : 'bg-gray-300'
+                          } ${loadingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              notificationSettings.dependencyEnabled ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">Scheduled Tasks</div>
+                          <div className="text-xs text-gray-600 mt-0.5">
+                            Reminders when tasks are scheduled to start
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleNotificationToggle('scheduledReminderEnabled')}
+                          disabled={loadingNotifications}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            notificationSettings.scheduledReminderEnabled ? 'bg-blue-500' : 'bg-gray-300'
+                          } ${loadingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              notificationSettings.scheduledReminderEnabled ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      {notificationSettings.scheduledReminderEnabled && (
+                        <div className="ml-4 pl-4 border-l-2 border-gray-200">
+                          <label className="block text-xs font-medium text-gray-700 mb-2">
+                            Reminder Timing
+                          </label>
+                          <select
+                            value={notificationSettings.reminderMinutesBefore}
+                            onChange={(e) => handleReminderMinutesChange(parseInt(e.target.value))}
+                            disabled={loadingNotifications}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                          >
+                            <option value={0}>At start time</option>
+                            <option value={5}>5 minutes before</option>
+                            <option value={10}>10 minutes before</option>
+                            <option value={15}>15 minutes before</option>
+                            <option value={30}>30 minutes before</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Account Actions */}
         <div className="bg-white rounded-lg shadow-sm p-6">

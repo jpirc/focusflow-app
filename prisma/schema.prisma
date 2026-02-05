@@ -27,7 +27,10 @@ model User {
   // Pomodoro
   pomodoroSettings  UserPomodoroSettings?
   pomodoroSessions  PomodoroSession[]
-  
+
+  // Notifications
+  notificationSettings UserNotificationSettings?
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -345,5 +348,39 @@ model PomodoroSession {
   
   @@index([userId, startedAt])
   @@index([taskId])
+}
+
+// ============================================
+// BROWSER NOTIFICATION SETTINGS
+// ============================================
+
+// User Browser Notification Settings
+model UserNotificationSettings {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+
+  // Global toggle
+  browserEnabled          Boolean  @default(false)
+
+  // Per-notification-type toggles
+  pomodoroEnabled         Boolean  @default(true)
+  rolloverEnabled         Boolean  @default(true)
+  dependencyEnabled       Boolean  @default(true)
+  taskAgeWarningsEnabled  Boolean  @default(false)
+  dailySummaryEnabled     Boolean  @default(false)
+  scheduledReminderEnabled Boolean @default(true)
+
+  // Scheduled task reminder timing
+  reminderMinutesBefore   Int      @default(0) // 0 = at start time, 5 = 5 minutes before, etc.
+
+  // Daily summary timing
+  dailySummaryTime        String?  // "08:00" format (24-hour HH:mm)
+
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([userId])
 }
 
