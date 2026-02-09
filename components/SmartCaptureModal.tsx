@@ -115,7 +115,7 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Sparkles className="text-purple-500" size={18} />
-              <h2 className="text-base font-semibold text-gray-900">Add Task</h2>
+              <h2 className="text-base font-semibold text-gray-900">Smart Task Capture</h2>
             </div>
             <button
               onClick={onClose}
@@ -126,15 +126,19 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
           </div>
 
           <p className="text-xs text-gray-500 mb-2">
-            Type naturally – dates, times, priorities, and durations are auto-detected.
+            Type naturally, paste emails/text messages, or list multiple tasks. AI extracts action items automatically.
           </p>
 
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="e.g., 'Call mom tomorrow morning - quick 15 min task' or 'Finish quarterly report by Friday afternoon - high priority 2 hours'"
-            className="w-full h-28 p-3 text-sm border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono"
+            placeholder="Simple: 'Call mom tomorrow morning' or 'Buy groceries - 30 min'
+
+Bulk paste: Copy entire emails, text messages, or meeting notes. AI will find your tasks.
+
+Example: 'Hey! Can you send me the report by Friday? Also don't forget the team meeting at 2pm.'"
+            className="w-full h-40 p-3 text-sm border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-y font-mono"
             autoFocus
             disabled={isLoading}
           />
@@ -143,12 +147,12 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
             <div className="flex items-start gap-2 text-xs text-purple-700">
               <Sparkles className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <div className="space-y-0.5">
-                <p className="font-medium">Supported patterns:</p>
+                <p className="font-medium">What AI can detect:</p>
                 <ul className="space-y-0.5 ml-2 text-purple-600">
-                  <li>• <span className="font-mono bg-white px-1 rounded">tomorrow morning</span> or <span className="font-mono bg-white px-1 rounded">Friday afternoon</span></li>
-                  <li>• <span className="font-mono bg-white px-1 rounded">urgent</span>, <span className="font-mono bg-white px-1 rounded">high priority</span>, or <span className="font-mono bg-white px-1 rounded">low priority</span></li>
-                  <li>• <span className="font-mono bg-white px-1 rounded">quick task</span> or <span className="font-mono bg-white px-1 rounded">complex project</span></li>
-                  <li>• <span className="font-mono bg-white px-1 rounded">30 min</span> or <span className="font-mono bg-white px-1 rounded">2 hours</span></li>
+                  <li>• <span className="font-semibold">Simple tasks:</span> <span className="font-mono bg-white px-1 rounded text-[10px]">call mom tomorrow morning</span></li>
+                  <li>• <span className="font-semibold">Dates/times:</span> <span className="font-mono bg-white px-1 rounded text-[10px]">Friday at 2pm</span> or <span className="font-mono bg-white px-1 rounded text-[10px]">this evening</span></li>
+                  <li>• <span className="font-semibold">Priority/effort:</span> <span className="font-mono bg-white px-1 rounded text-[10px]">urgent</span>, <span className="font-mono bg-white px-1 rounded text-[10px]">quick task</span>, <span className="font-mono bg-white px-1 rounded text-[10px]">2 hours</span></li>
+                  <li>• <span className="font-semibold">Emails/texts:</span> Extracts tasks from "Can you...", "Don't forget...", etc.</li>
                 </ul>
               </div>
             </div>
@@ -180,12 +184,12 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({ isOpen, on
                 {isLoading ? (
                   <>
                     <Loader2 size={14} className="animate-spin" />
-                    Creating...
+                    Extracting...
                   </>
                 ) : (
                   <>
                     <Sparkles size={14} />
-                    Create
+                    Extract Tasks
                   </>
                 )}
               </button>

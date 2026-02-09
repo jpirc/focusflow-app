@@ -41,19 +41,15 @@ export function useTaskFilters({
 
     // Filtered and sorted inbox tasks
     const inboxTasks = useMemo(() => {
-        let filtered = rawInboxTasks;
+        // Always include both inbox and scheduled incomplete tasks for filtering
+        const scheduledIncomplete = tasks.filter(t =>
+            t.date &&
+            t.status !== 'completed' &&
+            (!selectedProjectId || t.projectId === selectedProjectId)
+        );
+        let filtered = [...rawInboxTasks, ...scheduledIncomplete];
 
-        // When time filter is active, also include scheduled incomplete tasks
-        if (timeFilter !== null) {
-            const scheduledIncomplete = tasks.filter(t =>
-                t.date &&
-                t.status !== 'completed' &&
-                (!selectedProjectId || t.projectId === selectedProjectId)
-            );
-            filtered = [...rawInboxTasks, ...scheduledIncomplete];
-        }
-
-        // Apply time filter
+        // Apply time filter if active (null = show all)
         if (timeFilter !== null) {
             filtered = filtered.filter(t =>
                 (t.estimatedMinutes || 30) <= timeFilter
@@ -86,7 +82,7 @@ export function useTaskFilters({
             // 4. Finally by created date (older first)
             return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         });
-    }, [rawInboxTasks, timeFilter]);
+    }, [rawInboxTasks, timeFilter, tasks, selectedProjectId]);
 
     // Task counts for each time filter option (includes scheduled incomplete tasks)
     const timeFilterCounts = useMemo(() => {

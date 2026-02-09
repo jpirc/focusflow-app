@@ -95,34 +95,19 @@ export async function POST(req: NextRequest) {
       }
     } else if (dayOfWeek !== 5) { // Not Friday - handle normal weekday rollover
       // For Monday-Thursday: roll previous days' tasks to today
-      if (dayOfWeek === 1) { // Monday - roll Friday, Saturday, Sunday to today
-        // Get Friday's date
-        const fridayDate = new Date(todayDate);
-        fridayDate.setDate(fridayDate.getDate() - 3);
-        const fridayStr = formatDateInTimezone(fridayDate, userTimezone);
-        
-        // Get Saturday's date
-        const saturdayDate = new Date(todayDate);
-        saturdayDate.setDate(saturdayDate.getDate() - 2);
-        const saturdayStr = formatDateInTimezone(saturdayDate, userTimezone);
-        
-        // Get Sunday's date
-        const sundayDate = new Date(todayDate);
-        sundayDate.setDate(sundayDate.getDate() - 1);
-        const sundayStr = formatDateInTimezone(sundayDate, userTimezone);
-        
-        // Roll all weekend tasks to Monday
-        const weekendTasks = await prisma.task.findMany({
+      if (dayOfWeek === 1) { // Monday - roll ALL past tasks to today
+        // This catches weekend tasks (Fri/Sat/Sun) plus any older tasks that weren't rolled
+        const pastTasks = await prisma.task.findMany({
           where: {
             userId,
-            date: { in: [fridayStr, saturdayStr, sundayStr] },
+            date: { lt: today }, // All tasks before today
             status: { notIn: ['completed'] },
             parentTaskId: null, // Only get parent tasks
           },
           select: { id: true, title: true, date: true, timeBlock: true },
         });
 
-        for (const task of weekendTasks) {
+        for (const task of pastTasks) {
           // Update parent task - preserve time block but clear specific scheduled time
           await prisma.task.update({
             where: { id: task.id },
@@ -150,22 +135,19 @@ export async function POST(req: NextRequest) {
           rolledOverTasks.push({ id: task.id, title: task.title, originalDate: task.date });
         }
       } else {
-        // Tuesday-Thursday: roll yesterday's tasks to today
-        const yesterdayDate = new Date(todayDate);
-        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-        const yesterdayStr = formatDateInTimezone(yesterdayDate, userTimezone);
-        
-        const yesterdayTasks = await prisma.task.findMany({
+        // Tuesday-Thursday: roll ALL past tasks (not just yesterday) to today
+        // This ensures tasks from multiple days ago don't get stuck
+        const pastTasks = await prisma.task.findMany({
           where: {
             userId,
-            date: yesterdayStr,
+            date: { lt: today }, // All tasks before today
             status: { notIn: ['completed'] },
             parentTaskId: null, // Only get parent tasks
           },
           select: { id: true, title: true, date: true, timeBlock: true },
         });
 
-        for (const task of yesterdayTasks) {
+        for (const task of pastTasks) {
           // Update parent task - preserve time block but clear specific scheduled time
           await prisma.task.update({
             where: { id: task.id },
