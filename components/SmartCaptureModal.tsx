@@ -152,7 +152,7 @@ Example: 'Hey! Can you send me the report by Friday? Also don't forget the team 
                   <li>• <span className="font-semibold">Simple tasks:</span> <span className="font-mono bg-white px-1 rounded text-[10px]">call mom tomorrow morning</span></li>
                   <li>• <span className="font-semibold">Dates/times:</span> <span className="font-mono bg-white px-1 rounded text-[10px]">Friday at 2pm</span> or <span className="font-mono bg-white px-1 rounded text-[10px]">this evening</span></li>
                   <li>• <span className="font-semibold">Priority/effort:</span> <span className="font-mono bg-white px-1 rounded text-[10px]">urgent</span>, <span className="font-mono bg-white px-1 rounded text-[10px]">quick task</span>, <span className="font-mono bg-white px-1 rounded text-[10px]">2 hours</span></li>
-                  <li>• <span className="font-semibold">Emails/texts:</span> Extracts tasks from "Can you...", "Don't forget...", etc.</li>
+                  <li>• <span className="font-semibold">Emails/texts:</span> Extracts tasks from &quot;Can you...&quot;, &quot;Don&apos;t forget...&quot;, etc.</li>
                 </ul>
               </div>
             </div>

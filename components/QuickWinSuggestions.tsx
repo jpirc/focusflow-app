@@ -95,7 +95,7 @@ export function QuickWinSuggestions({
                         <div className="mb-4">🎉</div>
                         <h3 className="text-lg font-bold text-gray-900 mb-2">All Quick Wins Done!</h3>
                         <p className="text-sm text-gray-600 mb-4">
-                            You've completed all your short tasks. Great work!
+                            You&apos;ve completed all your short tasks. Great work!
                         </p>
                         <button
                             onClick={onClose}

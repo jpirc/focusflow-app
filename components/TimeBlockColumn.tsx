@@ -81,18 +81,15 @@ export const TimeBlockColumn: React.FC<TimeBlockColumnProps> = ({
         setIsDragOver(false);
         const taskId = e.dataTransfer.getData('text/plain');
         const dropBeforeTaskId = (window as any).__dropBeforeTaskId;
-        console.log('[COLUMN] handleDrop - taskId:', taskId, 'dropBeforeTaskId:', dropBeforeTaskId);
         // Clean up the global
         delete (window as any).__dropBeforeTaskId;
         
         if (taskId) {
             if (dropBeforeTaskId) {
                 // Dropped on a specific task - reorder before that task
-                console.log('[COLUMN] Calling onDrop with dropBefore:', dropBeforeTaskId);
                 onDrop(taskId, date, block.id, dropBeforeTaskId);
             } else {
                 // Dropped in empty space - append to end
-                console.log('[COLUMN] Calling onDrop without dropBefore');
                 onDrop(taskId, date, block.id);
             }
         }

@@ -4,7 +4,6 @@
  * Reduces activation energy from 5 steps to 1:
  * - Schedules task at current time
  * - Sets status to in-progress
- * - Starts Pomodoro timer
  * - Updates UI optimistically
  */
 

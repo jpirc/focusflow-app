@@ -85,9 +85,24 @@ export async function DELETE(
         if (!existing) return errorResponse('Project not found', 404);
         if (existing.userId !== session.user.id) return unauthorizedResponse();
 
-        await prisma.project.delete({
-            where: { id: params.id },
-        });
+        await prisma.$transaction([
+            prisma.task.updateMany({
+                where: {
+                    userId: session.user.id,
+                    projectId: params.id,
+                },
+                data: {
+                    projectId: null,
+                    date: null,
+                    timeBlock: 'inbox',
+                    scheduledHour: null,
+                    scheduledMinute: null,
+                },
+            }),
+            prisma.project.delete({
+                where: { id: params.id },
+            }),
+        ]);
 
         return successResponse({ success: true });
     } catch (error) {

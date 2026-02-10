@@ -7,19 +7,19 @@
 
 import { Calendar, Clock, Inbox, FolderKanban, MoreHorizontal } from 'lucide-react';
 
-type NavTab = 'today' | 'timeline' | 'inbox' | 'projects' | 'more';
+type NavTab = 'today' | 'timeline' | 'queue' | 'projects' | 'more';
 
 interface MobileBottomNavProps {
   activeTab: NavTab;
   onTabChange: (tab: NavTab) => void;
-  inboxCount?: number;
+  queueCount?: number;
 }
 
-export function MobileBottomNav({ activeTab, onTabChange, inboxCount = 0 }: MobileBottomNavProps) {
+export function MobileBottomNav({ activeTab, onTabChange, queueCount = 0 }: MobileBottomNavProps) {
   const tabs = [
     { id: 'today' as NavTab, icon: Calendar, label: 'Today' },
     { id: 'timeline' as NavTab, icon: Clock, label: 'Timeline' },
-    { id: 'inbox' as NavTab, icon: Inbox, label: 'Inbox', badge: inboxCount },
+    { id: 'queue' as NavTab, icon: Inbox, label: 'Inbox', badge: queueCount },
     { id: 'projects' as NavTab, icon: FolderKanban, label: 'Projects' },
     { id: 'more' as NavTab, icon: MoreHorizontal, label: 'More' },
   ];

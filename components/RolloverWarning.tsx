@@ -59,7 +59,7 @@ export function RolloverWarning({
                                 <span className="text-xs font-semibold">Stuck Task Alert</span>
                             </div>
                             <p className="text-[10px] text-amber-600 mt-0.5">
-                                Rolled over {rolloverCount} times. Maybe it's time to...
+                                Rolled over {rolloverCount} times. Maybe it&apos;s time to...
                             </p>
                         </div>
 
@@ -95,7 +95,7 @@ export function RolloverWarning({
 
                         <div className="p-2 bg-gray-50 border-t border-gray-200">
                             <p className="text-[9px] text-gray-500 italic">
-                                💡 Pro tip: If a task keeps rolling over, it's either too big or not important enough.
+                                💡 Pro tip: If a task keeps rolling over, it&apos;s either too big or not important enough.
                             </p>
                         </div>
                     </div>

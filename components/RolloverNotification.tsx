@@ -40,11 +40,11 @@ export function RolloverNotification({ rolledOverTasks, allTasks, onDismiss }: R
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                                 <h3 className="text-sm font-semibold text-gray-800">
-                                    {rolledOverTasks.length} task{rolledOverTasks.length === 1 ? '' : 's'} rolled over from yesterday
+                                    {rolledOverTasks.length} task{rolledOverTasks.length === 1 ? '' : 's'} moved back to Inbox
                                 </h3>
                             </div>
                             <p className="text-xs text-gray-600 mb-2">
-                                Incomplete tasks from previous days have been moved to today's "Anytime" block.
+                                Incomplete scheduled/planned tasks from previous days were unscheduled for re-planning.
                             </p>
 
                             {/* Pattern Detection Warning */}
@@ -59,7 +59,7 @@ export function RolloverNotification({ rolledOverTasks, allTasks, onDismiss }: R
                                             <div className="space-y-1">
                                                 {frequentRollovers.slice(0, 3).map(task => (
                                                     <div key={task.id} className="text-xs text-amber-800">
-                                                        <span className="font-medium">"{task.title}"</span>
+                                                        <span className="font-medium">&quot;{task.title}&quot;</span>
                                                         {' '}– rolled over <span className="font-semibold">{task.count}×</span>
                                                         {' '}
                                                         <span className="text-amber-600">

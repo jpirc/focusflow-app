@@ -152,7 +152,7 @@ export function TimingInsightsCard() {
                         }
                     </p>
                     {/* Key insight preview */}
-                    <p className="text-xs text-gray-700 italic">"{insights.insights[0]}"</p>
+                    <p className="text-xs text-gray-700 italic">&quot;{insights.insights[0]}&quot;</p>
                 </div>
                 <div className="flex-shrink-0">
                     {isExpanded ? <X size={16} /> : <TrendingUp size={16} />}

@@ -153,9 +153,6 @@ function TimelineTaskCardComponent({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  // Debug: Log when rendering
-  console.log('[TimelineTaskCard] Rendering:', task.title, 'timeBlock:', task.timeBlock);
-
   return (
     <div
       ref={cardRef}

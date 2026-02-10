@@ -53,18 +53,27 @@ export function useIntelligence({ isAuthenticated, tasks = [] }: UseIntelligence
 
         try {
             setLoading(true);
-            const res = await fetch('/api/intelligence');
-            if (!res.ok) throw new Error('Failed to fetch suggestions');
-            
-            const data = await res.json();
-            
+            const [suggestionsRes, insightsRes] = await Promise.all([
+                fetch('/api/intelligence'),
+                fetch('/api/intelligence?type=insights'),
+            ]);
+
+            if (!suggestionsRes.ok) throw new Error('Failed to fetch suggestions');
+
+            const suggestionsData = await suggestionsRes.json();
+            const insightsData = insightsRes.ok ? await insightsRes.json() : [];
+
+            const suggestionsList = Array.isArray(suggestionsData)
+                ? suggestionsData
+                : suggestionsData?.suggestions || [];
+
             // Filter to only pending suggestions
-            const pending = (data.suggestions || []).filter(
+            const pending = suggestionsList.filter(
                 (s: SmartSuggestion) => s.status === 'pending'
             );
             
             setSuggestions(pending);
-            setInsights(data.insights || []);
+            setInsights(Array.isArray(insightsData) ? insightsData : insightsData?.insights || []);
             setLastFetch(Date.now());
         } catch (err) {
             console.error('Failed to fetch intelligence:', err);
@@ -79,7 +88,7 @@ export function useIntelligence({ isAuthenticated, tasks = [] }: UseIntelligence
             const res = await fetch(`/api/intelligence/suggestions/${suggestionId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'accepted' }),
+                body: JSON.stringify({ accepted: true }),
             });
 
             if (res.ok) {
@@ -97,7 +106,7 @@ export function useIntelligence({ isAuthenticated, tasks = [] }: UseIntelligence
             const res = await fetch(`/api/intelligence/suggestions/${suggestionId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'dismissed' }),
+                body: JSON.stringify({ accepted: false }),
             });
 
             if (res.ok) {

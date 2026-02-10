@@ -208,7 +208,7 @@ export function TimeBudget({
       {/* Warning message for overbooked days */}
       {isOverbooked && (
         <div className="text-[10px] text-red-600 bg-red-50 px-2 py-1 rounded">
-          You've scheduled {((scheduledMinutes + completedMinutes - actualAvailableMinutes) / 60).toFixed(1)} hours more than available. Consider moving some tasks.
+          You&apos;ve scheduled {((scheduledMinutes + completedMinutes - actualAvailableMinutes) / 60).toFixed(1)} hours more than available. Consider moving some tasks.
         </div>
       )}
     </div>

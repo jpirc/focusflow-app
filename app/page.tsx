@@ -45,6 +45,7 @@ import { NotificationPermissionPrompt } from '@/components/NotificationPermissio
 import DualPanelLayout from '@/components/DualPanelLayout';
 import TimelinePanel from '@/components/TimelinePanel';
 import { TimeBudget } from '@/components/ui/TimeBudget';
+import { TimeFilterButtons } from '@/components/ui/TimeFilterButtons';
 
 // Mobile Components
 import { MobileBottomNav } from '@/components/mobile/MobileBottomNav';
@@ -75,7 +76,7 @@ export default function DopatikaApp() {
 
     // Mobile responsiveness
     const isMobile = useMobileBreakpoint();
-    const [mobileTab, setMobileTab] = useState<'today' | 'timeline' | 'inbox' | 'projects' | 'more'>('today');
+    const [mobileTab, setMobileTab] = useState<'today' | 'timeline' | 'queue' | 'projects' | 'more'>('today');
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
     const [taskModalOpen, setTaskModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -285,7 +286,8 @@ export default function DopatikaApp() {
     // ============================================
 
     const {
-        inboxTasks,
+        queueTasks,
+        queueCount,
         todayDateStr,
         todayTopPriorities,
         activeTask,
@@ -348,7 +350,7 @@ export default function DopatikaApp() {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
+    }, [setQuickWinModalOpen, setQuickWinTrigger, setSmartCaptureModalOpen]);
 
     // ============================================
     // Redirect if not authenticated
@@ -396,7 +398,7 @@ export default function DopatikaApp() {
         // Small delay to let tasks load
         const timer = setTimeout(checkMorningPrompt, 1000);
         return () => clearTimeout(timer);
-    }, [loading, session, tasks, todayDateStr, todayTopPriorities.length]);
+    }, [loading, session, tasks, todayDateStr, todayTopPriorities.length, setDailyPrioritiesModalOpen]);
 
     // ============================================
     // Handlers
@@ -405,12 +407,12 @@ export default function DopatikaApp() {
     const handleEditTask = useCallback((task: Task) => {
         setTaskToEditId(task.id);
         setEditModalOpen(true);
-    }, []);
+    }, [setEditModalOpen, setTaskToEditId]);
 
     const handleAIBreakdown = useCallback((task: Task) => {
         setTaskForAI(task);
         setAiModalOpen(true);
-    }, []);
+    }, [setAiModalOpen, setTaskForAI]);
 
     const handleApplyAIBreakdown = useCallback((subtasks: Subtask[]) => {
         if (taskForAI) {
@@ -423,12 +425,12 @@ export default function DopatikaApp() {
         // Mark as dismissed for today
         const dismissedKey = `dopatika_top3_dismissed_${todayDateStr}`;
         localStorage.setItem(dismissedKey, 'true');
-    }, [todayDateStr]);
+    }, [todayDateStr, setDailyPrioritiesModalOpen]);
 
     const handleSetTopPriorities = useCallback(async (taskIds: string[]) => {
         await setTopPriorities(taskIds, todayDateStr);
         setDailyPrioritiesModalOpen(false);
-    }, [setTopPriorities, todayDateStr]);
+    }, [setTopPriorities, todayDateStr, setDailyPrioritiesModalOpen]);
 
     const handleRestartDay = useCallback(async (note?: string) => {
         try {
@@ -443,8 +445,6 @@ export default function DopatikaApp() {
                 t.timeBlock !== 'inbox'
             );
 
-            console.log(`[RestartDay] Rescheduling ${incompleteTasks.length} incomplete tasks`);
-
             // Save note if provided
             if (note) {
                 saveRestartNote(note);
@@ -453,8 +453,6 @@ export default function DopatikaApp() {
             // Run smart reschedule algorithm (use current time, NOT midnight)
             const now = new Date(); // Current time with actual hours/minutes
             const rescheduleResults = smartReschedule(incompleteTasks, now);
-
-            console.log(`[RestartDay] Algorithm returned ${rescheduleResults.length} scheduled tasks`);
 
             // Apply updates to each task
             const updatePromises = rescheduleResults.map(result => {
@@ -466,8 +464,6 @@ export default function DopatikaApp() {
             });
 
             await Promise.all(updatePromises);
-
-            console.log('[RestartDay] All tasks rescheduled successfully');
 
             // Refresh to show updated schedule
             await refreshTasks();
@@ -494,22 +490,18 @@ export default function DopatikaApp() {
         setHoveredTimelineTaskId(taskId);
     }, []);
     
+    const handleStartDrag = useCallback((_item: DragItem) => undefined, []);
+
     const handleTimelineTaskDragStart = useCallback((task: Task, e: React.DragEvent) => {
         handleStartDrag({
             taskId: task.id,
             sourceDate: task.date,
             sourceTimeBlock: task.timeBlock
         });
-    }, []);
-
-    const handleStartDrag = useCallback((item: DragItem) => {
-        console.log('Dragging', item);
-    }, []);
+    }, [handleStartDrag]);
 
     // Handle drop on timeline - set specific scheduled time
     const handleTimelineDrop = useCallback(async (taskId: string, hour: number, minute: number, targetDate?: string) => {
-        console.log(`Dropping task ${taskId} at ${hour}:${minute} on ${targetDate}`);
-
         try {
             // Determine which time block this hour belongs to
             let newTimeBlock: TimeBlock = 'anytime';
@@ -563,13 +555,10 @@ export default function DopatikaApp() {
 
     // Wrap updateStatus to trigger celebration on completion
     const handleStatusChange = useCallback(async (taskId: string, status: TaskStatus) => {
-        console.log('[handleStatusChange] Called with:', { taskId, status });
         await updateStatus(taskId, status);
         if (status === 'completed') {
-            console.log('[handleStatusChange] Task completed! Triggering celebration...');
             const newStreak = incrementStreak();
             celebrate(newStreak);
-            console.log('[handleStatusChange] Celebration triggered with streak:', newStreak);
 
             // Show quick win suggestions after completing a task (30% chance)
             if (Math.random() < 0.3) {
@@ -579,18 +568,15 @@ export default function DopatikaApp() {
                 }, 1500); // Show after celebration animation
             }
         }
-    }, [updateStatus, incrementStreak, celebrate]);
+    }, [updateStatus, incrementStreak, celebrate, setQuickWinModalOpen, setQuickWinTrigger]);
 
     const handleDrop = useCallback(async (taskId: string, targetDate: string, targetBlock: TimeBlock, insertBeforeTaskId?: string) => {
-        console.log('[DRAG] handleDrop called:', { taskId, targetDate, targetBlock, insertBeforeTaskId });
         const task = tasks.find(t => t.id === taskId);
         if (!task) {
-            console.log('[DRAG] Task not found:', taskId);
             return;
         }
         
         const isSameBucket = task.date === targetDate && task.timeBlock === targetBlock;
-        console.log('[DRAG] isSameBucket:', isSameBucket, 'insertBeforeTaskId:', insertBeforeTaskId);
         
         if (isSameBucket && insertBeforeTaskId) {
             // Reordering within same bucket
@@ -598,19 +584,14 @@ export default function DopatikaApp() {
                 .filter(t => t.date === targetDate && t.timeBlock === targetBlock)
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
             
-            console.log('[DRAG] Bucket tasks:', bucketTasks.map(t => ({ id: t.id, title: t.title, order: t.order })));
             const currentIndex = bucketTasks.findIndex(t => t.id === taskId);
             const targetIndex = bucketTasks.findIndex(t => t.id === insertBeforeTaskId);
-            console.log('[DRAG] Indexes - current:', currentIndex, 'target:', targetIndex);
             
             if (currentIndex !== -1 && targetIndex !== -1 && currentIndex !== targetIndex) {
-                console.log('[DRAG] Reordering - moving from', currentIndex, 'to', targetIndex);
                 // Reorder tasks
                 const reorderedTasks = [...bucketTasks];
                 const [moved] = reorderedTasks.splice(currentIndex, 1);
                 reorderedTasks.splice(targetIndex > currentIndex ? targetIndex - 1 : targetIndex, 0, moved);
-                
-                console.log('[DRAG] New order:', reorderedTasks.map(t => ({ id: t.id, title: t.title })));
                 
                 // OPTIMISTIC UPDATE - reorder array AND update order field
                 setTasks(prev => {
@@ -631,15 +612,12 @@ export default function DopatikaApp() {
                 // Fire API updates in background (don't await)
                 Promise.all(
                     reorderedTasks.map((task, i) => {
-                        console.log('[DRAG] Updating task', task.title, 'order to', i);
                         return updateTask(task.id, { order: i });
                     })
                 ).catch(err => {
                     console.error('[DRAG] Reorder failed, refreshing:', err);
                     refreshTasks(); // Only refresh on error
                 });
-            } else {
-                console.log('[DRAG] Skipping reorder - conditions not met');
             }
         } else {
             // Moving to different bucket - use existing logic
@@ -694,7 +672,7 @@ export default function DopatikaApp() {
                 await updateTask(taskId, updates);
             }
         }
-    }, [tasks, moveTask, updateTask, refreshTasks]);
+    }, [tasks, moveTask, updateTask, refreshTasks, setTasks]);
 
     const handleCreateProject = useCallback(async (name: string, color: string, icon: string) => {
         await createProject({ name, color, icon });
@@ -705,9 +683,8 @@ export default function DopatikaApp() {
     }, [updateProject]);
 
     // Update subtasks helper (for TaskCard compatibility)
-    const handleUpdateSubtasks = useCallback((taskId: string, subtasks: Subtask[]) => {
-        // This is handled by the individual subtask operations now
-        console.log('Update subtasks called', taskId, subtasks.length);
+    const handleUpdateSubtasks = useCallback((_taskId: string, _subtasks: Subtask[]) => {
+        // This is handled by the individual subtask operations now.
     }, []);
 
     // ============================================
@@ -740,7 +717,7 @@ export default function DopatikaApp() {
             <div className="flex flex-col h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
                 {/* Mobile Header */}
                 <MobileHeader
-                    title={mobileTab === 'today' ? 'Today' : mobileTab === 'timeline' ? 'Timeline' : mobileTab === 'inbox' ? 'Inbox' : mobileTab === 'projects' ? 'Projects' : 'More'}
+                    title={mobileTab === 'today' ? 'Today' : mobileTab === 'timeline' ? 'Timeline' : mobileTab === 'queue' ? 'Inbox' : mobileTab === 'projects' ? 'Projects' : 'More'}
                     date={currentDate}
                     onMenuClick={() => setMobileDrawerOpen(true)}
                     onSettingsClick={() => window.location.href = '/settings'}
@@ -812,17 +789,44 @@ export default function DopatikaApp() {
                     )}
 
                     {/* Inbox Tab */}
-                    {mobileTab === 'inbox' && (
+                    {mobileTab === 'queue' && (
                         <div className="p-3 space-y-2">
                             <h2 className="text-base font-semibold text-gray-900 mb-2">Inbox</h2>
-                            {inboxTasks.length === 0 ? (
+                            <div className="bg-white rounded-lg border border-gray-200 p-2 space-y-2">
+                                <TimeFilterButtons
+                                    activeFilter={timeFilter}
+                                    onFilterChange={setTimeFilter}
+                                    taskCounts={timeFilterCounts}
+                                />
+                            </div>
+                            {queueTasks[0] && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                                    <div className="text-[10px] font-semibold uppercase tracking-wide text-blue-700">Start Here</div>
+                                    <div className="text-sm font-medium text-gray-900 truncate mt-0.5">{queueTasks[0].title}</div>
+                                    <button
+                                        onClick={() => startTaskNow(queueTasks[0].id)}
+                                        className="mt-1.5 px-2 py-1 text-[10px] font-semibold rounded bg-blue-600 text-white"
+                                    >
+                                        Start now
+                                    </button>
+                                </div>
+                            )}
+                            {queueTasks.length === 0 ? (
                                 <div className="py-16 text-center">
                                     <div className="text-gray-300 text-4xl mb-2">📭</div>
-                                    <p className="text-gray-500 font-medium text-sm">Inbox is empty</p>
-                                    <p className="text-gray-400 text-xs mt-0.5">You're all caught up!</p>
+                                    <p className="text-gray-500 font-medium text-sm">Inbox is clear</p>
+                                    <p className="text-gray-400 text-xs mt-0.5">Adjust the time filter or capture a new task.</p>
+                                    {timeFilter !== null && (
+                                        <button
+                                            onClick={() => setTimeFilter(null)}
+                                            className="mt-2 px-2 py-1 text-[10px] font-medium rounded bg-gray-100 text-gray-700"
+                                        >
+                                            Clear duration filter
+                                        </button>
+                                    )}
                                 </div>
                             ) : (
-                                inboxTasks.map((task) => (
+                                queueTasks.map((task) => (
                                     <MobileTaskCard
                                         key={task.id}
                                         task={task}
@@ -884,7 +888,7 @@ export default function DopatikaApp() {
                 <MobileBottomNav
                     activeTab={mobileTab}
                     onTabChange={setMobileTab}
-                    inboxCount={inboxTasks.length}
+                    queueCount={queueCount}
                 />
 
                 {/* FAB */}
@@ -961,8 +965,8 @@ export default function DopatikaApp() {
                 isOpen={sidebarOpen}
                 onToggle={() => setSidebarOpen(!sidebarOpen)}
                 userName={session?.user?.name}
-                tasks={tasks}
-                inboxTasks={inboxTasks}
+                queueTasks={queueTasks}
+                queueCount={queueCount}
                 selectedTaskId={selectedTaskId}
                 onSelectTask={setSelectedTaskId}
                 onUpdate={updateTask}
@@ -1214,7 +1218,7 @@ export default function DopatikaApp() {
                                                                 </span>
                                                             </div>
                                                             <p className="text-[9px] text-amber-600 mb-2">
-                                                                These tasks were scheduled earlier but haven't been started yet
+                                                                These tasks were scheduled earlier but haven&apos;t been started yet
                                                             </p>
                                                             <div className="space-y-1">
                                                                 {unstartedTasks.map(task => {
@@ -1635,7 +1639,7 @@ export default function DopatikaApp() {
                 projects={projects}
                 onSelectTask={handleEditTask}
                 onStartTask={(taskId) => {
-                    handleStatusChange(taskId, 'in-progress');
+                    void handleStartNow(taskId);
                 }}
                 trigger={quickWinTrigger}
                 theme={theme}

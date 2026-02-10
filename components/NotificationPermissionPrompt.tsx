@@ -154,7 +154,7 @@ export const NotificationPermissionPrompt: React.FC<NotificationPermissionPrompt
 
                     {/* Info Text */}
                     <p className="text-xs text-gray-500 px-1">
-                        We'll only notify you when the app is in the background. You can change these
+                        We&apos;ll only notify you when the app is in the background. You can change these
                         settings anytime in your preferences.
                     </p>
 
@@ -175,7 +175,7 @@ export const NotificationPermissionPrompt: React.FC<NotificationPermissionPrompt
                             onClick={handleDontAskAgain}
                             className="w-full py-2 px-4 text-sm text-gray-600 hover:text-gray-900 transition-colors"
                         >
-                            Don't ask again
+                            Don&apos;t ask again
                         </button>
                     </div>
                 </div>

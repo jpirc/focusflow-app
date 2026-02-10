@@ -56,9 +56,6 @@ export function getTaskUrgency(task: Task): UrgencyInfo {
     const minutesUntil = (taskDateTime.getTime() - now.getTime()) / (1000 * 60);
     const hoursUntil = minutesUntil / 60;
 
-    // Debug logging
-    console.log(`[Urgency] Task: "${task.title.substring(0, 30)}" | Scheduled: ${taskDateTime.toLocaleTimeString()} | Now: ${now.toLocaleTimeString()} | Minutes until: ${Math.round(minutesUntil)} | Hours: ${hoursUntil.toFixed(1)} | Should pulse: ${minutesUntil < 60}`);
-
     // Overdue (past scheduled time)
     if (minutesUntil < 0) {
       return {

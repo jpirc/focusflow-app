@@ -19,7 +19,7 @@ const responseSchema = z.object({
 });
 
 interface RouteParams {
-    params: Promise<{ id: string }>;
+    params: { id: string };
 }
 
 /**
@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const session = await getAuthSession();
     if (!session?.user?.id) return unauthorizedResponse();
     
-    const { id } = await params;
+    const { id } = params;
     const { data, error } = await validateRequest(req, responseSchema);
     if (error) return error;
     if (!data) return errorResponse('Invalid request body');

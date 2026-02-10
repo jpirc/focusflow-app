@@ -177,7 +177,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                             </div>
                             <div>
                                 <h2 className="text-sm font-semibold">AI Task Breakdown</h2>
-                                <p className="text-xs text-white/80 truncate max-w-[200px]">"{task.title}"</p>
+                                <p className="text-xs text-white/80 truncate max-w-[200px]">&quot;{task.title}&quot;</p>
                             </div>
                         </div>
                         <button onClick={onClose} className="p-1 hover:bg-white/20 transition-colors">
@@ -216,7 +216,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({ task, isOpen
                         <div className="space-y-3">
                             <div className="bg-blue-50 border border-blue-200 p-3">
                                 <p className="text-xs text-blue-800 font-medium mb-2 flex items-center gap-1">
-                                    <Lightbulb size={12} /> Let's think through this together (optional)
+                                    <Lightbulb size={12} /> Let&apos;s think through this together (optional)
                                 </p>
                                 {!task.projectId && (
                                     <p className="text-[10px] text-amber-600 mb-2 italic">

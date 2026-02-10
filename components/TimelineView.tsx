@@ -573,7 +573,7 @@ const TimelineViewComponent: React.FC<TimelineViewProps> = ({
             {/* Daily capacity header */}
             <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 mb-4">
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Today's Schedule
+                    Today&apos;s Schedule
                 </h3>
                 
                 {/* Time block capacity bars */}

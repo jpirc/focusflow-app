@@ -252,16 +252,6 @@ export default function TimelinePanel({
   // Use styled tasks (which include overlap calculations)
   const scheduledTasks = styledTasks;
 
-  // Debug: Log what we're rendering
-  useEffect(() => {
-    console.log('[TimelinePanel] Total tasks:', tasks.length);
-    console.log('[TimelinePanel] Tasks with time blocks:', tasks.filter(t => t.timeBlock && t.timeBlock !== 'anytime').length);
-    console.log('[TimelinePanel] Scheduled tasks:', scheduledTasks.length);
-    if (scheduledTasks.length > 0) {
-      console.log('[TimelinePanel] Sample scheduled task:', scheduledTasks[0]);
-    }
-  }, [tasks, scheduledTasks]);
-
   // Format hour for display
   const formatHour = (hour: number) => {
     const ampm = hour >= 12 ? 'PM' : 'AM';

@@ -4,10 +4,11 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Play, GripVertical, FileText, Link2, ChevronDown, ChevronRight, Calendar, Clock, Coffee, Briefcase, Home, Check, Flag, BatteryLow, BatteryMedium, BatteryFull } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Play, GripVertical, FileText, Link2, ChevronDown, ChevronRight, Calendar, Clock, Coffee, Briefcase, Home, Check, Flag, BatteryLow, BatteryMedium, BatteryFull, RotateCcw } from 'lucide-react';
 import { Task, Project, Priority, EnergyLevel, TimeBlock } from '@/types';
 import { StartNowButton } from './ui/StartNowButton';
+import { formatDate, parseLocalDate } from '@/lib/utils/date';
 
 const iconMap: Record<string, string> = {
     coffee: '☕', briefcase: '💼', home: '🏠', heart: '❤️', 
@@ -149,7 +150,7 @@ function CompactInboxTaskComponent({
         for (let i = 0; i < 7; i++) {
             const date = new Date(today);
             date.setDate(today.getDate() + i);
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = formatDate(date);
             const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
             dates.push({ value: dateStr, label });
         }
@@ -163,6 +164,58 @@ function CompactInboxTaskComponent({
         onUpdate(task.id, updates);
     };
 
+    const formatCompactTime = (hour: number, minute = 0) => {
+        const displayHour = hour % 12 || 12;
+        const suffix = hour >= 12 ? 'p' : 'a';
+        return `${displayHour}:${String(minute).padStart(2, '0')}${suffix}`;
+    };
+
+    const scheduleChip = useMemo(() => {
+        if (!task.date) return null;
+
+        const todayStr = formatDate(new Date());
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = formatDate(tomorrow);
+
+        let dateLabel = '';
+        if (task.date === todayStr) {
+            dateLabel = 'Today';
+        } else if (task.date === tomorrowStr) {
+            dateLabel = 'Tomorrow';
+        } else {
+            dateLabel = parseLocalDate(task.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        if (task.scheduledHour !== null && task.scheduledHour !== undefined) {
+            const timeLabel = formatCompactTime(task.scheduledHour, task.scheduledMinute || 0);
+            return {
+                label: `${dateLabel} ${timeLabel}`,
+                title: `Scheduled for ${task.date} at ${timeLabel}`,
+                className: 'bg-blue-100 text-blue-700',
+            };
+        }
+
+        if (task.timeBlock && task.timeBlock !== 'anytime' && task.timeBlock !== 'inbox') {
+            const blockLabel =
+                task.timeBlock === 'morning' ? 'Morning' :
+                task.timeBlock === 'afternoon' ? 'Afternoon' :
+                'Evening';
+
+            return {
+                label: `${dateLabel} ${blockLabel}`,
+                title: `Planned for ${task.date} in ${blockLabel.toLowerCase()}`,
+                className: 'bg-amber-100 text-amber-700',
+            };
+        }
+
+        return {
+            label: `${dateLabel} Anytime`,
+            title: `Planned for ${task.date} (anytime)`,
+            className: 'bg-violet-100 text-violet-700',
+        };
+    }, [task.date, task.scheduledHour, task.scheduledMinute, task.timeBlock]);
+
     return (
         <div className="relative">
             {/* Hover tooltip */}
@@ -171,6 +224,12 @@ function CompactInboxTaskComponent({
                     <div className="font-medium mb-0.5">{task.title}</div>
                     {task.estimatedMinutes && (
                         <div className="text-gray-300">⏱️ {task.estimatedMinutes} min</div>
+                    )}
+                    <div className="text-gray-300">
+                        🗓️ {scheduleChip ? scheduleChip.title : 'Not scheduled yet'}
+                    </div>
+                    {(task.rolloverCount || 0) > 0 && (
+                        <div className="text-amber-300">↻ Rolled {task.rolloverCount}x</div>
                     )}
                     {project && (
                         <div className="text-gray-300">📁 {project.name}</div>
@@ -237,6 +296,27 @@ function CompactInboxTaskComponent({
                         <Link2 size={10} className="text-gray-400 flex-shrink-0" />
                     )}
                 </span>
+
+                {/* Schedule state chip (only for scheduled tasks) */}
+                {scheduleChip && (
+                    <span
+                        className={`flex-shrink-0 max-w-[110px] truncate px-1.5 py-0.5 rounded text-[9px] font-medium ${scheduleChip.className}`}
+                        title={scheduleChip.title}
+                    >
+                        {scheduleChip.label}
+                    </span>
+                )}
+
+                {/* Rollover indicator */}
+                {(task.rolloverCount || 0) > 0 && (
+                    <span
+                        className="flex-shrink-0 inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-medium bg-amber-100 text-amber-700"
+                        title={`Rolled over ${task.rolloverCount} time${task.rolloverCount === 1 ? '' : 's'}`}
+                    >
+                        <RotateCcw size={9} />
+                        {task.rolloverCount}
+                    </span>
+                )}
 
                 {/* Time estimate */}
                 {task.estimatedMinutes && (
@@ -491,7 +571,7 @@ function CompactInboxTaskComponent({
                                                 key={block.value}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    const today = new Date().toISOString().split('T')[0];
+                                                    const today = formatDate(new Date());
                                                     handleUpdate({ timeBlock: block.value, date: today });
                                                     setShowTimeBlockDropdown(false);
                                                 }}

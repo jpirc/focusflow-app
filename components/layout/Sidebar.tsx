@@ -1,16 +1,24 @@
 /**
- * Sidebar Component - Project list and inbox
+ * Sidebar Component - Inbox and project navigation
  */
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { signOut } from 'next-auth/react';
-import { Settings, LogOut, MoreVertical, ChevronDown, ChevronRight, Inbox, FolderKanban, PanelLeftClose, PanelLeft, BarChart3 } from 'lucide-react';
+import {
+    Settings,
+    MoreVertical,
+    ChevronDown,
+    ChevronRight,
+    FolderKanban,
+    PanelLeftClose,
+    PanelLeft,
+    BarChart3,
+    ListTodo,
+} from 'lucide-react';
 import { Task, Project } from '@/types';
 import { CompactInboxTask } from '@/components/CompactInboxTask';
-import { TimingInsightsCard } from '@/components/TimingInsightsCard';
 import { TimeFilterButtons } from '@/components/ui/TimeFilterButtons';
 import { Theme } from '@/lib/themes';
 
@@ -37,15 +45,25 @@ const projectIconMap: Record<string, string> = {
     sunny: '☀️', moon: '🌙', rainbow: '🌈',
 };
 
+function isTaskBlocked(task: Task): boolean {
+    const dependencies = task.dependencies || [];
+    if (dependencies.length === 0) return false;
+
+    return dependencies.some(dep => {
+        if (!dep.dependsOn) return true;
+        return dep.dependsOn.status !== 'completed' && dep.dependsOn.completed !== true;
+    });
+}
+
 interface SidebarProps {
     // State
     isOpen: boolean;
     onToggle: () => void;
     userName?: string | null;
 
-    // Tasks
-    tasks: Task[];
-    inboxTasks: Task[];
+    // Inbox (unscheduled tasks)
+    queueTasks: Task[];
+    queueCount: number;
     selectedTaskId: string | null;
     onSelectTask: (id: string | null) => void;
 
@@ -87,8 +105,8 @@ export function Sidebar({
     isOpen,
     onToggle,
     userName,
-    tasks,
-    inboxTasks,
+    queueTasks,
+    queueCount,
     selectedTaskId,
     onSelectTask,
     onUpdate,
@@ -118,8 +136,75 @@ export function Sidebar({
     const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
     // Collapsible section state
-    const [inboxCollapsed, setInboxCollapsed] = useState(false);
     const [projectsCollapsed, setProjectsCollapsed] = useState(false);
+    const visibleQueueCount = timeFilter === null ? queueCount : queueTasks.length;
+
+    const recommendedTask = queueTasks[0];
+    const recommendationReason = useMemo(() => {
+        if (!recommendedTask) return '';
+
+        const isReady = (recommendedTask.dependencies || []).every(dep => {
+            if (!dep.dependsOn) return false;
+            return dep.dependsOn.status === 'completed' || dep.dependsOn.completed === true;
+        });
+
+        if (!isReady && (recommendedTask.dependencies || []).length > 0) {
+            return 'Blocked by dependency - finish blocker first.';
+        }
+
+        if ((recommendedTask.rolloverCount || 0) >= 3) {
+            return `Rolled ${recommendedTask.rolloverCount}x - tiny progress wins.`;
+        }
+
+        if ((recommendedTask.estimatedMinutes || 30) <= 15) {
+            return 'Quick win (<15m) to build momentum.';
+        }
+
+        if (recommendedTask.priority === 'urgent' || recommendedTask.priority === 'high') {
+            return 'High priority and ready to execute.';
+        }
+
+        const ageInDays = Math.floor((Date.now() - new Date(recommendedTask.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+        if (ageInDays >= 7) {
+            return 'Older task - clearing backlog reduces mental drag.';
+        }
+
+        return 'Best next step to schedule or start now.';
+    }, [recommendedTask]);
+
+    const queueSections = useMemo(() => {
+        const quickWins: Task[] = [];
+        const nextHour: Task[] = [];
+        const deepWork: Task[] = [];
+        const blocked: Task[] = [];
+
+        queueTasks.forEach(task => {
+            if (isTaskBlocked(task)) {
+                blocked.push(task);
+                return;
+            }
+
+            const minutes = task.estimatedMinutes || 30;
+            if (minutes <= 15) {
+                quickWins.push(task);
+                return;
+            }
+
+            if (minutes <= 60) {
+                nextHour.push(task);
+                return;
+            }
+
+            deepWork.push(task);
+        });
+
+        return [
+            { id: 'quick', label: 'Quick wins', hint: '<= 15m', dotClass: 'bg-emerald-400', tasks: quickWins },
+            { id: 'next', label: 'Next hour', hint: '16m - 60m', dotClass: 'bg-sky-400', tasks: nextHour },
+            { id: 'deep', label: 'Deep work', hint: '60m+', dotClass: 'bg-violet-400', tasks: deepWork },
+            { id: 'blocked', label: 'Blocked', hint: 'needs dependency', dotClass: 'bg-amber-400', tasks: blocked },
+        ];
+    }, [queueTasks]);
 
     const handleConfirmDeleteProject = async (projectId: string) => {
         onDeleteProject(projectId);
@@ -169,35 +254,27 @@ export function Sidebar({
                     {/* Inbox Section */}
                     <div>
                         {isOpen ? (
-                            <button
-                                onClick={() => setInboxCollapsed(!inboxCollapsed)}
-                                className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-50 rounded-lg transition-colors group"
-                            >
-                                {inboxCollapsed ? (
-                                    <ChevronRight size={14} className="text-gray-400" />
-                                ) : (
-                                    <ChevronDown size={14} className="text-gray-400" />
-                                )}
-                                <Inbox size={14} className="text-gray-400" />
+                            <div className="flex items-center gap-2 w-full px-2 py-1">
+                                <ListTodo size={14} className="text-gray-400" />
                                 <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex-1 text-left">
                                     Inbox
                                 </h2>
-                                {inboxTasks.length > 0 && (
+                                {visibleQueueCount > 0 && (
                                     <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
-                                        {inboxTasks.length}
+                                        {visibleQueueCount}
                                     </span>
                                 )}
-                            </button>
+                            </div>
                         ) : (
-                            inboxTasks.length > 0 && (
+                            queueCount > 0 && (
                                 <div className="flex justify-center mb-2">
                                     <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600" title="Inbox tasks">
-                                        {inboxTasks.length}
+                                        {queueCount}
                                     </div>
                                 </div>
                             )
                         )}
-                        {isOpen && !inboxCollapsed && (
+                        {isOpen && (
                             <>
                                 {/* Time Filter Buttons */}
                                 <div className="mt-3 mb-3">
@@ -208,23 +285,77 @@ export function Sidebar({
                                     />
                                 </div>
 
+                                {recommendedTask && (
+                                    <div className="mb-3 px-2">
+                                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-2">
+                                            <div className="text-[9px] font-semibold uppercase tracking-wide text-blue-700">Start Here</div>
+                                            <div className="text-xs font-medium text-gray-900 truncate mt-0.5">{recommendedTask.title}</div>
+                                            <div className="text-[10px] text-blue-700 mt-0.5">{recommendationReason}</div>
+                                            <button
+                                                onClick={() => { void onStartNow(recommendedTask.id); }}
+                                                className="mt-1.5 px-2 py-1 text-[10px] font-semibold rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                                            >
+                                                Start now
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Task List */}
-                                <div className="space-y-1">
-                                    {inboxTasks.map(task => (
-                                        <CompactInboxTask
-                                            key={task.id}
-                                            task={task}
-                                            project={getProjectById(task.projectId)}
-                                            allProjects={projects}
-                                            isSelected={selectedTaskId === task.id}
-                                            onSelect={onSelectTask}
-                                            onStartDrag={onStartDrag}
-                                            onEdit={onEdit}
-                                            onDelete={onDelete}
-                                            onUpdate={onUpdate}
-                                            onStartNow={onStartNow}
-                                        />
-                                    ))}
+                                <div className="space-y-3">
+                                    {queueSections
+                                        .filter(section => section.tasks.length > 0)
+                                        .map(section => (
+                                            <div key={section.id} className="space-y-1">
+                                                <div className="flex items-center justify-between px-2">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className={`h-2 w-2 rounded-full ${section.dotClass}`} />
+                                                        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                                                            {section.label}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[9px] text-gray-400">{section.hint}</span>
+                                                        <span className="text-[10px] text-gray-500">{section.tasks.length}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    {section.tasks.map(task => (
+                                                        <CompactInboxTask
+                                                            key={task.id}
+                                                            task={task}
+                                                            project={getProjectById(task.projectId)}
+                                                            allProjects={projects}
+                                                            isSelected={selectedTaskId === task.id}
+                                                            onSelect={onSelectTask}
+                                                            onStartDrag={onStartDrag}
+                                                            onEdit={onEdit}
+                                                            onDelete={onDelete}
+                                                            onUpdate={onUpdate}
+                                                            onStartNow={onStartNow}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    {queueTasks.length === 0 && (
+                                        <div className="px-2 py-6 text-center">
+                                            <p className="text-xs font-medium text-gray-500">Inbox is clear</p>
+                                            <p className="text-[10px] text-gray-400 mt-1">
+                                                {timeFilter === null
+                                                    ? 'Create a task to capture what is next.'
+                                                    : `No inbox tasks fit ${timeFilter} minutes.`}
+                                            </p>
+                                            {timeFilter !== null && (
+                                                <button
+                                                    onClick={() => onTimeFilterChange(null)}
+                                                    className="mt-2 px-2 py-1 text-[10px] font-medium rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                                >
+                                                    Clear duration filter
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </>
                         )}
@@ -328,53 +459,39 @@ export function Sidebar({
                             </div>
                         )}
                     </div>
-
-                    {/* Timing Insights Card */}
-                    {isOpen && (
-                        <div className="mt-4">
-                            <TimingInsightsCard />
-                        </div>
-                    )}
                 </div>
 
                 {/* User Profile */}
-                <div className="p-4 border-t border-gray-100 space-y-2">
-                    {/* Analytics Link */}
+                <div className="p-3 border-t border-gray-100">
+                    {isOpen && (
+                        <p className="px-2 mb-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+                            Workspace
+                        </p>
+                    )}
                     <Link
                         href="/analytics"
-                        className={`flex items-center gap-3 w-full hover:bg-purple-50 p-2 rounded-lg transition-colors text-gray-600 hover:text-purple-600 ${
+                        className={`flex items-center gap-2 w-full hover:bg-purple-50 p-2 rounded-lg transition-colors text-gray-600 hover:text-purple-600 ${
                             !isOpen && 'justify-center'
                         }`}
+                        title="Insights"
                     >
-                        <BarChart3 size={18} />
-                        {isOpen && <span className="flex-1 text-left text-sm">Analytics & Insights</span>}
+                        <BarChart3 size={16} />
+                        {isOpen && <span className="text-sm">Insights</span>}
                     </Link>
                     <Link
                         href="/settings"
-                        className={`flex items-center gap-3 w-full hover:bg-gray-50 p-2 rounded-lg transition-colors ${
+                        className={`flex items-center gap-2 w-full hover:bg-gray-50 p-2 rounded-lg transition-colors text-gray-600 ${
                             !isOpen && 'justify-center'
                         }`}
+                        title="Settings"
                     >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-orange-400 flex items-center justify-center text-white font-medium text-sm">
-                            {userName?.charAt(0)?.toUpperCase() || 'U'}
-                        </div>
+                        <Settings size={16} />
                         {isOpen && (
-                            <div className="flex-1 text-left">
-                                <p className="text-sm font-medium text-gray-700">{userName || 'User'}</p>
-                                <p className="text-xs text-gray-400">Account</p>
-                            </div>
+                            <span className="text-sm">
+                                Settings{userName ? ` (${userName.split(' ')[0]})` : ''}
+                            </span>
                         )}
-                        {isOpen && <Settings size={16} className="text-gray-400" />}
                     </Link>
-                    <button
-                        onClick={() => signOut({ callbackUrl: '/login' })}
-                        className={`flex items-center gap-3 w-full hover:bg-gray-50 p-2 rounded-lg transition-colors text-gray-600 ${
-                            !isOpen && 'justify-center'
-                        }`}
-                    >
-                        <LogOut size={18} />
-                        {isOpen && <span className="flex-1 text-left text-sm">Sign out</span>}
-                    </button>
                 </div>
             </div>
 

@@ -88,7 +88,7 @@ export function RestartMyDayModal({
                         </button>
                     </div>
                     <p className="text-sm opacity-90 mt-1">
-                        Things went sideways? Let's reset and refocus.
+                        Things went sideways? Let&apos;s reset and refocus.
                     </p>
                 </div>
 
@@ -99,7 +99,7 @@ export function RestartMyDayModal({
                         <div className="flex items-start gap-3">
                             <AlertCircle className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
                             <div className="flex-1">
-                                <h3 className="font-semibold text-blue-900 mb-2">What "Restart" does:</h3>
+                                <h3 className="font-semibold text-blue-900 mb-2">What &quot;Restart&quot; does:</h3>
                                 <ul className="text-sm text-blue-800 space-y-1">
                                     <li className="flex items-start gap-2">
                                         <CheckCircle2 size={16} className="flex-shrink-0 mt-0.5" />
@@ -162,7 +162,7 @@ export function RestartMyDayModal({
                                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
                             <span className="text-sm font-medium text-gray-700">
-                                Add a note: "What threw me off?"
+                                Add a note: &quot;What threw me off?&quot;
                             </span>
                         </label>
                         {includeNote && (

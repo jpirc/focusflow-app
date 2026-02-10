@@ -35,6 +35,29 @@ export function getCurrentHourInTimezone(timezone: string = 'America/Chicago'): 
 }
 
 /**
+ * Get day of week (0-6, Sunday-Saturday) in a specific timezone
+ */
+export function getDayOfWeekInTimezone(timezone: string = 'America/Chicago'): number {
+  const now = new Date();
+  const weekday = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    weekday: 'short',
+  }).format(now);
+
+  const dayMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+
+  return dayMap[weekday] ?? now.getDay();
+}
+
+/**
  * Format a date string to display in user's timezone
  */
 export function formatDateInTimezone(date: Date | string, timezone: string = 'America/Chicago'): string {

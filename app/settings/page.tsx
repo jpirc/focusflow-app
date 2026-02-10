@@ -144,13 +144,10 @@ export default function SettingsPage() {
   };
 
   const handleTestNotification = async () => {
-    console.log('[Settings] Test notification button clicked');
-
     // Show helper message
     alert('💡 Tip: Browsers usually hide notifications when the tab is in focus.\n\nAfter clicking OK, switch to another tab or minimize the browser to see the notification!');
 
     const result = await testNotification();
-    console.log('[Settings] Test notification completed, result:', result);
 
     if (!result) {
       alert('Notification failed to show. Check the browser console for details.');
@@ -494,9 +491,9 @@ export default function SettingsPage() {
 
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">Scheduled Tasks</div>
+                          <div className="text-sm font-medium text-gray-900">Upcoming Tasks</div>
                           <div className="text-xs text-gray-600 mt-0.5">
-                            Reminders when tasks are scheduled to start
+                            Reminders for tasks with a specific start time
                           </div>
                         </div>
                         <button
@@ -517,7 +514,7 @@ export default function SettingsPage() {
                       {notificationSettings.scheduledReminderEnabled && (
                         <div className="ml-4 pl-4 border-l-2 border-gray-200">
                           <label className="block text-xs font-medium text-gray-700 mb-2">
-                            Reminder Timing
+                            Remind me
                           </label>
                           <select
                             value={notificationSettings.reminderMinutesBefore}
@@ -531,6 +528,9 @@ export default function SettingsPage() {
                             <option value={15}>15 minutes before</option>
                             <option value={30}>30 minutes before</option>
                           </select>
+                          <p className="text-[11px] text-gray-500 mt-2">
+                            If the app was asleep, missed reminders from the last 15 minutes are still delivered.
+                          </p>
                         </div>
                       )}
                     </div>

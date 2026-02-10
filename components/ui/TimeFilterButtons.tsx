@@ -76,7 +76,7 @@ export function TimeFilterButtons({
           );
         })}
 
-        {/* All/Clear Button */}
+        {/* Any Duration / Clear Button */}
         <button
           onClick={() => onFilterChange(null)}
           className={`
@@ -86,9 +86,9 @@ export function TimeFilterButtons({
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }
           `}
-          title="Show all tasks"
+          title="Show tasks of any duration"
         >
-          All
+          Any
           {taskCounts && (
             <span className={`
               ml-1 text-[9px] px-1 rounded

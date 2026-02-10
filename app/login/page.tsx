@@ -19,7 +19,6 @@ export default function LoginPage() {
         if (status === 'authenticated' && session) {
             router.push('/');
         }
-        console.log('Auth status:', status, 'Session:', session);
     }, [session, status, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -28,20 +27,16 @@ export default function LoginPage() {
         setError('');
 
         try {
-            console.log('Attempting sign in...');
             const result = await signIn('credentials', {
                 email,
                 password,
                 redirect: false,
             });
 
-            console.log('Sign in result:', result);
-
             if (result?.error) {
                 console.error('Sign in error:', result.error);
                 setError('Invalid email or password');
             } else if (result?.ok) {
-                console.log('Sign in successful, redirecting...');
                 router.push('/');
                 router.refresh();
             } else {

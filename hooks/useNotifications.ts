@@ -97,22 +97,17 @@ export function useNotifications() {
 
   // Request notification permission
   const requestPermission = useCallback(async (): Promise<NotificationPermission> => {
-    console.log('[Notifications] Requesting permission...');
     if (!isSupported) {
-      console.warn('[Notifications] Not supported');
       return 'denied';
     }
 
     try {
       const result = await Notification.requestPermission();
-      console.log('[Notifications] Permission result:', result);
       setPermission(result);
 
       // If granted, enable browser notifications in settings
       if (result === 'granted') {
-        console.log('[Notifications] Enabling browser notifications in settings...');
         await updateSettings({ browserEnabled: true });
-        console.log('[Notifications] Settings updated');
       }
 
       return result;
@@ -131,23 +126,18 @@ export function useNotifications() {
     tag,
     onClick,
   }: ShowNotificationParams) => {
-    console.log('[Notifications] Attempting to show notification:', { title, type, permission, isSupported, settings });
-
     // Check browser support
     if (!isSupported) {
-      console.warn('[Notifications] Browser notifications are not supported');
       return null;
     }
 
     // Check permission
     if (permission !== 'granted') {
-      console.warn('[Notifications] Permission not granted. Current permission:', permission);
       return null;
     }
 
     // Check if notifications are enabled globally
     if (!settings.browserEnabled) {
-      console.warn('[Notifications] Browser notifications are disabled globally');
       return null;
     }
 
@@ -162,12 +152,10 @@ export function useNotifications() {
     };
 
     if (!typeEnabledMap[type]) {
-      console.warn('[Notifications] Notification type disabled:', type, 'Settings:', typeEnabledMap);
       return null;
     }
 
     try {
-      console.log('[Notifications] Creating notification...');
       const notification = new Notification(title, {
         body,
         icon: icon || undefined, // Don't set icon if not provided
@@ -175,20 +163,9 @@ export function useNotifications() {
         requireInteraction: false,
       });
 
-      // Add event handlers for debugging
-      notification.onshow = () => {
-        console.log('[Notifications] ✅ Notification displayed');
-      };
-
       notification.onerror = (error) => {
         console.error('[Notifications] ❌ Notification error:', error);
       };
-
-      notification.onclose = () => {
-        console.log('[Notifications] Notification closed');
-      };
-
-      console.log('[Notifications] Notification created successfully');
 
       if (onClick) {
         notification.onclick = () => {
@@ -207,17 +184,14 @@ export function useNotifications() {
 
   // Test notification (for settings page)
   const testNotification = useCallback(async () => {
-    console.log('[Notifications] Test notification triggered');
-    console.log('[Notifications] Current state:', { permission, isSupported, settings });
     const result = await showNotification({
       title: 'Dopatika Notifications',
       body: 'Your notifications are working! 🎉',
       type: 'pomodoro', // Use pomodoro type for test
       tag: 'test',
     });
-    console.log('[Notifications] Test notification result:', result);
     return result;
-  }, [showNotification, permission, isSupported, settings]);
+  }, [showNotification]);
 
   return {
     permission,

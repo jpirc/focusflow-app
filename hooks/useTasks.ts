@@ -105,8 +105,8 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
                 // Send rollover notification
                 const count = rolloverResult.data.count;
                 showNotification({
-                    title: 'Tasks Rolled Over',
-                    body: `${count} task${count > 1 ? 's' : ''} moved to today from previous days`,
+                    title: 'Tasks Need Re-Scheduling',
+                    body: `${count} task${count > 1 ? 's were' : ' was'} moved back to your inbox`,
                     type: 'rollover',
                 });
             }
