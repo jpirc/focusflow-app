@@ -1049,9 +1049,12 @@ const QuickEditTaskCardComponent: React.FC<QuickEditTaskCardProps> = (props) => 
                         ) : (
                             <div
                                 onDoubleClick={handleTitleDoubleClick}
-                                className="relative"
+                                className="relative min-w-0"
                             >
-                                <p className={`${compact ? 'text-[11px]' : 'text-sm'} font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'} ${isCompleted ? '' : 'cursor-text'}`}>
+                                <p
+                                    className={`${compact ? 'text-[11px] truncate leading-tight' : 'text-sm'} font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'} ${isCompleted ? '' : 'cursor-text'}`}
+                                    title={compact ? task.title : undefined}
+                                >
                                     {showPriorityDot && <span className={`inline-block w-1.5 h-1.5 rounded-full ${priorityColor} mr-1.5 align-middle`}></span>}
                                     {task.isTopPriority && <Star size={14} className="inline mr-1 text-amber-500 fill-amber-500" />}
                                     {task.title}

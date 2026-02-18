@@ -1078,21 +1078,12 @@ export default function DopatikaApp() {
                                     }`}
                                 >
                                     {/* Day Header */}
-                                    <div className={`mb-1.5 sm:mb-2 space-y-2`}>
+                                    <div className={`${viewDays === 1 ? 'mb-1.5 sm:mb-2 space-y-2' : 'mb-1 space-y-1'}`}>
                                         <div className={`flex items-center justify-between ${
                                             day.isToday ? 'text-blue-600' : day.isWeekend ? 'text-amber-600' : 'text-gray-500'
                                         }`}>
                                             <div className="min-w-0 flex-1">
-                                                {viewDays === 7 ? (
-                                                    <>
-                                                        <h3 className="font-bold truncate text-xs sm:text-sm">
-                                                            {day.date.toLocaleDateString('en-US', { weekday: 'short' })}
-                                                        </h3>
-                                                        <p className="opacity-70 truncate text-[9px]">
-                                                            {day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                                        </p>
-                                                    </>
-                                                ) : (
+                                                {viewDays === 1 ? (
                                                     <>
                                                         <h3 className={`font-bold truncate ${viewDays === 1 ? 'text-lg sm:text-xl' : 'text-sm sm:text-lg'}`}>
                                                             {getRelativeDayLabel(day.date)}
@@ -1106,6 +1097,12 @@ export default function DopatikaApp() {
                                                             })}
                                                         </p>
                                                     </>
+                                                ) : (
+                                                    <h3 className={`${viewDays === 7 ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-sm'} font-bold truncate`}>
+                                                        {viewDays === 7
+                                                            ? `${day.date.toLocaleDateString('en-US', { weekday: 'short' })} ${day.date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}`
+                                                            : `${getRelativeDayLabel(day.date)} · ${day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                                                    </h3>
                                                 )}
                                             </div>
                         <div className="flex items-center gap-2">
@@ -1143,7 +1140,7 @@ export default function DopatikaApp() {
                                 </div>
                             )}
                             {day.isToday && (
-                                <span className={`font-bold bg-blue-100 text-blue-600 rounded-full ${viewDays === 7 ? 'text-[8px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1'}`}>
+                                <span className={`font-bold bg-blue-100 text-blue-600 rounded-full ${viewDays > 1 ? 'text-[8px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1'}`}>
                                     TODAY
                                 </span>
                             )}
@@ -1151,7 +1148,7 @@ export default function DopatikaApp() {
                         </div>
 
                         {/* Time Budget - Show only in 1-day and 3-day views */}
-                        {viewDays <= 3 && (
+                        {(viewDays === 1 || viewDays === 3) && (
                             <div className="px-1">
                                 <TimeBudget
                                     scheduledMinutes={day.tasks.reduce((total, task) =>
@@ -1457,7 +1454,7 @@ export default function DopatikaApp() {
                                                 onStartPomodoro={(task) => pomodoro.startPomodoro(task)}
                                                 onUnschedule={handleUnschedule}
                                                 onStartNow={handleStartNow}
-                                                compact={viewDays === 7}
+                                                compact={viewDays >= 2}
                                                 subtasksExpandedAll={subtasksExpandedAll}
                                                 theme={theme}
                                             />
