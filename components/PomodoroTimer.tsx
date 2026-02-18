@@ -144,6 +144,12 @@ export function PomodoroTimer({
     // Don't render if idle
     if (timerState === 'idle') return null;
 
+    const handleCompleteCurrentTask = async () => {
+        if (!currentTask || !onCompleteTask) return;
+        await onCompleteTask(currentTask.id);
+        onStop();
+    };
+
     // Format time as MM:SS
     const minutes = Math.floor(timeRemaining / 60);
     const seconds = timeRemaining % 60;
@@ -199,6 +205,20 @@ export function PomodoroTimer({
                     {/* Pulsing ring animation */}
                     {!isPaused && (
                         <div className={`absolute inset-0 rounded-full ${colors.border} border-2 animate-ping opacity-20`} />
+                    )}
+
+                    {/* Minimized quick close for current task */}
+                    {!isBreak && currentTask && onCompleteTask && (
+                        <span
+                            className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-green-600 text-white border-2 border-white shadow-md flex items-center justify-center"
+                            title="Complete task"
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                await handleCompleteCurrentTask();
+                            }}
+                        >
+                            <CheckCircle2 size={14} />
+                        </span>
                     )}
                 </button>
             ) : (
@@ -370,12 +390,7 @@ export function PomodoroTimer({
                             {/* Complete Task Button - Only show during work sessions with a task */}
                             {!isBreak && currentTask && onCompleteTask && (
                                 <button
-                                    onClick={async () => {
-                                        // Complete the task FIRST (this triggers celebration and API call)
-                                        await onCompleteTask(currentTask.id);
-                                        // Then stop timer (which will refresh - but task is already completed on server)
-                                        onStop();
-                                    }}
+                                    onClick={handleCompleteCurrentTask}
                                     className="w-full px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors font-semibold flex items-center justify-center gap-2 shadow-lg"
                                     title="Mark task as complete and stop timer"
                                 >
