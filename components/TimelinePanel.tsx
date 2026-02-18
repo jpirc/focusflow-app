@@ -22,6 +22,7 @@ interface TimelinePanelProps {
   onUnschedule?: (taskId: string) => void;
   onStartNow?: (taskId: string) => void;
   onStartPomodoro?: (task: Task) => void;
+  onQuickClose?: (taskId: string) => void;
 }
 
 const HOUR_HEIGHT = 80; // 80px per hour for comfortable spacing
@@ -55,6 +56,7 @@ export default function TimelinePanel({
   onUnschedule,
   onStartNow,
   onStartPomodoro,
+  onQuickClose,
 }: TimelinePanelProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isDragOver, setIsDragOver] = useState(false);
@@ -470,6 +472,7 @@ export default function TimelinePanel({
                   onUnschedule={onUnschedule}
                   onStartNow={onStartNow}
                   onStartPomodoro={onStartPomodoro}
+                  onQuickClose={onQuickClose}
                   onProjectChange={async (taskId, projectId) => {
                     // Update task project inline
                     if (onUpdate) {

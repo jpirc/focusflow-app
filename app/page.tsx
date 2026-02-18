@@ -1404,6 +1404,9 @@ export default function DopatikaApp() {
                                         onUnschedule={handleUnschedule}
                                         onStartNow={handleStartNow}
                                         onStartPomodoro={pomodoro.startPomodoro}
+                                        onQuickClose={(taskId) => {
+                                            void handleStatusChange(taskId, 'completed');
+                                        }}
                                     />
                                 }
                             />

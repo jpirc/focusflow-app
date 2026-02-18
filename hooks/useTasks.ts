@@ -8,8 +8,24 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Task, Subtask, TaskStatus, TimeBlock, TaskDependency } from '@/types';
 import { taskApi, dependencyApi, CreateTaskInput, UpdateTaskInput } from '@/lib/api/client';
-import { formatDate, getCurrentTimeBlock, isPastTimeBlock, getNextTimeBlock } from '@/lib/utils/date';
+import { formatDate, parseLocalDate, getCurrentTimeBlock, isPastTimeBlock, getNextTimeBlock } from '@/lib/utils/date';
 import { useNotifications } from './useNotifications';
+
+function shouldClearScheduleOnComplete(task: Task, now: Date): boolean {
+    if (!task.date) return false;
+
+    const scheduledDate = parseLocalDate(task.date);
+
+    if (task.scheduledHour !== null && task.scheduledHour !== undefined) {
+        scheduledDate.setHours(task.scheduledHour, task.scheduledMinute || 0, 0, 0);
+        return scheduledDate.getTime() > now.getTime();
+    }
+
+    // If task is date-only (no exact time), clear schedule only when it is planned for a future day.
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    return scheduledDate.getTime() > today.getTime();
+}
 
 interface UseTasksOptions {
     /** Whether user is authenticated */
@@ -192,6 +208,9 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
         const now = nowDate.toISOString();
         const currentHour = nowDate.getHours();
         const currentMinute = nowDate.getMinutes();
+        const taskToUpdate = tasks.find(t => t.id === id);
+        const clearScheduleOnComplete =
+            status === 'completed' && !!taskToUpdate && shouldClearScheduleOnComplete(taskToUpdate, nowDate);
 
         // If completing a task, check for newly unblocked tasks
         if (status === 'completed') {
@@ -252,6 +271,12 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
                     accumulatedMinutes += elapsed;
                 }
                 updates.actualMinutes = accumulatedMinutes;
+                if (clearScheduleOnComplete) {
+                    updates.date = null;
+                    updates.timeBlock = 'anytime';
+                    updates.scheduledHour = undefined;
+                    updates.scheduledMinute = undefined;
+                }
             } else if (status === 'pending') {
                 updates.startedAt = null;
                 updates.completedAt = null;
@@ -270,10 +295,15 @@ export function useTasks({ isAuthenticated, onLoadComplete, onTaskComplete }: Us
         } else if (status === 'completed') {
             updatePayload.completedAt = now;
             // Calculate actual duration
-            const task = tasks.find(t => t.id === id);
-            if (task?.startedAt) {
-                const elapsed = Math.round((Date.now() - new Date(task.startedAt).getTime()) / 60000);
-                updatePayload.actualMinutes = (task.actualMinutes || 0) + elapsed;
+            if (taskToUpdate?.startedAt) {
+                const elapsed = Math.round((Date.now() - new Date(taskToUpdate.startedAt).getTime()) / 60000);
+                updatePayload.actualMinutes = (taskToUpdate.actualMinutes || 0) + elapsed;
+            }
+            if (clearScheduleOnComplete) {
+                updatePayload.date = null;
+                updatePayload.timeBlock = 'anytime';
+                updatePayload.scheduledHour = null;
+                updatePayload.scheduledMinute = null;
             }
         }
 

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Task, Project } from '@/types';
-import { Clock, Edit2, X, Play, Timer } from 'lucide-react';
+import { Clock, Edit2, X, Play, Timer, CheckCircle2 } from 'lucide-react';
 
 interface TimelineTaskCardProps {
   task: Task;
@@ -18,6 +18,7 @@ interface TimelineTaskCardProps {
   displayTime?: string; // Pass the calculated time from parent
   onStartNow?: (taskId: string) => void; // Quick start without timer
   onStartPomodoro?: (task: Task) => void; // Start with Pomodoro timer
+  onQuickClose?: (taskId: string) => void; // Mark complete directly from timeline
   onProjectChange?: (taskId: string, projectId: string | null) => void; // Quick project assignment
   onDurationChange?: (taskId: string, newMinutes: number) => void; // Duration change from resize
   compact?: boolean; // Use compact styling for overlapping tasks
@@ -36,6 +37,7 @@ function TimelineTaskCardComponent({
   displayTime,
   onStartNow,
   onStartPomodoro,
+  onQuickClose,
   onProjectChange,
   onDurationChange,
   compact = false,
@@ -314,6 +316,18 @@ function TimelineTaskCardComponent({
               <Edit2 size={compact ? 8 : 10} className="text-blue-600" />
             </button>
           )}
+          {onQuickClose && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickClose(task.id);
+              }}
+              className="p-0.5 bg-white/90 hover:bg-green-100 rounded shadow-sm transition-colors"
+              title="Mark done"
+            >
+              <CheckCircle2 size={compact ? 8 : 10} className="text-green-600" />
+            </button>
+          )}
           {onUnschedule && (
             <button
               onClick={(e) => {
@@ -527,7 +541,8 @@ const TimelineTaskCard = React.memo(
       prevProps.displayTime === nextProps.displayTime &&
       prevProps.compact === nextProps.compact &&
       prevProps.onStartNow === nextProps.onStartNow &&
-      prevProps.onStartPomodoro === nextProps.onStartPomodoro
+      prevProps.onStartPomodoro === nextProps.onStartPomodoro &&
+      prevProps.onQuickClose === nextProps.onQuickClose
     );
   }
 );
