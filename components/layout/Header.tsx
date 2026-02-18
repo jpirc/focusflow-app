@@ -79,12 +79,10 @@ export function Header({
                     <div>
                         <div className="text-[10px] font-semibold uppercase tracking-wider opacity-90">Currently Working On</div>
                         <div className="text-sm font-bold">{activeTask.title}</div>
-                        {activeTask.currentSubtask && (
-                            <div className="text-xs opacity-80 flex items-center gap-1">
-                                <span>→</span>
-                                <span>{activeTask.currentSubtask}</span>
-                            </div>
-                        )}
+                        <div className="text-xs opacity-85 flex items-center gap-1 min-w-0">
+                            <span className="uppercase tracking-wide text-[9px] font-semibold opacity-80">Next:</span>
+                            <span className="truncate">{activeTask.currentSubtask || 'Define next step'}</span>
+                        </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">

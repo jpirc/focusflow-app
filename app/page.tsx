@@ -541,17 +541,60 @@ export default function DopatikaApp() {
         }
     }, [updateTask]);
 
+    // Guard against accidental context switching when another task is active.
+    const ensureTaskSwitch = useCallback(async (
+        targetTaskId: string,
+        mode: 'start' | 'pomodoro' = 'start'
+    ) => {
+        if (!activeTask || activeTask.id === targetTaskId) {
+            return true;
+        }
+
+        const targetTask = tasks.find(t => t.id === targetTaskId);
+        const targetTitle = targetTask?.title || 'this task';
+        const actionText = mode === 'pomodoro' ? 'start a pomodoro on' : 'start';
+
+        const shouldSwitch = window.confirm(
+            `You're currently working on "${activeTask.title}".\n\nPause it and ${actionText} "${targetTitle}"?`
+        );
+
+        if (!shouldSwitch) {
+            return false;
+        }
+
+        await pauseTask(activeTask.id);
+        return true;
+    }, [activeTask, tasks, pauseTask]);
+
     // Handle Start Now - Quick start without Pomodoro timer
     // Just schedules task and sets to in-progress (use Start Pomodoro button for timer)
     const handleStartNow = useCallback(async (taskId: string) => {
+        if (activeTask?.id === taskId) {
+            return;
+        }
+
         try {
+            const canSwitch = await ensureTaskSwitch(taskId, 'start');
+            if (!canSwitch) {
+                return;
+            }
+
             // Schedule + set in-progress (no timer)
             await startTaskNow(taskId);
         } catch (error) {
             console.error('Failed to start task now:', error);
             // Error is already handled in startTaskNow (shows in UI)
         }
-    }, [startTaskNow]);
+    }, [activeTask, ensureTaskSwitch, startTaskNow]);
+
+    const handleStartPomodoro = useCallback(async (task: Task) => {
+        const canSwitch = await ensureTaskSwitch(task.id, 'pomodoro');
+        if (!canSwitch) {
+            return;
+        }
+
+        await pomodoro.startPomodoro(task);
+    }, [ensureTaskSwitch, pomodoro]);
 
     // Wrap updateStatus to trigger celebration on completion
     const handleStatusChange = useCallback(async (taskId: string, status: TaskStatus) => {
@@ -766,7 +809,7 @@ export default function DopatikaApp() {
                                     setTaskModalOpen(true);
                                 }}
                                 onTaskStart={(task) => {
-                                    startTaskNow(task.id);
+                                    void handleStartNow(task.id);
                                 }}
                                 onTaskComplete={(taskId) => updateStatus(taskId, 'completed')}
                             />
@@ -782,7 +825,7 @@ export default function DopatikaApp() {
                                 setTaskModalOpen(true);
                             }}
                             onTaskStart={(task) => {
-                                startTaskNow(task.id);
+                                void handleStartNow(task.id);
                             }}
                             onTaskComplete={(taskId) => updateStatus(taskId, 'completed')}
                         />
@@ -804,7 +847,7 @@ export default function DopatikaApp() {
                                     <div className="text-[10px] font-semibold uppercase tracking-wide text-blue-700">Start Here</div>
                                     <div className="text-sm font-medium text-gray-900 truncate mt-0.5">{queueTasks[0].title}</div>
                                     <button
-                                        onClick={() => startTaskNow(queueTasks[0].id)}
+                                        onClick={() => { void handleStartNow(queueTasks[0].id); }}
                                         className="mt-1.5 px-2 py-1 text-[10px] font-semibold rounded bg-blue-600 text-white"
                                     >
                                         Start now
@@ -835,7 +878,7 @@ export default function DopatikaApp() {
                                             setTaskModalOpen(true);
                                         }}
                                         onStart={() => {
-                                            startTaskNow(task.id);
+                                            void handleStartNow(task.id);
                                         }}
                                         onToggleComplete={() => updateStatus(task.id, task.completed ? 'pending' : 'completed')}
                                     />
@@ -1331,7 +1374,7 @@ export default function DopatikaApp() {
                                                     onAIBreakdown={handleAIBreakdown}
                                                     onUpdateSubtasks={handleUpdateSubtasks}
                                                     onEdit={handleEditTask}
-                                                    onStartPomodoro={(task) => pomodoro.startPomodoro(task)}
+                                                    onStartPomodoro={(task) => { void handleStartPomodoro(task); }}
                                                     onUnschedule={handleUnschedule}
                                                     compact={true}
                                                     subtasksExpandedAll={subtasksExpandedAll}
@@ -1400,7 +1443,7 @@ export default function DopatikaApp() {
                                         onEdit={handleEditTask}
                                         onUnschedule={handleUnschedule}
                                         onStartNow={handleStartNow}
-                                        onStartPomodoro={pomodoro.startPomodoro}
+                                        onStartPomodoro={(task) => { void handleStartPomodoro(task); }}
                                         onQuickClose={(taskId) => {
                                             void handleStatusChange(taskId, 'completed');
                                         }}
@@ -1451,7 +1494,7 @@ export default function DopatikaApp() {
                                                 onAIBreakdown={handleAIBreakdown}
                                                 onUpdateSubtasks={handleUpdateSubtasks}
                                                 onEdit={handleEditTask}
-                                                onStartPomodoro={(task) => pomodoro.startPomodoro(task)}
+                                                onStartPomodoro={(task) => { void handleStartPomodoro(task); }}
                                                 onUnschedule={handleUnschedule}
                                                 onStartNow={handleStartNow}
                                                 compact={viewDays >= 2}
