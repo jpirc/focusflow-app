@@ -979,6 +979,9 @@ export default function DopatikaApp() {
                 onUpdateSubtasks={handleUpdateSubtasks}
                 onEdit={handleEditTask}
                 onStartNow={handleStartNow}
+                onQuickCloseTask={(taskId) => {
+                    void handleStatusChange(taskId, 'completed');
+                }}
                 timeFilter={timeFilter}
                 onTimeFilterChange={setTimeFilter}
                 timeFilterCounts={timeFilterCounts}

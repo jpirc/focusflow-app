@@ -89,6 +89,7 @@ interface SidebarProps {
     onUpdateSubtasks: (taskId: string, subtasks: any[]) => void;
     onEdit: (task: Task) => void;
     onStartNow: (taskId: string) => Promise<void>;
+    onQuickCloseTask: (taskId: string) => void;
 
     // Projects
     projects: Project[];
@@ -119,6 +120,7 @@ export function Sidebar({
     onUpdateSubtasks,
     onEdit,
     onStartNow,
+    onQuickCloseTask,
     timeFilter,
     onTimeFilterChange,
     timeFilterCounts,
@@ -333,6 +335,7 @@ export function Sidebar({
                                                             onDelete={onDelete}
                                                             onUpdate={onUpdate}
                                                             onStartNow={onStartNow}
+                                                            onQuickCloseTask={onQuickCloseTask}
                                                         />
                                                     ))}
                                                 </div>

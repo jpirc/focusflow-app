@@ -5,7 +5,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Play, GripVertical, FileText, Link2, ChevronDown, ChevronRight, Calendar, Clock, Coffee, Briefcase, Home, Check, Flag, BatteryLow, BatteryMedium, BatteryFull, RotateCcw } from 'lucide-react';
+import { Play, GripVertical, FileText, Link2, ChevronDown, ChevronRight, Calendar, Clock, Coffee, Briefcase, Home, Check, CheckCircle2, Flag, BatteryLow, BatteryMedium, BatteryFull, RotateCcw } from 'lucide-react';
 import { Task, Project, Priority, EnergyLevel, TimeBlock } from '@/types';
 import { StartNowButton } from './ui/StartNowButton';
 import { formatDate, parseLocalDate } from '@/lib/utils/date';
@@ -42,6 +42,7 @@ interface CompactInboxTaskProps {
     onDelete: (id: string) => void;
     onUpdate: (id: string, updates: Partial<Task>) => void;
     onStartNow: (taskId: string) => Promise<void>;
+    onQuickCloseTask: (taskId: string) => void;
 }
 
 function CompactInboxTaskComponent({
@@ -55,6 +56,7 @@ function CompactInboxTaskComponent({
     onDelete,
     onUpdate,
     onStartNow,
+    onQuickCloseTask,
 }: CompactInboxTaskProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
@@ -276,6 +278,18 @@ function CompactInboxTaskComponent({
                     title="Start task"
                 >
                     <Play size={11} />
+                </button>
+
+                {/* Quick close button */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onQuickCloseTask(task.id);
+                    }}
+                    className="flex-shrink-0 p-0.5 text-gray-300 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                    title="Mark done"
+                >
+                    <CheckCircle2 size={11} />
                 </button>
 
                 {/* Project color dot */}
@@ -595,6 +609,15 @@ function CompactInboxTaskComponent({
                             size="xs"
                             showLabel={true}
                         />
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onQuickCloseTask(task.id);
+                            }}
+                            className="text-[10px] text-green-600 hover:text-green-700 font-medium"
+                        >
+                            Quick close
+                        </button>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
