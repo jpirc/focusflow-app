@@ -98,44 +98,11 @@ focusflow/
 └── tsconfig.json
 ```
 
-## 🗺 Roadmap
+## 🗺 Architecture + Roadmap
 
-### Phase 1: MVP ✅
-- [x] Multi-day timeline view (1, 3, 5, 7 days + month calendar)
-- [x] Time block scheduling (Morning, Afternoon, Evening, Anytime)
-- [x] Drag and drop between days and time blocks
-- [x] Project organization with color-coding
-- [x] Task dependencies
-- [x] AI task breakdown (simulated)
-- [x] Subtasks with inline editing
-- [x] Unscheduled inbox
+Roadmap and architecture are maintained in a single canonical document:
 
-### Phase 2: User Accounts ✅
-- [x] Email/password authentication (NextAuth)
-- [x] Google OAuth
-- [x] User preferences storage
-- [x] Cloud sync (Prisma + PostgreSQL/Supabase)
-
-### Phase 3: Backend API ✅
-- [x] PostgreSQL database (Supabase)
-- [x] Next.js API routes with auth protection
-- [x] Prisma ORM with full schema
-
-### Phase 4: Enhanced Features ✅
-- [x] Task rollover tracking (rolloverCount badge)
-- [x] Completed tasks per-day "Done" section
-- [x] Task restore from completed
-- [x] Hover tooltips showing task details
-- [x] Compact week view
-- [x] Month/calendar view
-- [x] Event tracking for analytics (TaskEvent model)
-
-### Phase 5: Future
-- [ ] Real AI integration (Claude API for breakdown)
-- [ ] Task timer (actual time tracking)
-- [ ] Push notifications
-- [ ] Calendar integrations
-- [ ] Mobile app (React Native)
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/docs/MASTER_ARCHITECTURE_ROADMAP.md`
 
 ## 🔧 Configuration
 

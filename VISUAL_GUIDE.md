@@ -404,7 +404,7 @@ The progress bar at the top of each day shows your scheduled time vs. available 
 
 ## 📚 Additional Resources
 
-- **ROADMAP.md** - Full feature roadmap and priorities
+- **docs/MASTER_ARCHITECTURE_ROADMAP.md** - Canonical architecture + roadmap
 - **TIMELINE_UX_SPEC.md** - Technical spec for timeline features
 - **CLAUDE.md** - Development notes and architecture
 

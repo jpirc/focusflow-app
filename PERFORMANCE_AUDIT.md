@@ -440,8 +440,7 @@ The codebase is well-structured with minimal tech debt. Main opportunities are p
 
 ## 🔗 Related Files
 
-- [Architecture](./ARCHITECTURE.md)
-- [Roadmap](./ROADMAP.md)
+- [Master Architecture + Roadmap](./docs/MASTER_ARCHITECTURE_ROADMAP.md)
 - [Quick Edit Guide](./QUICK_EDIT_GUIDE.md)
 - [Session Notes](./SESSION_NOTES.md)
 
