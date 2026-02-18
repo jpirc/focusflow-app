@@ -1,5 +1,45 @@
 # Session Transition Log
 
+## 2026-02-18 14:29 (CST)
+### What Was Done
+- Added a clear `Next:` cue in the active focus strip so the header always shows the next actionable step:
+  - If an incomplete subtask exists, it is shown.
+  - If not, fallback text is `Define next step`.
+- Added a centralized task context-switch guard for starts:
+  - Starting a different task now prompts to pause the current active task first.
+  - Applied guard to `Start Now` and `Start Pomodoro` entry points used across desktop and mobile task surfaces.
+- Updated start flows so mobile task starts and inbox quick-starts use the guarded start handler instead of directly calling `startTaskNow`.
+
+### Why
+- User requested the first two ADHD-oriented improvements:
+  1. stronger next-step guidance in the existing focus strip
+  2. explicit protection against accidental task switching when another task is active
+- This reduces restart friction and prevents hidden multitasking drift.
+
+### Files Changed
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/app/page.tsx`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/components/layout/Header.tsx`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/SESSION_TRANSITION.md`
+
+### Validation
+- `npm -C /Users/jonathanpirc/Desktop/Apps/focusflow-app run typecheck` passed
+- `npm -C /Users/jonathanpirc/Desktop/Apps/focusflow-app run lint` passed
+- `npm -C /Users/jonathanpirc/Desktop/Apps/focusflow-app run build` passed
+
+### Open Issues / Risks
+- Context-switch prompt currently uses browser `confirm`; this is reliable but visually basic and blocks the thread while open.
+- Pomodoro task activation continues to rely on the existing status-update callback path; behavior is stable but could be unified later with the same scheduling semantics as `Start Now`.
+
+### Next Recommended Steps
+1. Replace `window.confirm` with an in-app modal/sheet for a more consistent ADHD-friendly interaction.
+2. Add an optional “Don’t ask for this task pair again today” setting if prompt frequency feels high.
+3. Add lightweight analytics events for accepted/rejected switches and focus-strip next-step visibility.
+
+### Git State
+- Branch: `codex/quick-close-complete-tasks`
+- Feature commit created in this session: `daf0f2a`
+- Latest local commit at handoff write time: `daf0f2a`
+
 ## 2026-02-18 12:45 (CST)
 ### What Was Done
 - Tightened multi-day header density for `2-day`, `3-day`, and `week` views so each day header uses a shorter single-line label instead of taller two-line variants.
