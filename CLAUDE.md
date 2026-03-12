@@ -2,6 +2,31 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## Safety Rules (MUST FOLLOW)
+
+1. **No irreversible actions without explicit permission:**
+   - Do NOT delete files, folders, or database records without asking first
+   - Do NOT force-push, rebase, or rewrite git history without asking first
+   - Do NOT drop database tables or run destructive migrations without asking first
+   - Do NOT modify `.env` files or credentials without asking first
+
+2. **Always preserve recoverability:**
+   - Before deleting anything, confirm with the user or move to an archive folder
+   - Use `git mv` or rename instead of delete when consolidating files
+   - Create backups or checkpoints before large refactors
+
+3. **Validate before committing:**
+   - Always run `npm run typecheck` and `npm run lint` before committing
+   - Do NOT commit code that fails validation unless explicitly told to
+
+4. **Track your work:**
+   - Use todo lists for complex multi-step tasks
+   - Update `SESSION_TRANSITION.md` at the end of significant work sessions
+
+---
+
 ## Project Overview
 
 Dopatika is an ADHD-friendly visual task planner built with **Next.js 14 App Router**, **TypeScript**, **Prisma/PostgreSQL**, and **NextAuth**. The app focuses on time-block scheduling (morning/afternoon/evening) with multi-day views, subtasks, dependencies, Pomodoro timer integration, and intelligent learning features.
@@ -48,6 +73,10 @@ const pomodoro = usePomodoro({ isAuthenticated, onTaskStart, onPomodoroComplete 
 - `useViewState` (`hooks/useViewState.ts`): Current date, view days, view mode, sidebar state
 - `useModalState` (`hooks/useModalState.ts`): All modal open/close state management
 - `useTaskFilters` (`hooks/useTaskFilters.ts`): Computed values for filtering and displaying tasks
+- `useIntelligence` (`hooks/useIntelligence.ts`): AI suggestion fetching and state
+- `useIntelligenceFeatures` (`hooks/useIntelligenceFeatures.ts`): User preferences for push coaching features
+- `useScheduledTaskReminders` (`hooks/useScheduledTaskReminders.ts`): Browser notification scheduling
+- `useNotifications` (`hooks/useNotifications.ts`): Notification permission and delivery
 
 ### API Layer Architecture
 
@@ -162,6 +191,14 @@ Store dates as ISO strings `YYYY-MM-DD` but always parse in user's timezone.
 - **EditTaskModal**: Full task editing with subtasks, dependencies, time estimates
 - **DailyPrioritiesModal**: Select Top 3 tasks for the day
 - **PomodoroSettingsModal**: Configure Pomodoro timer preferences
+- **RestartMyDayModal**: Reset/replanning modal for when the day goes off track
+
+### Push Coach System
+- **PushCoachPanel** (`components/PushCoachPanel.tsx`): Proactive intelligence suggestions panel
+  - Surfaces AI-generated suggestions (reschedule, breakdown, focus recommendations)
+  - Inline rollover-rescue flow with draft preview and apply
+  - Accept/dismiss actions with telemetry tracking
+  - Respects user feature preferences via `useIntelligenceFeatures`
 
 ### Task Display
 - **TaskCard**: Main task display with badges (priority, energy, rollover, age)
@@ -211,6 +248,7 @@ app/api/
 ├── intelligence/
 │   ├── route.ts                 # GET suggestions, POST analyze patterns
 │   ├── breakdown/route.ts       # AI task breakdown (OpenAI GPT-4)
+│   ├── features/route.ts        # GET/PUT user intelligence preferences
 │   ├── suggestions/[id]/route.ts # Accept/dismiss suggestions
 │   ├── stats/route.ts          # Analytics data
 │   └── timing/route.ts         # Timing analysis
@@ -273,3 +311,31 @@ Common issues:
 - **Drag-and-drop issues**: Look for `[DRAG]` logs, verify `order` field updates
 - **Timeline scheduling**: Ensure both `scheduledHour`/`scheduledMinute` and `date` are set
 - **Timezone bugs**: Verify `User.timezone` field and use `getTodayInTimezone()`
+
+---
+
+## Documentation Structure
+
+- **Canonical docs** (keep updated):
+  - `CLAUDE.md` - This file, AI coding instructions
+  - `docs/MASTER_ARCHITECTURE_ROADMAP.md` - Architecture + roadmap single source of truth
+  - `SESSION_TRANSITION.md` - Session handoff log (append-only)
+  - `AGENTS.md` - Session rules for AI assistants
+
+- **Archived docs** (historical reference only):
+  - All legacy specs and shipped-feature docs live in `docs/archive/`
+  - See `docs/DOCUMENTATION_MAP.md` for full inventory
+
+---
+
+## Session Handoff Protocol
+
+Before ending a work session, update `SESSION_TRANSITION.md` with:
+1. Date/time
+2. What was done
+3. Why these changes were made
+4. Files changed
+5. Validation run (lint/typecheck/build)
+6. Open issues / risks
+7. Next recommended steps
+8. Git state (branch + latest commit hash)
