@@ -53,11 +53,47 @@ interface UseIntelligenceProps {
     tasks?: Task[];
 }
 
+// Snooze storage helpers
+const SNOOZE_STORAGE_KEY = 'dopatika_snoozed_suggestions';
+
+function getSnoozedSuggestions(): Record<string, number> {
+    if (typeof window === 'undefined') return {};
+    try {
+        const stored = window.localStorage.getItem(SNOOZE_STORAGE_KEY);
+        if (!stored) return {};
+        const parsed = JSON.parse(stored);
+        // Clean up expired snoozes
+        const now = Date.now();
+        const active: Record<string, number> = {};
+        for (const [id, expiresAt] of Object.entries(parsed)) {
+            if (typeof expiresAt === 'number' && expiresAt > now) {
+                active[id] = expiresAt;
+            }
+        }
+        return active;
+    } catch {
+        return {};
+    }
+}
+
+function setSnoozedSuggestion(suggestionId: string, durationMs: number) {
+    const current = getSnoozedSuggestions();
+    current[suggestionId] = Date.now() + durationMs;
+    window.localStorage.setItem(SNOOZE_STORAGE_KEY, JSON.stringify(current));
+}
+
+function isSuggestionSnoozed(suggestionId: string): boolean {
+    const snoozed = getSnoozedSuggestions();
+    const expiresAt = snoozed[suggestionId];
+    return typeof expiresAt === 'number' && expiresAt > Date.now();
+}
+
 export function useIntelligence({ isAuthenticated, tasks = [] }: UseIntelligenceProps) {
     const [suggestions, setSuggestions] = useState<SmartSuggestion[]>([]);
     const [insights, setInsights] = useState<UserInsight[]>([]);
     const [loading, setLoading] = useState(false);
     const [lastFetch, setLastFetch] = useState<number>(0);
+    const [snoozedIds, setSnoozedIds] = useState<Set<string>>(new Set());
 
     // Fetch suggestions from API
     const fetchSuggestions = useCallback(async () => {
@@ -130,6 +166,30 @@ export function useIntelligence({ isAuthenticated, tasks = [] }: UseIntelligence
         }
     }, []);
 
+    // Snooze a suggestion for a duration (client-side only)
+    const snoozeSuggestion = useCallback((suggestionId: string, durationMs: number = 60 * 60 * 1000) => {
+        setSnoozedSuggestion(suggestionId, durationMs);
+        setSnoozedIds(prev => {
+            const next = new Set(prev);
+            next.add(suggestionId);
+            return next;
+        });
+    }, []);
+
+    // Check if a suggestion is snoozed
+    const isSnoozing = useCallback((suggestionId: string) => {
+        return snoozedIds.has(suggestionId) || isSuggestionSnoozed(suggestionId);
+    }, [snoozedIds]);
+
+    // Load snoozed IDs on mount
+    useEffect(() => {
+        const snoozed = getSnoozedSuggestions();
+        setSnoozedIds(new Set(Object.keys(snoozed)));
+    }, []);
+
+    // Filter out snoozed suggestions
+    const activeSuggestions = suggestions.filter(s => !isSuggestionSnoozed(s.id));
+
     // Generate new suggestions based on current tasks
     const generateSuggestions = useCallback(async () => {
         if (!isAuthenticated || tasks.length === 0) return;
@@ -185,12 +245,14 @@ export function useIntelligence({ isAuthenticated, tasks = [] }: UseIntelligence
     }, [isAuthenticated, lastFetch, fetchSuggestions]);
 
     return {
-        suggestions,
+        suggestions: activeSuggestions,
         insights,
         loading,
         fetchSuggestions,
         acceptSuggestion,
         dismissSuggestion,
+        snoozeSuggestion,
+        isSnoozing,
         generateSuggestions,
         getSuggestionsForTask,
         getSuggestionsForTimeBlock,

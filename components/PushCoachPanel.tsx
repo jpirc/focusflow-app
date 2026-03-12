@@ -13,6 +13,9 @@ import {
     MoveRight,
     Clock3,
     Loader2,
+    Pencil,
+    Settings,
+    Clock,
 } from 'lucide-react';
 import { Task, Subtask, AIBreakdownSuggestion } from '@/types';
 import { useIntelligence, type SmartSuggestion } from '@/hooks/useIntelligence';
@@ -135,6 +138,7 @@ export function PushCoachPanel({
         generateSuggestions,
         acceptSuggestion,
         dismissSuggestion,
+        snoozeSuggestion,
     } = useIntelligence({ isAuthenticated, tasks });
 
     const {
@@ -145,15 +149,53 @@ export function PushCoachPanel({
         updateFeatures,
     } = useIntelligenceFeatures({ isAuthenticated });
 
-    const [collapsed, setCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return window.localStorage.getItem('dopatika_push_coach_collapsed') === 'true';
+    });
+
+    // Persist collapsed state
+    useEffect(() => {
+        window.localStorage.setItem('dopatika_push_coach_collapsed', String(collapsed));
+    }, [collapsed]);
     const [busySuggestionId, setBusySuggestionId] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
+    const [successToast, setSuccessToast] = useState<string | null>(null);
+
+    // Auto-clear success toast
+    useEffect(() => {
+        if (successToast) {
+            const timer = setTimeout(() => setSuccessToast(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [successToast]);
     const [generating, setGenerating] = useState(false);
     const [rescueDrafts, setRescueDrafts] = useState<Record<string, RescueBreakdownDraft>>({});
     const [rescueDraftSelections, setRescueDraftSelections] = useState<Record<string, boolean[]>>({});
     const [rescueDraftLoadingIds, setRescueDraftLoadingIds] = useState<Record<string, boolean>>({});
     const [rescueDraftErrors, setRescueDraftErrors] = useState<Record<string, string>>({});
     const rescuePrefetchedTaskIdsRef = useRef<Set<string>>(new Set());
+
+    // Inline editing state for rescue steps
+    const [editingStep, setEditingStep] = useState<{ taskId: string; index: number; field: 'title' | 'duration' } | null>(null);
+    const [editingValue, setEditingValue] = useState<string>('');
+
+    // Settings dropdown state
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const settingsRef = useRef<HTMLDivElement>(null);
+
+    // Close settings dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+                setSettingsOpen(false);
+            }
+        };
+        if (settingsOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [settingsOpen]);
 
     const taskById = useMemo(
         () => new Map(tasks.map(task => [task.id, task])),
@@ -265,6 +307,42 @@ export function PushCoachPanel({
                     : draft.subtasks.map((_step, index) => index === 0),
         }));
     }, [rescueDrafts]);
+
+    // Inline editing handlers for rescue steps
+    const startEditingStep = useCallback((taskId: string, index: number, field: 'title' | 'duration', currentValue: string) => {
+        setEditingStep({ taskId, index, field });
+        setEditingValue(currentValue);
+    }, []);
+
+    const cancelEditingStep = useCallback(() => {
+        setEditingStep(null);
+        setEditingValue('');
+    }, []);
+
+    const saveEditingStep = useCallback(() => {
+        if (!editingStep) return;
+        const { taskId, index, field } = editingStep;
+        const draft = rescueDrafts[taskId];
+        if (!draft) return;
+
+        const updatedSubtasks = [...draft.subtasks];
+        if (field === 'title') {
+            updatedSubtasks[index] = { ...updatedSubtasks[index], title: editingValue.trim() || updatedSubtasks[index].title };
+        } else {
+            const parsed = parseInt(editingValue, 10);
+            updatedSubtasks[index] = { ...updatedSubtasks[index], estimatedMinutes: isNaN(parsed) || parsed < 1 ? updatedSubtasks[index].estimatedMinutes : parsed };
+        }
+
+        // Recalculate total estimate
+        const newTotal = updatedSubtasks.reduce((sum, s) => sum + s.estimatedMinutes, 0);
+
+        setRescueDrafts(prev => ({
+            ...prev,
+            [taskId]: { ...draft, subtasks: updatedSubtasks, totalEstimate: newTotal },
+        }));
+        setEditingStep(null);
+        setEditingValue('');
+    }, [editingStep, editingValue, rescueDrafts]);
 
     useEffect(() => {
         if (!isAuthenticated || featuresLoading) return;
@@ -437,6 +515,7 @@ export function PushCoachPanel({
                     return next;
                 });
                 await acceptSuggestion(suggestion.id);
+                setSuccessToast(`Rescue plan applied to "${targetTask.title}"`);
                 return;
             }
 
@@ -449,6 +528,7 @@ export function PushCoachPanel({
 
             await executeSuggestion(suggestion);
             await acceptSuggestion(suggestion.id);
+            setSuccessToast('Suggestion applied');
         } catch (err) {
             console.error('Failed to apply suggestion:', err);
             setActionError('Could not apply that suggestion.');
@@ -526,6 +606,85 @@ export function PushCoachPanel({
                         </div>
                     </div>
                     <div className="flex items-center gap-1.5">
+                        {/* Settings dropdown */}
+                        <div className="relative" ref={settingsRef}>
+                            <button
+                                onClick={() => setSettingsOpen(prev => !prev)}
+                                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+                                title="Push Coach settings"
+                            >
+                                <Settings size={16} />
+                            </button>
+                            {settingsOpen && (
+                                <div className="absolute right-0 top-full mt-1 w-64 bg-white rounded-xl shadow-lg border border-gray-200 p-3 z-50 space-y-3">
+                                    <div className="text-xs font-semibold text-gray-700 pb-1 border-b border-gray-100">Settings</div>
+
+                                    {/* Smart suggestions toggle */}
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-xs text-gray-700">Smart suggestions</span>
+                                        <button
+                                            onClick={handleToggleSmartSuggestions}
+                                            disabled={featuresLoading || featuresSaving}
+                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                                features.smartSuggestions ? 'bg-blue-500' : 'bg-gray-300'
+                                            } disabled:opacity-60`}
+                                        >
+                                            <span
+                                                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                                                    features.smartSuggestions ? 'translate-x-4.5' : 'translate-x-0.5'
+                                                }`}
+                                                style={{ transform: features.smartSuggestions ? 'translateX(18px)' : 'translateX(2px)' }}
+                                            />
+                                        </button>
+                                    </div>
+
+                                    {/* Frequency selector */}
+                                    <div className="space-y-1">
+                                        <span className="text-xs text-gray-700">Frequency</span>
+                                        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+                                            {(['minimal', 'balanced', 'proactive'] as const).map(level => (
+                                                <button
+                                                    key={level}
+                                                    onClick={() => void updateFeatures({ suggestionFrequency: level })}
+                                                    disabled={!features.smartSuggestions || featuresSaving}
+                                                    className={`flex-1 px-2 py-1 text-[10px] rounded-md transition-colors ${
+                                                        features.suggestionFrequency === level
+                                                            ? 'bg-white text-gray-900 shadow-sm'
+                                                            : 'text-gray-600 hover:text-gray-900'
+                                                    } disabled:opacity-50`}
+                                                >
+                                                    {formatFrequencyLabel(level)}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Learning toggle */}
+                                    <label className="flex items-center justify-between gap-2 text-xs text-gray-700 cursor-pointer">
+                                        <span>Learning enabled</span>
+                                        <input
+                                            type="checkbox"
+                                            checked={features.learningEnabled}
+                                            disabled={featuresSaving}
+                                            onChange={() => void updateFeatures({ learningEnabled: !features.learningEnabled })}
+                                            className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                                        />
+                                    </label>
+
+                                    {/* AI breakdown toggle */}
+                                    <label className="flex items-center justify-between gap-2 text-xs text-gray-700 cursor-pointer">
+                                        <span>AI breakdown help</span>
+                                        <input
+                                            type="checkbox"
+                                            checked={features.aiBreakdown}
+                                            disabled={featuresSaving}
+                                            onChange={() => void updateFeatures({ aiBreakdown: !features.aiBreakdown })}
+                                            className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                                        />
+                                    </label>
+                                </div>
+                            )}
+                        </div>
                         <button
                             onClick={() => setCollapsed(prev => !prev)}
                             className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
@@ -538,48 +697,7 @@ export function PushCoachPanel({
 
                 {!collapsed && (
                     <div className="p-3 sm:p-4 space-y-3">
-                        <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={handleToggleSmartSuggestions}
-                                    disabled={featuresLoading || featuresSaving}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                        features.smartSuggestions ? 'bg-blue-500' : 'bg-gray-300'
-                                    } disabled:opacity-60`}
-                                    title="Enable or disable proactive suggestions"
-                                    aria-pressed={features.smartSuggestions}
-                                >
-                                    <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                            features.smartSuggestions ? 'translate-x-6' : 'translate-x-1'
-                                        }`}
-                                    />
-                                </button>
-                                <div>
-                                    <div className="text-xs font-medium text-gray-900">Smart suggestions</div>
-                                    <div className="text-[11px] text-gray-500">You can turn this off anytime</div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-                                {(['minimal', 'balanced', 'proactive'] as const).map(level => (
-                                    <button
-                                        key={level}
-                                        onClick={() => void updateFeatures({ suggestionFrequency: level })}
-                                        disabled={!features.smartSuggestions || featuresSaving}
-                                        className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
-                                            features.suggestionFrequency === level
-                                                ? 'bg-white text-gray-900 shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-900'
-                                        } disabled:opacity-50`}
-                                        title={`${formatFrequencyLabel(level)} suggestion mode`}
-                                    >
-                                        {formatFrequencyLabel(level)}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
+                        {/* Action buttons */}
                         <div className="flex flex-wrap items-center gap-2">
                             <button
                                 onClick={() => void autoGenerate()}
@@ -587,7 +705,7 @@ export function PushCoachPanel({
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
                             >
                                 <RefreshCw size={12} className={(generating || suggestionsLoading) ? 'animate-spin' : ''} />
-                                {suggestions.length > 0 ? 'Refresh suggestions' : 'Generate suggestions'}
+                                {suggestions.length > 0 ? 'Refresh' : 'Generate'}
                             </button>
 
                             <button
@@ -599,27 +717,11 @@ export function PushCoachPanel({
                                 Check updates
                             </button>
 
-                            <label className="inline-flex items-center gap-2 text-xs text-gray-600">
-                                <input
-                                    type="checkbox"
-                                    checked={features.learningEnabled}
-                                    disabled={featuresSaving}
-                                    onChange={() => void updateFeatures({ learningEnabled: !features.learningEnabled })}
-                                    className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
-                                />
-                                Learning enabled
-                            </label>
-
-                            <label className="inline-flex items-center gap-2 text-xs text-gray-600">
-                                <input
-                                    type="checkbox"
-                                    checked={features.aiBreakdown}
-                                    disabled={featuresSaving}
-                                    onChange={() => void updateFeatures({ aiBreakdown: !features.aiBreakdown })}
-                                    className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
-                                />
-                                AI breakdown help
-                            </label>
+                            {!features.smartSuggestions && (
+                                <span className="text-xs text-gray-500">
+                                    Suggestions off — enable in <Settings size={10} className="inline" />
+                                </span>
+                            )}
                         </div>
 
                         {featureError && (
@@ -631,6 +733,13 @@ export function PushCoachPanel({
                         {actionError && (
                             <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
                                 {actionError}
+                            </div>
+                        )}
+
+                        {successToast && (
+                            <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 flex items-center gap-2">
+                                <Check size={14} className="text-emerald-500" />
+                                {successToast}
                             </div>
                         )}
 
@@ -772,23 +881,71 @@ export function PushCoachPanel({
                                                                 </button>
                                                             </div>
                                                             <ul className="mt-1 space-y-1">
-                                                                {rescueDraft.subtasks.map((subtask, index) => (
-                                                                    <li key={`${subtask.title}-${index}`} className="text-[11px] text-gray-700 flex items-start gap-1.5">
-                                                                        {targetTask && (
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={rescueSelections ? rescueSelections[index] !== false : true}
-                                                                                onChange={() => toggleRescueStep(targetTask.id, index)}
-                                                                                className="mt-[2px] rounded border-gray-300 text-blue-500 focus:ring-blue-500"
-                                                                            />
-                                                                        )}
-                                                                        <span className="mt-[1px] text-gray-400">{index + 1}.</span>
-                                                                        <span className="min-w-0">
-                                                                            {subtask.title}
-                                                                            <span className="text-gray-500"> ({subtask.estimatedMinutes}m)</span>
-                                                                        </span>
-                                                                    </li>
-                                                                ))}
+                                                                {rescueDraft.subtasks.map((subtask, index) => {
+                                                                    const isEditingTitle = editingStep?.taskId === targetTask?.id && editingStep?.index === index && editingStep?.field === 'title';
+                                                                    const isEditingDuration = editingStep?.taskId === targetTask?.id && editingStep?.index === index && editingStep?.field === 'duration';
+
+                                                                    return (
+                                                                        <li key={`${subtask.title}-${index}`} className="text-[11px] text-gray-700 flex items-start gap-1.5">
+                                                                            {targetTask && (
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={rescueSelections ? rescueSelections[index] !== false : true}
+                                                                                    onChange={() => toggleRescueStep(targetTask.id, index)}
+                                                                                    className="mt-[2px] rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                                                                                />
+                                                                            )}
+                                                                            <span className="mt-[1px] text-gray-400">{index + 1}.</span>
+                                                                            <span className="min-w-0 flex-1 flex items-center gap-1 flex-wrap">
+                                                                                {isEditingTitle ? (
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        value={editingValue}
+                                                                                        onChange={(e) => setEditingValue(e.target.value)}
+                                                                                        onBlur={saveEditingStep}
+                                                                                        onKeyDown={(e) => {
+                                                                                            if (e.key === 'Enter') saveEditingStep();
+                                                                                            if (e.key === 'Escape') cancelEditingStep();
+                                                                                        }}
+                                                                                        autoFocus
+                                                                                        className="flex-1 min-w-[120px] px-1 py-0.5 text-[11px] border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                                                    />
+                                                                                ) : (
+                                                                                    <span
+                                                                                        onClick={() => targetTask && startEditingStep(targetTask.id, index, 'title', subtask.title)}
+                                                                                        className="cursor-pointer hover:bg-blue-50 hover:text-blue-700 px-0.5 rounded transition-colors"
+                                                                                        title="Click to edit title"
+                                                                                    >
+                                                                                        {subtask.title}
+                                                                                    </span>
+                                                                                )}
+                                                                                {isEditingDuration ? (
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        min="1"
+                                                                                        value={editingValue}
+                                                                                        onChange={(e) => setEditingValue(e.target.value)}
+                                                                                        onBlur={saveEditingStep}
+                                                                                        onKeyDown={(e) => {
+                                                                                            if (e.key === 'Enter') saveEditingStep();
+                                                                                            if (e.key === 'Escape') cancelEditingStep();
+                                                                                        }}
+                                                                                        autoFocus
+                                                                                        className="w-12 px-1 py-0.5 text-[11px] border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                                                    />
+                                                                                ) : (
+                                                                                    <span
+                                                                                        onClick={() => targetTask && startEditingStep(targetTask.id, index, 'duration', String(subtask.estimatedMinutes))}
+                                                                                        className="text-gray-500 cursor-pointer hover:bg-blue-50 hover:text-blue-700 px-0.5 rounded transition-colors"
+                                                                                        title="Click to edit duration"
+                                                                                    >
+                                                                                        ({subtask.estimatedMinutes}m)
+                                                                                    </span>
+                                                                                )}
+                                                                            </span>
+                                                                        </li>
+                                                                    );
+                                                                })}
                                                             </ul>
                                                             {selectedRescueCount === 0 && (
                                                                 <p className="mt-1 text-[10px] text-amber-700">
@@ -849,14 +1006,25 @@ export function PushCoachPanel({
                                                 )}
 
                                                 {suggestion.id && (
-                                                    <button
-                                                        onClick={() => void handleDismiss(suggestion.id)}
-                                                        disabled={isBusy}
-                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-50"
-                                                    >
-                                                        <X size={12} />
-                                                        Dismiss
-                                                    </button>
+                                                    <>
+                                                        <button
+                                                            onClick={() => snoozeSuggestion(suggestion.id, 60 * 60 * 1000)}
+                                                            disabled={isBusy}
+                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+                                                            title="Snooze for 1 hour"
+                                                        >
+                                                            <Clock size={12} />
+                                                            Later
+                                                        </button>
+                                                        <button
+                                                            onClick={() => void handleDismiss(suggestion.id)}
+                                                            disabled={isBusy}
+                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+                                                        >
+                                                            <X size={12} />
+                                                            Dismiss
+                                                        </button>
+                                                    </>
                                                 )}
                                             </div>
                                         </div>
