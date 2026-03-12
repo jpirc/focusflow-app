@@ -37,11 +37,13 @@ import { SmartCaptureModal } from '@/components/SmartCaptureModal';
 import { CelebrationMessage } from '@/components/CelebrationMessage';
 import { DailyPrioritiesModal } from '@/components/DailyPrioritiesModal';
 import { RestartMyDayModal } from '@/components/RestartMyDayModal';
+import { TaskSwitchModal } from '@/components/TaskSwitchModal';
 import { Top3Section } from '@/components/Top3Section';
 import { RolloverNotification } from '@/components/RolloverNotification';
 import { UnblockedTasksNotification } from '@/components/UnblockedTasksNotification';
 import { QuickWinSuggestions } from '@/components/QuickWinSuggestions';
 import { NotificationPermissionPrompt } from '@/components/NotificationPermissionPrompt';
+import { PushCoachPanel } from '@/components/PushCoachPanel';
 import DualPanelLayout from '@/components/DualPanelLayout';
 import TimelinePanel from '@/components/TimelinePanel';
 import { TimeBudget } from '@/components/ui/TimeBudget';
@@ -264,6 +266,12 @@ export default function DopatikaApp() {
         closeAIModal,
         openProjectModal,
         closeProjectModal,
+        // Task switch modal
+        taskSwitchModalOpen,
+        taskSwitchRequest,
+        requestTaskSwitch,
+        confirmTaskSwitch,
+        cancelTaskSwitch,
     } = modalState;
 
     // Restart My Day modal state
@@ -550,13 +558,19 @@ export default function DopatikaApp() {
             return true;
         }
 
+        // Find the full Task objects for the modal
+        const activeFullTask = tasks.find(t => t.id === activeTask.id);
         const targetTask = tasks.find(t => t.id === targetTaskId);
-        const targetTitle = targetTask?.title || 'this task';
-        const actionText = mode === 'pomodoro' ? 'start a pomodoro on' : 'start';
+        if (!activeFullTask || !targetTask) {
+            return false;
+        }
 
-        const shouldSwitch = window.confirm(
-            `You're currently working on "${activeTask.title}".\n\nPause it and ${actionText} "${targetTitle}"?`
-        );
+        // Show ADHD-friendly modal instead of jarring window.confirm
+        const shouldSwitch = await requestTaskSwitch({
+            activeTask: activeFullTask,
+            targetTask,
+            mode,
+        });
 
         if (!shouldSwitch) {
             return false;
@@ -564,7 +578,7 @@ export default function DopatikaApp() {
 
         await pauseTask(activeTask.id);
         return true;
-    }, [activeTask, tasks, pauseTask]);
+    }, [activeTask, tasks, pauseTask, requestTaskSwitch]);
 
     // Handle Start Now - Quick start without Pomodoro timer
     // Just schedules task and sets to in-progress (use Start Pomodoro button for timer)
@@ -1087,6 +1101,17 @@ export default function DopatikaApp() {
                     isOpen={showNotificationPrompt}
                     onRequestPermission={handleNotificationPermissionRequest}
                     onDismiss={handleNotificationPromptDismiss}
+                />
+
+                {/* Optional Push Coach (proactive suggestions) */}
+                <PushCoachPanel
+                    isAuthenticated={isAuthenticated}
+                    tasks={tasks}
+                    onUpdateTask={updateTask}
+                    onSelectTask={setSelectedTaskId}
+                    onStartNow={handleStartNow}
+                    onRequestAIBreakdown={handleAIBreakdown}
+                    onApplyAIBreakdown={applyAIBreakdown}
                 />
 
                 {/* View Content */}
@@ -1698,6 +1723,14 @@ export default function DopatikaApp() {
                 projects={projects}
                 onRestart={handleRestartDay}
                 theme={theme}
+            />
+
+            {/* Task switch confirmation modal */}
+            <TaskSwitchModal
+                isOpen={taskSwitchModalOpen}
+                request={taskSwitchRequest}
+                onConfirm={confirmTaskSwitch}
+                onCancel={cancelTaskSwitch}
             />
 
             {/* Celebration message overlay */}

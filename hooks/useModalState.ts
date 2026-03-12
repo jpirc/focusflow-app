@@ -3,8 +3,9 @@
  * Consolidates modal state to avoid prop drilling
  */
 
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Task, Project } from '@/types';
+import { TaskSwitchRequest } from '@/components/TaskSwitchModal';
 
 export function useModalState() {
     // Edit task modal
@@ -28,6 +29,40 @@ export function useModalState() {
     // Quick win modal
     const [quickWinModalOpen, setQuickWinModalOpen] = useState(false);
     const [quickWinTrigger, setQuickWinTrigger] = useState<'completion' | 'manual' | 'low-energy'>('manual');
+
+    // Task switch modal (replaces window.confirm for task switching)
+    const [taskSwitchModalOpen, setTaskSwitchModalOpen] = useState(false);
+    const [taskSwitchRequest, setTaskSwitchRequest] = useState<TaskSwitchRequest | null>(null);
+    const taskSwitchResolveRef = useRef<((confirmed: boolean) => void) | null>(null);
+
+    // Helper: Request task switch confirmation (returns promise)
+    const requestTaskSwitch = useCallback((request: TaskSwitchRequest): Promise<boolean> => {
+        return new Promise((resolve) => {
+            taskSwitchResolveRef.current = resolve;
+            setTaskSwitchRequest(request);
+            setTaskSwitchModalOpen(true);
+        });
+    }, []);
+
+    // Helper: Confirm task switch
+    const confirmTaskSwitch = useCallback(() => {
+        if (taskSwitchResolveRef.current) {
+            taskSwitchResolveRef.current(true);
+            taskSwitchResolveRef.current = null;
+        }
+        setTaskSwitchModalOpen(false);
+        setTaskSwitchRequest(null);
+    }, []);
+
+    // Helper: Cancel task switch
+    const cancelTaskSwitch = useCallback(() => {
+        if (taskSwitchResolveRef.current) {
+            taskSwitchResolveRef.current(false);
+            taskSwitchResolveRef.current = null;
+        }
+        setTaskSwitchModalOpen(false);
+        setTaskSwitchRequest(null);
+    }, []);
 
     // Helper: Open edit modal for a specific task
     const openEditModal = (taskId: string) => {
@@ -103,5 +138,12 @@ export function useModalState() {
         setQuickWinModalOpen,
         quickWinTrigger,
         setQuickWinTrigger,
+
+        // Task switch
+        taskSwitchModalOpen,
+        taskSwitchRequest,
+        requestTaskSwitch,
+        confirmTaskSwitch,
+        cancelTaskSwitch,
     };
 }
