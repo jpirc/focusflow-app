@@ -3,7 +3,7 @@
  * Generates intelligent suggestions based on learned patterns
  */
 
-import { prisma } from '@/lib/prisma';
+import { prisma, Prisma } from '@/lib/prisma';
 import { Task, TimeBlock, Priority } from '@/types';
 import { 
     Suggestion, 
@@ -62,12 +62,16 @@ export async function generateSuggestions(
     const dependencySuggestions = generateDependencyReadySuggestions(userId, tasks);
     suggestions.push(...dependencySuggestions);
     
+    const filteredSuggestions = features?.aiBreakdown
+        ? suggestions
+        : suggestions.filter(suggestion => suggestion.action.type !== 'breakdown');
+
     // Save suggestions to database
-    for (const suggestion of suggestions) {
+    for (const suggestion of filteredSuggestions) {
         await saveSuggestion(suggestion);
     }
     
-    return suggestions;
+    return filteredSuggestions;
 }
 
 /**
@@ -183,18 +187,44 @@ function generateStaleSuggestions(userId: string, tasks: Task[]): Suggestion[] {
         
         if (isStale || hasRolledOver) {
             const age = Math.floor((now.getTime() - createdAt.getTime()) / (24 * 60 * 60 * 1000));
+            const incompleteSubtasks = (task.subtasks || []).filter(subtask => !subtask.completed);
+            const hasSubtasks = incompleteSubtasks.length > 0;
+
+            if (hasRolledOver && hasSubtasks) {
+                const nextSubtask = incompleteSubtasks[0];
+                suggestions.push({
+                    userId,
+                    taskId: task.id,
+                    type: 'focus_recommendation',
+                    title: `Resume "${task.title}" with next step`,
+                    description: nextSubtask
+                        ? `Rolled over ${task.rolloverCount} times. Start with: ${nextSubtask.title}`
+                        : `Rolled over ${task.rolloverCount} times. Start with one existing subtask.`,
+                    action: { type: 'focus', taskIds: [task.id] },
+                    reasoning: `Task already has subtasks; reducing activation friction is better than re-breaking it down`,
+                    confidence: 0.82,
+                    source: 'rule',
+                    status: 'pending',
+                    expiresAt: new Date(Date.now() + SUGGESTION_EXPIRY_HOURS * 60 * 60 * 1000),
+                });
+                continue;
+            }
             
             suggestions.push({
                 userId,
                 taskId: task.id,
-                type: 'stale_task',
-                title: `"${task.title}" is ${age} days old`,
+                type: hasRolledOver ? 'breakdown' : 'stale_task',
+                title: hasRolledOver
+                    ? `Rescue "${task.title}" with smaller steps?`
+                    : `"${task.title}" is ${age} days old`,
                 description: hasRolledOver 
-                    ? `Rolled over ${task.rolloverCount} times. Break it down or archive?`
+                    ? `Rolled over ${task.rolloverCount} times. Draft a tiny-step rescue plan?`
                     : `Consider completing, breaking down, or archiving`,
                 action: { type: 'breakdown' },
-                reasoning: `Tasks that sit too long often need to be rethought`,
-                confidence: 0.7,
+                reasoning: hasRolledOver
+                    ? `Repeated rollover usually means the task needs a smaller first step`
+                    : `Tasks that sit too long often need to be rethought`,
+                confidence: hasRolledOver ? 0.84 : 0.7,
                 source: 'rule',
                 status: 'pending',
                 expiresAt: new Date(Date.now() + SUGGESTION_EXPIRY_HOURS * 60 * 60 * 1000),
@@ -389,6 +419,25 @@ function getProjectName(projectId?: string | null): string {
  */
 async function saveSuggestion(suggestion: Suggestion): Promise<void> {
     try {
+        const duplicate = await prisma.suggestion.findFirst({
+            where: {
+                userId: suggestion.userId,
+                taskId: suggestion.taskId || null,
+                type: suggestion.type,
+                title: suggestion.title,
+                status: 'pending',
+                OR: [
+                    { expiresAt: null },
+                    { expiresAt: { gte: new Date() } },
+                ],
+            },
+            select: { id: true },
+        });
+
+        if (duplicate) {
+            return;
+        }
+
         await prisma.suggestion.create({
             data: {
                 userId: suggestion.userId,
@@ -461,6 +510,20 @@ export async function respondToSuggestion(
     suggestionId: string,
     accepted: boolean
 ): Promise<void> {
+    const existing = await prisma.suggestion.findUnique({
+        where: { id: suggestionId },
+        select: {
+            id: true,
+            userId: true,
+            taskId: true,
+            type: true,
+            source: true,
+            confidence: true,
+            action: true,
+            title: true,
+        },
+    });
+
     await prisma.suggestion.update({
         where: { id: suggestionId },
         data: {
@@ -468,4 +531,26 @@ export async function respondToSuggestion(
             respondedAt: new Date(),
         },
     });
+
+    if (!existing) return;
+
+    try {
+        await prisma.taskEvent.create({
+            data: {
+                userId: existing.userId,
+                taskId: existing.taskId,
+                eventType: accepted ? 'suggestion_accepted' : 'suggestion_dismissed',
+                metadata: {
+                    suggestionId: existing.id,
+                    suggestionType: existing.type,
+                    suggestionSource: existing.source,
+                    confidence: existing.confidence,
+                    title: existing.title,
+                    action: existing.action,
+                } as Prisma.InputJsonValue,
+            },
+        });
+    } catch (error) {
+        console.error('Failed to track suggestion response event:', error);
+    }
 }

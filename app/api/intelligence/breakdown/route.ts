@@ -25,6 +25,7 @@ const BreakdownRequestSchema = z.object({
     projectId: z.string().optional(),
     timeBlock: z.enum(['morning', 'afternoon', 'evening', 'anytime']).optional(),
     userContext: z.string().optional(), // User's instructions/context about why they're stuck
+    saveSuggestion: z.boolean().optional().default(true),
 });
 
 export async function POST(req: NextRequest) {
@@ -119,24 +120,27 @@ export async function POST(req: NextRequest) {
             throw new Error('Invalid AI response format');
         }
 
-        // Save the suggestion for learning
-        await prisma.suggestion.create({
-            data: {
-                userId: session.user.id,
-                taskId: data.taskId,
-                type: 'breakdown',
-                title: 'AI Task Breakdown',
-                description: `Break down "${data.taskTitle}" into ${breakdown.subtasks.length} subtasks`,
-                action: {
+        // Save the suggestion for learning/history unless the caller is requesting
+        // a preview draft only (e.g., proactive rescue preview inside Push Coach).
+        if (data.saveSuggestion !== false) {
+            await prisma.suggestion.create({
+                data: {
+                    userId: session.user.id,
+                    taskId: data.taskId,
                     type: 'breakdown',
-                    subtasks: breakdown.subtasks,
+                    title: 'AI Task Breakdown',
+                    description: `Break down "${data.taskTitle}" into ${breakdown.subtasks.length} subtasks`,
+                    action: {
+                        type: 'breakdown',
+                        subtasks: breakdown.subtasks,
+                    },
+                    reasoning: breakdown.reasoning || 'AI-generated task breakdown',
+                    confidence: 0.8,
+                    source: 'ai',
+                    status: 'pending',
                 },
-                reasoning: breakdown.reasoning || 'AI-generated task breakdown',
-                confidence: 0.8,
-                source: 'ai',
-                status: 'pending',
-            },
-        });
+            });
+        }
 
         return successResponse({
             subtasks: breakdown.subtasks,

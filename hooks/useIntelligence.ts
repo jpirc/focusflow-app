@@ -8,7 +8,17 @@ import { Task } from '@/types';
 
 export interface SmartSuggestion {
     id: string;
-    type: 'time_block' | 'priority' | 'breakdown' | 'overload_warning' | 'stale_task' | 'dependency_ready';
+    type:
+      | 'time_block'
+      | 'reschedule'
+      | 'priority'
+      | 'breakdown'
+      | 'energy_match'
+      | 'overload_warning'
+      | 'stale_task'
+      | 'dependency_ready'
+      | 'focus_recommendation'
+      | 'daily_plan';
     taskId: string | null;
     title: string;
     description: string | null;
@@ -16,6 +26,8 @@ export interface SmartSuggestion {
         type: string;
         targetTimeBlock?: string;
         targetPriority?: string;
+        targetDate?: string;
+        suggestedSubtasks?: string[];
         taskIds?: string[];
     };
     reasoning: string | null;
@@ -30,7 +42,7 @@ export interface UserInsight {
     id: string;
     insightType: string;
     category: string | null;
-    pattern: any;
+    pattern: unknown;
     confidence: number;
     sampleSize: number;
     lastUpdated: string;
