@@ -100,6 +100,71 @@ Update this file for all architecture and roadmap changes.
 - Intelligence UX polish: confidence-driven suggestion ranking and clearer explainability.
 - Time planning UX: improved scheduling conflict handling and timeline ergonomics.
 
+### ADHD UX Backlog (Near-Term)
+
+This section tracks ADHD-specific UX improvements that have been identified in recent implementation sessions and should be kept in sync with actual shipped behavior.
+
+- Task switch protection UX
+  - Replace browser-native `window.confirm` task-switch prompt with an in-app modal/sheet.
+  - Preserve active-task context in the prompt (what is active, what will be paused/started).
+  - Keep interaction non-blocking and mobile-friendly.
+- Prompt fatigue controls
+  - Optional "Don't ask again for this task pair today" setting for repeated task switches.
+  - Evaluate lightweight suppression rules so guardrails remain helpful without adding friction.
+- Focus guidance instrumentation
+  - Add analytics events for accepted/rejected task switches.
+  - Add analytics for focus-strip "next step" visibility/use to validate ADHD guidance value.
+- Reminder overwhelm reduction
+  - Add quiet hours to reminder settings.
+  - Add reminder frequency caps (per hour/day).
+  - Add quick actions from reminders (`Snooze 5m`, `Reschedule`).
+- ADHD scanability/mobile parity
+  - Ensure inbox grouping/scannability improvements are fully mirrored in mobile views.
+  - Continue compact, high-signal UI passes that reduce visual noise and decision load.
+
+### Push Intelligence (Optional by Design)
+
+Goal: move Dopatika from a pull-based planner ("show me my tasks") toward a push-based coach ("notice patterns and propose the next best move") while keeping all automation optional and user-controlled.
+
+Core rules:
+- Suggestions should explain why they appeared (observable trigger or learned pattern).
+- Prefer draft-and-accept flows over silent task changes.
+- Every proactive behavior must be disable-able (global off + feature/frequency controls).
+- Respect quiet periods, cooldowns, and nudge caps to avoid overwhelm.
+
+Phase 1 (MVP push layer)
+- Repeated rollover rescue:
+  - Detect rollover streaks (e.g., 2-3+) and suggest AI breakdown + first micro-step.
+  - User reviews/accepts the breakdown before changes are applied.
+- Capacity guardrails:
+  - Detect overloaded day/time blocks and suggest rescheduling lighter tasks.
+- Smart reminder actions:
+  - Add action-oriented reminders (`Start 5m`, `Snooze 5m`, `Reschedule`, `Break it down`).
+- Optional controls:
+  - Smart suggestions on/off.
+  - Suggestion frequency (`minimal`, `balanced`, `proactive`).
+  - Learning on/off.
+
+Phase 2 (behavior-aware coaching)
+- Stuck detection:
+  - Detect open/edit/no-start loops and prompt for friction reason (`too big`, `unclear`, `blocked`, `low energy`).
+  - Adapt suggestions based on selected friction type.
+- Time-estimate learning:
+  - Learn estimate vs actual deltas and recommend better defaults by task type/project.
+- Best-time recommendations:
+  - Suggest scheduling by user completion patterns (time of day, task energy).
+- Context-switch interventions:
+  - Detect switching spikes and recommend a short focus lock or "finish 5-minute step first".
+
+Phase 3 (recovery + coaching loops)
+- Deadline risk forecasting with recovery plan suggestions.
+- Recovery mode ("salvage today" plan after derailment).
+- Weekly coaching summary (patterns + one experiment for next week).
+- Automation tiers:
+  - `suggest only`
+  - `draft + ask`
+  - optional low-risk auto-apply (future, opt-in only)
+
 ## P3: Platform Hardening
 
 - Expand automated tests for high-risk workflows:
@@ -117,4 +182,3 @@ Update this file for all architecture and roadmap changes.
 - Architecture and roadmap changes must be made in this file only.
 - `/Users/jonathanpirc/Desktop/Apps/focusflow-app/ARCHITECTURE.md` and `/Users/jonathanpirc/Desktop/Apps/focusflow-app/ROADMAP.md` are redirect stubs.
 - Legacy versions are archived under `/Users/jonathanpirc/Desktop/Apps/focusflow-app/docs/archive/`.
-

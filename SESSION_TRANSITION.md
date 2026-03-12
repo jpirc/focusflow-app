@@ -1,5 +1,198 @@
 # Session Transition Log
 
+## 2026-02-23 16:37 (CST)
+### What Was Done
+- Improved Push Coach suggestion quality and efficiency:
+  - Added client-side suggestion ranking + de-duplication (one suggestion per task, confidence thresholds by mode, actionability scoring).
+  - Added rollover rescue draft cache TTL and limited rescue prefetch count by suggestion mode to reduce unnecessary AI calls.
+  - Added selective rescue-draft apply UI (checkboxes per step + quick actions for `Select all` / `First step only`).
+- Made rollover handling smarter in the server suggestion generator:
+  - If a repeatedly rolled-over task already has subtasks, Push Coach now suggests resuming/focusing instead of re-breaking it down.
+  - Rollover tasks without subtasks get a stronger breakdown/rescue-style suggestion.
+- Honored the `aiBreakdown` feature flag across Push Coach and intelligence generation:
+  - Push Coach now exposes an `AI breakdown help` toggle.
+  - Rescue draft prefetch/generation stops when AI breakdown is disabled.
+  - Suggestion generation filters out breakdown suggestions when `aiBreakdown` is off.
+
+### Why
+- User requested the app become "super smart and efficient."
+- These changes reduce noisy/redundant suggestions, cut AI work when unnecessary, and improve rescue-plan usability without adding friction.
+
+### Files Changed
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/components/PushCoachPanel.tsx`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/lib/intelligence/suggestions.ts`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/SESSION_TRANSITION.md`
+
+### Validation
+- `npm -C /Users/jonathanpirc/Desktop/Apps/focusflow-app run typecheck` ✅
+- `npm -C /Users/jonathanpirc/Desktop/Apps/focusflow-app run lint` ✅
+- `npm -C /Users/jonathanpirc/Desktop/Apps/focusflow-app run build` ✅
+
+### Open Issues / Risks
+- Push Coach ranking/deduping is currently client-side only; server still generates a broader suggestion set.
+- Selective rescue apply supports selection, but not inline editing of subtask titles/durations yet.
+- AI breakdown disablement prevents rescue draft generation, but older pending breakdown suggestions can still appear until refreshed/dismissed.
+
+### Next Recommended Steps
+1. Add inline editing for rescue draft step titles/durations before apply.
+2. Add `suggestion_shown` and `suggestion_applied` telemetry (separate from accept/dismiss) for better learning signal quality.
+3. Move suggestion ranking/deduping rules to the server so all clients (including future mobile Push Coach) get consistent prioritization.
+4. Add a dedicated `rollover_rescue` suggestion type for cleaner analytics and UI treatment.
+
+### Git State
+- Branch: `main`
+- Latest local commit at handoff write time: `a660884`
+- New commit created in this session: no
+
+## 2026-02-23 16:30 (CST)
+### What Was Done
+- Extended `Push Coach` with an inline rollover-rescue flow:
+  - Detects rollover-heavy breakdown suggestions in the panel.
+  - Auto-prefetches a rescue breakdown draft (with cooldown/frequency gating already in place).
+  - Shows an inline preview of the rescue plan (subtasks, estimate, tip).
+  - Lets the user explicitly apply the draft to create subtasks (optional, one-click accept/apply).
+- Updated `Push Coach` suggestion handling so non-rescue `breakdown` suggestions no longer count as "accepted" just because the AI breakdown modal was opened.
+- Added server-side telemetry for suggestion responses by logging `suggestion_accepted` / `suggestion_dismissed` events into `TaskEvent`.
+- Added `saveSuggestion` support to `/api/intelligence/breakdown` so proactive rescue draft previews can request AI breakdowns without creating duplicate pending "AI Task Breakdown" suggestions.
+
+### Why
+- User requested smarter, more proactive behavior while keeping it optional.
+- The rollover-rescue flow is the first concrete "push" coaching pattern (detect behavior -> draft intervention -> user accepts).
+- Telemetry and acceptance semantics improvements reduce noise and improve future learning quality.
+
+### Files Changed
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/components/PushCoachPanel.tsx`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/app/page.tsx`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/app/api/intelligence/breakdown/route.ts`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/lib/intelligence/suggestions.ts`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/SESSION_TRANSITION.md`
+
+### Validation
+- `npm -C /Users/jonathanpirc/Desktop/Apps/focusflow-app run typecheck` ✅
+- `npm -C /Users/jonathanpirc/Desktop/Apps/focusflow-app run lint` ✅
+- `npm -C /Users/jonathanpirc/Desktop/Apps/focusflow-app run build` ✅
+
+### Open Issues / Risks
+- Rescue draft apply currently creates subtasks but does not yet offer selective step inclusion/editing like the full `AIBreakdownModal`.
+- Inline rescue preview generation uses the same AI breakdown endpoint; if OpenAI latency is high, draft preview can feel slow (fallback path exists).
+- Suggestion telemetry logs accept/dismiss events, but not yet "suggestion shown" impressions or "applied successfully vs opened only" outcome granularity for all action types.
+
+### Next Recommended Steps
+1. Add a lightweight inline edit/select UI for rescue drafts before apply (at least deselect step + regenerate).
+2. Track `suggestion_shown` and `suggestion_applied` events (separate from accept/dismiss) for stronger feedback loops.
+3. Add a dedicated `rollover_rescue` suggestion type/server generator to avoid overloading generic `stale_task` semantics.
+4. Add mobile `Push Coach` UI surface (collapsed card or bottom sheet) using the same rescue flow.
+
+### Git State
+- Branch: `main`
+- Latest local commit at handoff write time: `a660884`
+- New commit created in this session: no
+
+## 2026-02-23 15:52 (CST)
+### What Was Done
+- Added an optional `Push Coach` UI panel that surfaces proactive intelligence suggestions and lets users accept/dismiss them with one-tap actions.
+- Wired the panel into the desktop app flow (below notifications, above main view content).
+- Added a new `/api/intelligence/features` API route to persist user-controlled intelligence settings (`smartSuggestions`, frequency, learning, etc.) via `UserFeature`.
+- Added a `useIntelligenceFeatures` hook for fetching/updating optional push/intelligence preferences.
+- Expanded client-side intelligence suggestion typings to support the full backend suggestion/action set (including focus recommendations and reschedule metadata).
+- Added duplicate suppression when saving generated suggestions to reduce spam/noise from repeated proactive generation.
+- Added a new `Push Intelligence (Optional by Design)` roadmap section in the canonical master roadmap.
+
+### Why
+- User wants Dopatika to become smarter and more proactive ("push" vs "pull") while keeping all automation optional and user-controlled.
+- This creates the first end-to-end foundation: settings -> suggestion generation -> UI surfacing -> accept/dismiss actions.
+
+### Files Changed
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/app/api/intelligence/features/route.ts`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/hooks/useIntelligenceFeatures.ts`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/components/PushCoachPanel.tsx`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/app/page.tsx`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/hooks/useIntelligence.ts`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/lib/intelligence/suggestions.ts`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/docs/MASTER_ARCHITECTURE_ROADMAP.md`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/SESSION_TRANSITION.md`
+
+### Validation
+- `npm -C /Users/jonathanpirc/Desktop/Apps/focusflow-app run typecheck` ✅
+- `npm -C /Users/jonathanpirc/Desktop/Apps/focusflow-app run lint` ✅
+- `npm -C /Users/jonathanpirc/Desktop/Apps/focusflow-app run build` ✅
+
+### Open Issues / Risks
+- `Push Coach` is currently desktop-only; mobile UI parity is not implemented yet.
+- Suggestion acceptance marks the suggestion as acted on even for `breakdown` suggestions where the user can still cancel inside the AI breakdown modal.
+- Suggestion execution supports safe actions first (focus/select, start, move time block/date, breakdown prompt); more advanced actions (archive/auto-reschedule plans) are not implemented yet.
+- The proactive generation cadence is localStorage cooldown-based and not yet coordinated with server-side rate limits/nudge caps.
+
+### Next Recommended Steps
+1. Add explicit suggestion action telemetry (accept/dismiss/apply result) to improve learning quality and tune nudges.
+2. Refine rollover rescue into a dedicated suggestion type with an AI-generated breakdown draft preview and accept/apply flow.
+3. Add mobile `Push Coach` surface (collapsed card or sheet) using the same hooks/actions.
+4. Add quiet-hours / nudge-cap controls for proactive suggestion delivery to reduce overwhelm.
+
+### Git State
+- Branch: `main`
+- Latest local commit at handoff write time: `a660884`
+- New commit created in this session: no
+
+## 2026-02-23 15:31 (CST)
+### What Was Done
+- Added an `ADHD UX Backlog (Near-Term)` section to the canonical roadmap document.
+- Consolidated recent ADHD-support feature ideas from session handoffs into the master roadmap (task switch modal, prompt fatigue controls, focus guidance analytics, reminder overwhelm reduction, mobile scanability parity).
+- Added this handoff entry for the documentation update.
+
+### Why
+- User requested a documented ADHD-specific next-features backlog in the canonical roadmap to keep future work visible and centralized.
+
+### Files Changed
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/docs/MASTER_ARCHITECTURE_ROADMAP.md`
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/SESSION_TRANSITION.md`
+
+### Validation
+- No `lint` / `typecheck` / `build` / `tests` run (documentation-only changes).
+
+### Open Issues / Risks
+- The new ADHD UX backlog is roadmap-level only; no implementation tickets/status markers yet.
+- Some items overlap existing P2 bullets (notifications, timeline ergonomics) and may need deduping as work is planned.
+
+### Next Recommended Steps
+1. Add lightweight status tags (e.g., `planned`, `in progress`, `shipped`) to the ADHD UX backlog items.
+2. Create one scoped implementation ticket/branch for the task-switch modal replacement (`window.confirm` -> in-app modal/sheet).
+3. Define the minimum analytics schema for task-switch and focus-strip events before instrumenting.
+
+### Git State
+- Branch: `main`
+- Latest local commit at handoff write time: `a660884`
+- New commit created in this session: no
+
+## 2026-02-23 10:47 (CST)
+### What Was Done
+- Reviewed the latest handoff entries and canonical roadmap/docs to answer the user’s question about upcoming ADHD-support feature ideas.
+- Confirmed documentation structure is already in place (canonical roadmap + documentation map).
+- Added this transition entry for session handoff compliance.
+
+### Why
+- User asked what the next ADHD-focused development ideas were and suggested adding documentation.
+
+### Files Changed
+- `/Users/jonathanpirc/Desktop/Apps/focusflow-app/SESSION_TRANSITION.md`
+
+### Validation
+- No `lint` / `typecheck` / `build` / `tests` run (no code changes).
+
+### Open Issues / Risks
+- ADHD-focused next ideas are currently captured across recent handoff entries, while the canonical roadmap is more engineering/platform-oriented.
+- Without an explicit ADHD product backlog section in the master doc, future prioritization can drift into session notes only.
+
+### Next Recommended Steps
+1. Add an ADHD-focused “Next UX Experiments” section to `/Users/jonathanpirc/Desktop/Apps/focusflow-app/docs/MASTER_ARCHITECTURE_ROADMAP.md`.
+2. Fold recent handoff ADHD items (switch modal, prompt frequency controls, switch analytics) into that section.
+3. If desired, add a short end-user/feature documentation page that explains ADHD-specific workflows and how to use them.
+
+### Git State
+- Branch: `main`
+- Latest local commit at handoff write time: `a660884`
+- New commit created in this session: no
+
 ## 2026-02-18 15:26 (CST)
 ### What Was Done
 - Switched to `main` and fast-forward merged `codex/quick-close-complete-tasks` into `main`.
