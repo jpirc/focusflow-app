@@ -977,6 +977,8 @@ export default function DopatikaApp() {
                         isOpen={smartCaptureModalOpen}
                         onClose={() => setSmartCaptureModalOpen(false)}
                         onTasksCreated={refreshTasks}
+                        onCreateAndStart={(task) => { void handleStartNow(task.id); }}
+                        onStartPomodoro={(task) => { void handleStartPomodoro(task); }}
                     />
                 )}
 
@@ -1691,6 +1693,8 @@ export default function DopatikaApp() {
                 isOpen={smartCaptureModalOpen}
                 onClose={() => setSmartCaptureModalOpen(false)}
                 onTasksCreated={refreshTasks}
+                onCreateAndStart={(task) => { void handleStartNow(task.id); }}
+                onStartPomodoro={(task) => { void handleStartPomodoro(task); }}
             />
 
             <DailyPrioritiesModal

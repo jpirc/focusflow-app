@@ -1,5 +1,58 @@
 # Session Transition Log
 
+## 2026-03-12 (CST)
+### What Was Done
+- Cleaned up redundant documentation by archiving 16 stale docs to `docs/archive/` with `.legacy-2026-03-12.md` suffix
+- Deleted legacy folders `/focusflow` and `/focusflow-app` that were causing confusion
+- Updated `docs/DOCUMENTATION_MAP.md` with current inventory
+- Updated `CLAUDE.md` with Safety Rules section preventing irreversible actions without permission
+- Added TaskSwitchModal component replacing jarring `window.confirm` with ADHD-friendly modal
+- Fixed Vercel build failure by committing missing Push Coach files from prior session
+- Improved Push Coach panel with 5 enhancements:
+  1. Inline editing for rescue draft step titles and durations
+  2. Persist collapsed state in localStorage
+  3. Move settings to gear icon dropdown (cleaner UI)
+  4. Add snooze option ("Later" button, 1 hour client-side)
+  5. Add visual feedback (toast) when suggestion applied
+
+### Why
+- User wanted documentation cleanup to reduce confusion from overlapping/extinct docs
+- User wanted safety guardrails in CLAUDE.md to prevent irreversible actions without permission
+- TaskSwitchModal improves ADHD UX by providing contextual, non-blocking task switch confirmation
+- Push Coach improvements reduce friction and improve usability
+
+### Files Changed
+- `components/TaskSwitchModal.tsx` (NEW)
+- `hooks/useModalState.ts` (added promise-based task switch state)
+- `app/page.tsx` (integrated TaskSwitchModal, fixed type errors)
+- `components/PushCoachPanel.tsx` (inline editing, settings dropdown, snooze, toast)
+- `hooks/useIntelligence.ts` (added snooze functionality with localStorage)
+- `CLAUDE.md` (Safety Rules, new hooks docs, Push Coach docs)
+- `docs/DOCUMENTATION_MAP.md` (updated inventory)
+- Archived 16 docs to `docs/archive/`
+
+### Validation
+- `npm run typecheck` ✅
+- `npm run lint` ✅
+- `npm run build` ✅
+- Vercel deployment succeeded
+
+### Open Issues / Risks
+- Push Coach ranking/deduping is still client-side only
+- Snooze is client-side localStorage only (not persisted server-side)
+- 4 Push Coach improvements deferred to future sessions
+
+### Next Recommended Steps (Deferred)
+1. Add telemetry (suggestion_shown, suggestion_applied) for better learning signal
+2. Move suggestion ranking/deduping to server-side for consistency across clients
+3. Add dedicated `rollover_rescue` suggestion type for cleaner analytics
+4. Split PushCoachPanel into smaller components for maintainability
+
+### Git State
+- Branch: `main`
+- Commits in this session: `b85b37d`, `0f1e464`, `77ca2bf`, `f07b551`, `dd6731b`, `46f1db7`
+- Latest pushed commit: `46f1db7`
+
 ## 2026-02-23 16:37 (CST)
 ### What Was Done
 - Improved Push Coach suggestion quality and efficiency:
