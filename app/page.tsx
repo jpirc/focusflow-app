@@ -283,6 +283,15 @@ export default function DopatikaApp() {
     const [hoveredTimelineTaskId, setHoveredTimelineTaskId] = useState<string | null>(null);
     const [subtasksExpandedAll, setSubtasksExpandedAll] = useState(true);
 
+    // Share capture state (for PWA share_target)
+    const [shareText, setShareText] = useState<string>('');
+    const [quickCaptureEnabled, setQuickCaptureEnabled] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('dopatika-quick-capture') === 'true';
+        }
+        return false;
+    });
+
     // Derive the current task to edit from the tasks array
     const taskToEdit = useMemo(() =>
         taskToEditId ? tasks.find(t => t.id === taskToEditId) || null : null,
@@ -359,6 +368,58 @@ export default function DopatikaApp() {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [setQuickWinModalOpen, setQuickWinTrigger, setSmartCaptureModalOpen]);
+
+    // ============================================
+    // PWA Share Target Handler
+    // ============================================
+    // Handles incoming share intents via URL parameters
+    // Uses URL params instead of sessionStorage to survive auth redirects
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const url = new URL(window.location.href);
+        const isShare = url.searchParams.get('share') === 'true';
+
+        if (isShare) {
+            // Extract shared content from URL params
+            const title = url.searchParams.get('title') || '';
+            const text = url.searchParams.get('text') || '';
+            const sharedUrl = url.searchParams.get('url') || '';
+
+            // Combine content (avoid duplicate URL if already in text)
+            const parts: string[] = [];
+            if (title) parts.push(title);
+            if (text) parts.push(text);
+            if (sharedUrl && !text.includes(sharedUrl)) parts.push(sharedUrl);
+
+            const combinedText = parts.join('\n\n').trim();
+
+            if (combinedText) {
+                setShareText(combinedText);
+                setSmartCaptureModalOpen(true);
+            }
+
+            // Clean URL without reload (remove share params)
+            url.searchParams.delete('share');
+            url.searchParams.delete('title');
+            url.searchParams.delete('text');
+            url.searchParams.delete('url');
+            window.history.replaceState({}, '', url.pathname);
+        }
+    }, [setSmartCaptureModalOpen]);
+
+    // Handle quick capture preference persistence
+    const handleQuickCaptureChange = useCallback((enabled: boolean) => {
+        setQuickCaptureEnabled(enabled);
+        localStorage.setItem('dopatika-quick-capture', enabled.toString());
+    }, []);
+
+    // Clear share text when modal closes
+    const handleSmartCaptureClose = useCallback(() => {
+        setSmartCaptureModalOpen(false);
+        setShareText('');
+    }, [setSmartCaptureModalOpen]);
 
     // ============================================
     // Redirect if not authenticated
@@ -975,11 +1036,14 @@ export default function DopatikaApp() {
                 {smartCaptureModalOpen && (
                     <SmartCaptureModal
                         isOpen={smartCaptureModalOpen}
-                        onClose={() => setSmartCaptureModalOpen(false)}
+                        onClose={handleSmartCaptureClose}
                         onTasksCreated={refreshTasks}
                         onCreateAndStart={(task) => { void handleStartNow(task.id); }}
                         onStartPomodoro={(task) => { void handleStartPomodoro(task); }}
                         projects={projects}
+                        initialText={shareText}
+                        quickModeEnabled={quickCaptureEnabled}
+                        onQuickModeChange={handleQuickCaptureChange}
                     />
                 )}
 
@@ -1692,11 +1756,14 @@ export default function DopatikaApp() {
 
             <SmartCaptureModal
                 isOpen={smartCaptureModalOpen}
-                onClose={() => setSmartCaptureModalOpen(false)}
+                onClose={handleSmartCaptureClose}
                 onTasksCreated={refreshTasks}
                 onCreateAndStart={(task) => { void handleStartNow(task.id); }}
                 onStartPomodoro={(task) => { void handleStartPomodoro(task); }}
                 projects={projects}
+                initialText={shareText}
+                quickModeEnabled={quickCaptureEnabled}
+                onQuickModeChange={handleQuickCaptureChange}
             />
 
             <DailyPrioritiesModal
