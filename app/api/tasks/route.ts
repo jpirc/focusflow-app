@@ -13,11 +13,12 @@ import { trackTaskCreated } from '@/lib/intelligence';
 const createTaskSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     description: z.string().optional(),
-    projectId: z.string().optional(),
-    parentTaskId: z.string().optional(),
+    projectId: z.string().nullable().optional(),
+    parentTaskId: z.string().nullable().optional(),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
     timeBlock: z.enum(['anytime', 'morning', 'afternoon', 'evening']).nullable().optional(),
     scheduledHour: z.number().min(0).max(23).nullable().optional(),
+    scheduledMinute: z.number().min(0).max(59).nullable().optional(),
     estimatedMinutes: z.number().optional(),
     priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
     energyLevel: z.enum(['low', 'medium', 'high']).optional(),
@@ -119,6 +120,7 @@ export async function POST(req: NextRequest) {
         if (data!.date !== undefined && data!.date !== null) taskData.date = data!.date;
         if (data!.timeBlock !== undefined && data!.timeBlock !== null) taskData.timeBlock = data!.timeBlock;
         if (data!.scheduledHour !== undefined) taskData.scheduledHour = data!.scheduledHour;
+        if (data!.scheduledMinute !== undefined) taskData.scheduledMinute = data!.scheduledMinute;
         // Default to 30 minutes if not specified (changed from 60 to be more realistic)
         if (data!.estimatedMinutes !== undefined) {
             taskData.estimatedMinutes = data!.estimatedMinutes;

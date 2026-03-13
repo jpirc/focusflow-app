@@ -238,34 +238,45 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
     }
 
     try {
+      const taskPayload = {
+        title: parsedTask.title,
+        description: parsedTask.description,
+        date: parsedTask.date,
+        timeBlock: parsedTask.timeBlock,
+        scheduledHour,
+        scheduledMinute,
+        estimatedMinutes: parsedTask.estimatedMinutes,
+        priority: parsedTask.priority,
+        energyLevel: parsedTask.energyLevel,
+        icon: parsedTask.icon,
+        projectId: parsedTask.projectId || null,
+        status: 'pending',
+        completed: false,
+      };
+
+      console.log('[SmartCapture] Creating task with payload:', taskPayload);
+
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: parsedTask.title,
-          description: parsedTask.description,
-          date: parsedTask.date,
-          timeBlock: parsedTask.timeBlock,
-          scheduledHour,
-          scheduledMinute,
-          estimatedMinutes: parsedTask.estimatedMinutes,
-          priority: parsedTask.priority,
-          energyLevel: parsedTask.energyLevel,
-          icon: parsedTask.icon,
-          projectId: parsedTask.projectId || null,
-          status: 'pending',
-          completed: false,
-        }),
+        body: JSON.stringify(taskPayload),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('[SmartCapture] API error:', response.status, errorData);
+        // Log validation details if present
+        if (errorData.details) {
+          console.error('[SmartCapture] Validation details:', JSON.stringify(errorData.details, null, 2));
+        }
         throw new Error(`Failed to create task: ${errorData.error || 'Unknown error'}`);
       }
 
-      return await response.json();
+      const created = await response.json();
+      console.log('[SmartCapture] Task created successfully:', created.id);
+      return created;
     } catch (err) {
-      console.error('Error creating task:', err);
+      console.error('[SmartCapture] Error creating task:', err);
       return null;
     }
   };

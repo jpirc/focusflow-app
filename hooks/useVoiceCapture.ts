@@ -164,6 +164,8 @@ export function useVoiceCapture(): UseVoiceCaptureReturn {
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Track if we intentionally aborted to start a new recording
+  const intentionalAbortRef = useRef(false);
 
   // Check browser support on mount
   useEffect(() => {
@@ -216,9 +218,11 @@ export function useVoiceCapture(): UseVoiceCaptureReturn {
       return;
     }
 
-    // Stop any existing recording
+    // Stop any existing recording (mark as intentional to suppress error)
     if (recognitionRef.current) {
+      intentionalAbortRef.current = true;
       recognitionRef.current.abort();
+      recognitionRef.current = null;
     }
 
     try {
@@ -263,6 +267,12 @@ export function useVoiceCapture(): UseVoiceCaptureReturn {
           timeoutRef.current = null;
         }
 
+        // Ignore aborted errors if we intentionally aborted (e.g., to restart)
+        if (event.error === 'aborted' && intentionalAbortRef.current) {
+          intentionalAbortRef.current = false;
+          return;
+        }
+
         const errorType = mapSpeechError(event.error);
 
         // Map audio-capture to mic-unavailable for clearer messaging
@@ -283,6 +293,8 @@ export function useVoiceCapture(): UseVoiceCaptureReturn {
 
       // Handle start
       recognition.onstart = () => {
+        // Clear intentional abort flag - we successfully started
+        intentionalAbortRef.current = false;
         setIsRecording(true);
         setIsProcessing(false);
 
