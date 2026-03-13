@@ -1,5 +1,54 @@
 # Session Transition Log
 
+## 2026-03-13 (CST)
+### What Was Done
+- Implemented Seamless Capture MVP with voice input and share sheet support:
+  1. **Voice Capture** - New `useVoiceCapture` hook wrapping Web Speech API with full error handling
+  2. **Voice Button** - New `VoiceCaptureButton` component with ARIA labels, keyboard support, screen reader announcements
+  3. **Share Sheet Handler** - New `/api/capture/share` route for PWA share_target
+  4. **Quick Capture Mode** - Toggle in SmartCaptureModal to skip preview and add directly to inbox
+  5. **PWA Manifest** - Created `public/manifest.json` with share_target configuration
+  6. **Share URL Handling** - Updated `app/page.tsx` to handle share intent via URL params
+- Created `TODOS.md` to track deferred work (Whisper API fallback, API tests, etc.)
+
+### Why
+- User wanted zero-friction task capture from anywhere ("tasks pop into my head")
+- Voice capture eliminates typing friction for quick thoughts
+- Share sheets enable capture from any app without switching to Dopatika
+- Quick mode reduces steps from 5-7 to 2-3 for simple captures
+
+### Files Changed
+- `hooks/useVoiceCapture.ts` (NEW) - Web Speech API wrapper with error handling
+- `components/VoiceCaptureButton.tsx` (NEW) - Accessible mic button component
+- `app/api/capture/share/route.ts` (NEW) - Share intent handler
+- `public/manifest.json` (NEW) - PWA manifest with share_target
+- `components/SmartCaptureModal.tsx` - Added voice button, quick mode toggle, initialText prop
+- `app/layout.tsx` - Added manifest link
+- `app/page.tsx` - Share URL param handling, quick mode state, new modal props
+- `TODOS.md` (NEW) - Deferred work tracking
+
+### Validation
+- `npm run typecheck` ✅
+- `npm run lint` ✅
+- `npm run build` ✅
+
+### Open Issues / Risks
+- Voice capture hidden on Firefox (Web Speech API not supported) - Whisper fallback deferred
+- Share handler API tests not yet written (test infrastructure needed)
+- Quick mode preference stored in localStorage only
+
+### Next Recommended Steps
+1. Manual QA: Test voice capture in Chrome/Safari, share from iOS/Android
+2. Add Whisper API fallback for Firefox users (tracked in TODOS.md)
+3. Set up Jest/Vitest for API route testing
+4. Add observability: voice_capture_started/completed metrics
+
+### Git State
+- Branch: `main`
+- Files ready to commit (not yet committed)
+
+---
+
 ## 2026-03-12 (CST)
 ### What Was Done
 - Cleaned up redundant documentation by archiving 16 stale docs to `docs/archive/` with `.legacy-2026-03-12.md` suffix
