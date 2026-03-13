@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { Sparkles, X, Loader2, ArrowLeft } from 'lucide-react';
-import { Task, TimeBlock, Priority, EnergyLevel } from '@/types';
+import { Task, TimeBlock, Priority, EnergyLevel, Project } from '@/types';
 import { TaskPreviewCard, ParsedTask } from './TaskPreviewCard';
 
 interface SmartCaptureModalProps {
@@ -11,6 +11,7 @@ interface SmartCaptureModalProps {
   onTasksCreated: () => void;
   onCreateAndStart?: (task: Task) => void;
   onStartPomodoro?: (task: Task) => void;
+  projects?: Project[];
 }
 
 export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
@@ -19,6 +20,7 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
   onTasksCreated,
   onCreateAndStart,
   onStartPomodoro,
+  projects = [],
 }) => {
   // Phase: 'input' for text entry, 'preview' for showing parsed results
   const [phase, setPhase] = useState<'input' | 'preview'>('input');
@@ -129,6 +131,7 @@ export const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
           priority: parsedTask.priority,
           energyLevel: parsedTask.energyLevel,
           icon: parsedTask.icon,
+          projectId: parsedTask.projectId || null,
           status: 'pending',
           completed: false,
         }),
@@ -309,6 +312,7 @@ Example: 'Hey! Can you send me the report by Friday? Also don't forget the team 
                     onStartNow={() => handleStartNow(task)}
                     onStartPomodoro={() => handleStartPomodoro(task)}
                     isCreating={isCreating}
+                    projects={projects}
                   />
                 ))}
               </div>

@@ -979,6 +979,7 @@ export default function DopatikaApp() {
                         onTasksCreated={refreshTasks}
                         onCreateAndStart={(task) => { void handleStartNow(task.id); }}
                         onStartPomodoro={(task) => { void handleStartPomodoro(task); }}
+                        projects={projects}
                     />
                 )}
 
@@ -1695,6 +1696,7 @@ export default function DopatikaApp() {
                 onTasksCreated={refreshTasks}
                 onCreateAndStart={(task) => { void handleStartNow(task.id); }}
                 onStartPomodoro={(task) => { void handleStartPomodoro(task); }}
+                projects={projects}
             />
 
             <DailyPrioritiesModal

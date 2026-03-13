@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Calendar,
   Sun,
@@ -10,10 +10,10 @@ import {
   Play,
   Timer,
   ChevronDown,
-  Check,
-  Circle
+  Circle,
+  Folder
 } from 'lucide-react';
-import { TimeBlock, Priority, EnergyLevel } from '@/types';
+import { TimeBlock, Priority, EnergyLevel, Project } from '@/types';
 
 export interface ParsedTask {
   tempId: string;
@@ -27,6 +27,7 @@ export interface ParsedTask {
   priority: Priority;
   energyLevel: EnergyLevel;
   icon: string;
+  projectId?: string | null;
 }
 
 interface TaskPreviewCardProps {
@@ -35,6 +36,7 @@ interface TaskPreviewCardProps {
   onStartNow: () => void;
   onStartPomodoro: () => void;
   isCreating?: boolean;
+  projects?: Project[];
 }
 
 // Date helper functions
@@ -75,6 +77,33 @@ const DURATION_OPTIONS = [
   { value: 120, label: '2h' },
 ];
 
+// Time options for specific scheduling
+const HOUR_OPTIONS = [
+  { value: 6, label: '6am' },
+  { value: 7, label: '7am' },
+  { value: 8, label: '8am' },
+  { value: 9, label: '9am' },
+  { value: 10, label: '10am' },
+  { value: 11, label: '11am' },
+  { value: 12, label: '12pm' },
+  { value: 13, label: '1pm' },
+  { value: 14, label: '2pm' },
+  { value: 15, label: '3pm' },
+  { value: 16, label: '4pm' },
+  { value: 17, label: '5pm' },
+  { value: 18, label: '6pm' },
+  { value: 19, label: '7pm' },
+  { value: 20, label: '8pm' },
+  { value: 21, label: '9pm' },
+];
+
+const MINUTE_OPTIONS = [
+  { value: 0, label: ':00' },
+  { value: 15, label: ':15' },
+  { value: 30, label: ':30' },
+  { value: 45, label: ':45' },
+];
+
 // Priority config
 const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; bg: string }> = {
   low: { label: 'Low', color: 'text-gray-600', bg: 'bg-gray-100' },
@@ -85,18 +114,62 @@ const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; bg: stri
 
 const PRIORITY_ORDER: Priority[] = ['low', 'medium', 'high', 'urgent'];
 
+// Smart project matching based on task title keywords
+function autoDetectProject(title: string, projects: Project[]): string | null {
+  const lowerTitle = title.toLowerCase();
+
+  for (const project of projects) {
+    const projectName = project.name.toLowerCase();
+    // Check if task title contains project name
+    if (lowerTitle.includes(projectName)) {
+      return project.id;
+    }
+    // Check for common keyword matches
+    const keywords = projectName.split(/\s+/);
+    for (const keyword of keywords) {
+      if (keyword.length > 3 && lowerTitle.includes(keyword)) {
+        return project.id;
+      }
+    }
+  }
+
+  return null;
+}
+
+// Format time for display
+function formatTime(hour: number | null, minute: number | null): string {
+  if (hour === null) return 'No time';
+  const h = hour % 12 || 12;
+  const ampm = hour < 12 ? 'am' : 'pm';
+  const m = minute ?? 0;
+  return `${h}:${m.toString().padStart(2, '0')}${ampm}`;
+}
+
 export const TaskPreviewCard: React.FC<TaskPreviewCardProps> = ({
   task,
   onUpdate,
   onStartNow,
   onStartPomodoro,
   isCreating = false,
+  projects = [],
 }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showProjectPicker, setShowProjectPicker] = useState(false);
   const [customDate, setCustomDate] = useState(task.date || getTodayString());
 
   const today = getTodayString();
   const tomorrow = getTomorrowString();
+
+  // Auto-detect project on mount if not already set
+  useEffect(() => {
+    if (!task.projectId && projects.length > 0) {
+      const detectedProjectId = autoDetectProject(task.title, projects);
+      if (detectedProjectId) {
+        onUpdate({ projectId: detectedProjectId });
+      }
+    }
+  }, [task.title, task.projectId, projects, onUpdate]);
 
   const cyclePriority = () => {
     const currentIndex = PRIORITY_ORDER.indexOf(task.priority);
@@ -115,7 +188,39 @@ export const TaskPreviewCard: React.FC<TaskPreviewCardProps> = ({
     onUpdate({ date: newDate });
   };
 
+  const handleTimeSelect = (hour: number, minute: number) => {
+    // Determine timeBlock from hour
+    let timeBlock: TimeBlock = 'anytime';
+    if (hour >= 6 && hour < 12) {
+      timeBlock = 'morning';
+    } else if (hour >= 12 && hour < 17) {
+      timeBlock = 'afternoon';
+    } else if (hour >= 17 && hour < 22) {
+      timeBlock = 'evening';
+    }
+
+    onUpdate({
+      scheduledHour: hour,
+      scheduledMinute: minute,
+      timeBlock,
+      // If no date set, default to today when setting a specific time
+      date: task.date || today
+    });
+    setShowTimePicker(false);
+  };
+
+  const handleClearTime = () => {
+    onUpdate({ scheduledHour: null, scheduledMinute: null });
+    setShowTimePicker(false);
+  };
+
+  const handleProjectSelect = (projectId: string | null) => {
+    onUpdate({ projectId });
+    setShowProjectPicker(false);
+  };
+
   const priorityConfig = PRIORITY_CONFIG[task.priority];
+  const selectedProject = projects.find(p => p.id === task.projectId);
 
   return (
     <div className="border border-gray-200 rounded-lg p-3 bg-white space-y-3">
@@ -135,11 +240,11 @@ export const TaskPreviewCard: React.FC<TaskPreviewCardProps> = ({
         </button>
       </div>
 
-      {/* Quick Selectors Row */}
+      {/* Quick Selectors */}
       <div className="space-y-2">
         {/* Date Selection */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-gray-500 w-12">When:</span>
+          <span className="text-xs text-gray-500 w-12">Date:</span>
           <button
             onClick={() => handleDateSelect(null)}
             className={`px-2 py-1 text-xs rounded-md transition-colors ${
@@ -201,7 +306,7 @@ export const TaskPreviewCard: React.FC<TaskPreviewCardProps> = ({
 
         {/* Time Block Selection */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-gray-500 w-12">Time:</span>
+          <span className="text-xs text-gray-500 w-12">Block:</span>
           {TIME_BLOCKS.map((block) => (
             <button
               key={block.id}
@@ -218,9 +323,103 @@ export const TaskPreviewCard: React.FC<TaskPreviewCardProps> = ({
           ))}
         </div>
 
-        {/* Duration Selection */}
+        {/* Specific Time Selection */}
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-gray-500 w-12">Time:</span>
+          <div className="relative">
+            <button
+              onClick={() => setShowTimePicker(!showTimePicker)}
+              className={`px-2 py-1 text-xs rounded-md transition-colors flex items-center gap-1 ${
+                task.scheduledHour !== null
+                  ? 'bg-purple-100 text-purple-700 font-medium'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Clock className="w-3 h-3" />
+              {task.scheduledHour !== null
+                ? formatTime(task.scheduledHour, task.scheduledMinute)
+                : 'Set time'}
+              <ChevronDown className="w-3 h-3" />
+            </button>
+            {showTimePicker && (
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-10 w-48">
+                <div className="flex gap-2 mb-2">
+                  {/* Hour selector */}
+                  <select
+                    value={task.scheduledHour ?? ''}
+                    onChange={(e) => {
+                      const hour = e.target.value ? parseInt(e.target.value) : null;
+                      if (hour !== null) {
+                        handleTimeSelect(hour, task.scheduledMinute ?? 0);
+                      }
+                    }}
+                    className="flex-1 text-sm border border-gray-300 rounded px-2 py-1"
+                  >
+                    <option value="">Hour</option>
+                    {HOUR_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  {/* Minute selector */}
+                  <select
+                    value={task.scheduledMinute ?? 0}
+                    onChange={(e) => {
+                      const minute = parseInt(e.target.value);
+                      if (task.scheduledHour !== null) {
+                        handleTimeSelect(task.scheduledHour, minute);
+                      }
+                    }}
+                    className="w-16 text-sm border border-gray-300 rounded px-2 py-1"
+                    disabled={task.scheduledHour === null}
+                  >
+                    {MINUTE_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={handleClearTime}
+                  className="w-full text-xs text-gray-500 hover:text-gray-700 py-1"
+                >
+                  Clear time
+                </button>
+              </div>
+            )}
+          </div>
+          {/* Quick time buttons */}
+          {task.scheduledHour === null && (
+            <>
+              <button
+                onClick={() => handleTimeSelect(9, 0)}
+                className="px-2 py-1 text-xs rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200"
+              >
+                9am
+              </button>
+              <button
+                onClick={() => handleTimeSelect(12, 0)}
+                className="px-2 py-1 text-xs rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200"
+              >
+                12pm
+              </button>
+              <button
+                onClick={() => handleTimeSelect(14, 0)}
+                className="px-2 py-1 text-xs rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200"
+              >
+                2pm
+              </button>
+              <button
+                onClick={() => handleTimeSelect(17, 0)}
+                className="px-2 py-1 text-xs rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200"
+              >
+                5pm
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Duration Selection */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-gray-500 w-12">Effort:</span>
           {DURATION_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -235,6 +434,59 @@ export const TaskPreviewCard: React.FC<TaskPreviewCardProps> = ({
             </button>
           ))}
         </div>
+
+        {/* Project Selection */}
+        {projects.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-gray-500 w-12">Project:</span>
+            <div className="relative">
+              <button
+                onClick={() => setShowProjectPicker(!showProjectPicker)}
+                className={`px-2 py-1 text-xs rounded-md transition-colors flex items-center gap-1 ${
+                  task.projectId
+                    ? 'font-medium'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                style={selectedProject ? {
+                  backgroundColor: selectedProject.bgColor || selectedProject.color + '20',
+                  color: selectedProject.color
+                } : undefined}
+              >
+                <Folder className="w-3 h-3" />
+                {selectedProject?.name || 'None'}
+                <ChevronDown className="w-3 h-3" />
+              </button>
+              {showProjectPicker && (
+                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-1 z-10 min-w-[160px] max-h-48 overflow-y-auto">
+                  <button
+                    onClick={() => handleProjectSelect(null)}
+                    className={`w-full text-left px-2 py-1.5 text-xs rounded hover:bg-gray-100 flex items-center gap-2 ${
+                      !task.projectId ? 'bg-gray-100 font-medium' : ''
+                    }`}
+                  >
+                    <span className="w-3 h-3 rounded-full bg-gray-300" />
+                    None
+                  </button>
+                  {projects.map((project) => (
+                    <button
+                      key={project.id}
+                      onClick={() => handleProjectSelect(project.id)}
+                      className={`w-full text-left px-2 py-1.5 text-xs rounded hover:bg-gray-100 flex items-center gap-2 ${
+                        task.projectId === project.id ? 'bg-gray-100 font-medium' : ''
+                      }`}
+                    >
+                      <span
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: project.color }}
+                      />
+                      <span className="truncate">{project.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}
