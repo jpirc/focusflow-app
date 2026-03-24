@@ -13,7 +13,7 @@ import { trackTaskCreated } from '@/lib/intelligence';
 const createTaskSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     description: z.string().optional(),
-    projectId: z.string().optional(),
+    projectId: z.string().nullable().optional(),
     parentTaskId: z.string().optional(),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
     timeBlock: z.enum(['anytime', 'morning', 'afternoon', 'evening']).nullable().optional(),
